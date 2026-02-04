@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(go mod init:*)",
+      "Bash(powershell -Command \"cd 'e:\\\\Sources\\\\gpx-utility-analyzer'; & 'C:\\\\Program Files\\\\Go\\\\bin\\\\go.exe' get:*)",
+      "Bash(powershell -Command \"cd 'e:\\\\Sources\\\\gpx-utility-analyzer'; & 'C:\\\\Program Files\\\\Go\\\\bin\\\\go.exe' run . analyze --format json gpx/pct-karel-sabbe.gpx 2>&1\":*)"
+    ]
+  }
+}

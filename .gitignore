@@ -1,0 +1,19 @@
+# Binaries
+gpx-analyzer
+gpx-analyzer.exe
+*.exe
+
+# Split output
+splits/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go
+vendor/
