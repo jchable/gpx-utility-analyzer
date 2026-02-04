@@ -46,6 +46,7 @@ gpx-analyzer analyze [fichiers...] [flags]
 | `--preset` | Preset de détection d'arrêts : `hiking`, `trail`, `cycling` | `hiking` |
 | `--stop-speed` | Surcharge de la vitesse max pour un arrêt (m/s) | _(selon preset)_ |
 | `--stop-duration` | Surcharge de la durée min pour un arrêt (ex: `2m`) | _(selon preset)_ |
+| `--export` | Exporter les GPX retraités (DEM + lissage) dans ce répertoire | _(désactivé)_ |
 
 ### Exemples
 
@@ -125,6 +126,20 @@ gpx-analyzer analyze ultra-trail.gpx --stop-speed 0.2 --stop-duration 5m
 
 ```bash
 gpx-analyzer analyze vacances-*.gpx --format json
+```
+
+**Exporter le GPX avec altitudes corrigées par DEM :**
+
+```bash
+gpx-analyzer analyze ma-rando.gpx --export ./processed/
+```
+
+Produit `./processed/ma-rando_processed.gpx` avec les altitudes DEM + lissage appliqués.
+
+**Exporter après retraitement complet (DEM + segments) :**
+
+```bash
+gpx-analyzer analyze pct.gpx --elevation-algo segments --export ./processed/
 ```
 
 ---
@@ -514,6 +529,18 @@ gpx-analyzer analyze trace.gpx --elevation-algo segments
 ```bash
 gpx-analyzer analyze trace.gpx --track-smoothing medium --elevation-algo segments
 ```
+
+### Exporter un GPX avec altitudes corrigées
+
+```bash
+# Exporter avec correction DEM pour utiliser dans un autre outil
+gpx-analyzer analyze ma-rando.gpx --export ./processed/
+
+# Exporter avec le meilleur retraitement possible
+gpx-analyzer analyze pct.gpx --elevation-algo segments --smoothing medium --export ./clean/
+```
+
+Le fichier exporté contient les coordonnées et altitudes après l'ensemble du pipeline de retraitement (lissage lat/lon, correction DEM, lissage élévation). Il peut être importé dans n'importe quel outil compatible GPX.
 
 ### Analyser une sortie vélo
 

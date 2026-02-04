@@ -60,6 +60,12 @@ gpx-analyzer analyze pct.gpx --elevation-algo segments
 gpx-analyzer analyze pct.gpx --track-smoothing medium --elevation-algo douglas-peucker
 ```
 
+**Exporter le GPX avec altitudes corrigées :**
+
+```bash
+gpx-analyzer analyze ma-rando.gpx --export ./processed/
+```
+
 Pour la documentation complète des commandes, flags et exemples avancés, voir [docs/CLI_USAGE.md](docs/CLI_USAGE.md).
 
 ## Développement

@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/jchable/gpx-utility-analyzer/internal/dem"
@@ -28,6 +30,7 @@ var (
 	dpEpsilonFlag     float64
 	segMinLenFlag     float64
 	segMaxDevFlag     float64
+	exportDirFlag     string
 )
 
 var analyzeCmd = &cobra.Command{
@@ -65,6 +68,8 @@ func init() {
 		"Segments algo: minimum segment length in meters")
 	analyzeCmd.Flags().Float64Var(&segMaxDevFlag, "seg-max-deviation", 2.0,
 		"Segments algo: max RMS residual in meters")
+	analyzeCmd.Flags().StringVar(&exportDirFlag, "export", "",
+		"Export preprocessed GPX files to this directory")
 
 	rootCmd.AddCommand(analyzeCmd)
 }
@@ -102,9 +107,26 @@ func analyzeFile(path string, formatter output.Formatter, cfg stats.ComputeConfi
 		return fmt.Errorf("extracting points from %s: %w", path, err)
 	}
 
+	// Compute modifies points in place (track smoothing, DEM, elevation smoothing)
 	summary := stats.Compute(points, g.SegmentCount(), cfg)
 
-	return formatter.Format(os.Stdout, path, summary, cfg.StopConfig)
+	if err := formatter.Format(os.Stdout, path, summary, cfg.StopConfig); err != nil {
+		return err
+	}
+
+	// Export preprocessed GPX if requested
+	if exportDirFlag != "" {
+		base := filepath.Base(path)
+		name := strings.TrimSuffix(base, filepath.Ext(base)) + "_processed.gpx"
+		outPath := filepath.Join(exportDirFlag, name)
+		exported := gpx.NewGPXFromPoints(points, strings.TrimSuffix(base, filepath.Ext(base)))
+		if err := gpx.WriteFile(exported, outPath); err != nil {
+			return fmt.Errorf("exporting %s: %w", outPath, err)
+		}
+		fmt.Fprintf(os.Stdout, "Exported: %s (%d points)\n", outPath, len(points))
+	}
+
+	return nil
 }
 
 func buildComputeConfig() stats.ComputeConfig {
