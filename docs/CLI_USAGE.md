@@ -11,6 +11,8 @@ Documentation complète de toutes les commandes, flags et exemples d'utilisation
 - [merge — Fusionner plusieurs GPX](#merge--fusionner-plusieurs-gpx)
 - [Statistiques calculées](#statistiques-calculées)
 - [Correction d'élévation](#correction-délévation)
+- [Algorithmes de calcul du dénivelé](#algorithmes-de-calcul-du-dénivelé---elevation-algo)
+- [Lissage de la trace GPS](#lissage-de-la-trace-gps---track-smoothing)
 - [Presets de détection d'arrêts](#presets-de-détection-darrêts)
 - [Cas d'usage courants](#cas-dusage-courants)
 
@@ -36,6 +38,11 @@ gpx-analyzer analyze [fichiers...] [flags]
 | `--dem-auto-download` | Télécharger automatiquement les tuiles SRTM manquantes | `true` |
 | `--dem-cache` | Répertoire de cache pour les tuiles téléchargées | _(OS cache dir)_ |
 | `--elevation-threshold` | Seuil minimum de changement d'élévation (mètres) | `2.0` |
+| `--elevation-algo` | Algorithme de dénivelé : `threshold`, `douglas-peucker`, `segments` | `threshold` |
+| `--track-smoothing` | Lissage lat/lon de la trace GPS : `none`, `light`, `medium`, `heavy` | `none` |
+| `--dp-epsilon` | Douglas-Peucker : déviation verticale max tolérée (mètres) | `3.0` |
+| `--seg-min-length` | Segments : longueur min d'un segment (mètres) | `200.0` |
+| `--seg-max-deviation` | Segments : résidu RMS max par segment (mètres) | `2.0` |
 | `--preset` | Preset de détection d'arrêts : `hiking`, `trail`, `cycling` | `hiking` |
 | `--stop-speed` | Surcharge de la vitesse max pour un arrêt (m/s) | _(selon preset)_ |
 | `--stop-duration` | Surcharge de la durée min pour un arrêt (ex: `2m`) | _(selon preset)_ |
@@ -143,6 +150,11 @@ gpx-analyzer split <fichier> [flags]
 | `--dem-auto-download` | Télécharger automatiquement les tuiles SRTM manquantes | `true` |
 | `--dem-cache` | Répertoire de cache pour les tuiles téléchargées | _(OS cache dir)_ |
 | `--elevation-threshold` | Seuil de bruit d'élévation (mètres) | `2.0` |
+| `--elevation-algo` | Algorithme de dénivelé : `threshold`, `douglas-peucker`, `segments` | `threshold` |
+| `--track-smoothing` | Lissage lat/lon de la trace GPS | `none` |
+| `--dp-epsilon` | Douglas-Peucker : déviation verticale max (mètres) | `3.0` |
+| `--seg-min-length` | Segments : longueur min d'un segment (mètres) | `200.0` |
+| `--seg-max-deviation` | Segments : résidu RMS max (mètres) | `2.0` |
 | `--preset` | Preset de détection d'arrêts | `hiking` |
 | `--stop-speed` | Surcharge vitesse max pour arrêt (m/s) | _(selon preset)_ |
 | `--stop-duration` | Surcharge durée min pour arrêt | _(selon preset)_ |
@@ -221,6 +233,11 @@ gpx-analyzer merge [fichiers...] [flags]
 | `--dem-auto-download` | Télécharger automatiquement les tuiles SRTM manquantes | `true` |
 | `--dem-cache` | Répertoire de cache pour les tuiles téléchargées | _(OS cache dir)_ |
 | `--elevation-threshold` | Seuil de bruit d'élévation (si `--analyze`) | `2.0` |
+| `--elevation-algo` | Algorithme de dénivelé (si `--analyze`) | `threshold` |
+| `--track-smoothing` | Lissage lat/lon de la trace GPS (si `--analyze`) | `none` |
+| `--dp-epsilon` | Douglas-Peucker : déviation verticale max (si `--analyze`) | `3.0` |
+| `--seg-min-length` | Segments : longueur min d'un segment (si `--analyze`) | `200.0` |
+| `--seg-max-deviation` | Segments : résidu RMS max (si `--analyze`) | `2.0` |
 | `--preset` | Preset de détection d'arrêts (si `--analyze`) | `hiking` |
 
 ### Exemples
@@ -262,7 +279,7 @@ gpx-analyzer merge ./etapes/ -o complet.gpx --analyze --format json --dem-dir ./
 | Catégorie | Statistiques |
 |-----------|-------------|
 | **Distance** | Distance totale 2D (Haversine), distance 3D (avec pente) |
-| **Dénivelé** | D+ / D- avec filtre de bruit à seuil, altitude max, altitude min |
+| **Dénivelé** | D+ / D- (3 algorithmes au choix), altitude max, altitude min |
 | **Temps** | Durée totale, temps en mouvement, temps à l'arrêt, date de début, date de fin |
 | **Vitesse** | Vitesse moyenne, vitesse moyenne en mouvement, vitesse max |
 | **Allure** | Allure moyenne (min/km), allure moyenne en mouvement |
@@ -346,9 +363,76 @@ Quand `--dem-dir` est fourni avec `--dem-auto-download` (défaut), les tuiles lo
 | `--smoothing none` | 599 323 m | 7 583 m |
 | `--smoothing medium` (défaut) | 226 908 m | 5 720 m |
 | `--smoothing heavy` | 155 015 m | 5 645 m |
-| `--dem-dir` + `--smoothing light` | ~96 000 m* | ~4 009 m* |
+| DEM + `--smoothing medium` + seuil 5m | ~126 000 m | ~4 001 m |
+| DEM + `--elevation-algo segments` | **~104 000 m** | ~4 001 m |
 
-\* Avec tuiles SRTM. Le D+ réel du PCT est d'environ 96 000 m.
+Le D+ réel du PCT est d'environ 96 000 m. L'algorithme `segments` combiné au DEM donne le résultat le plus proche.
+
+---
+
+## Algorithmes de calcul du dénivelé (`--elevation-algo`)
+
+Trois algorithmes sont disponibles pour calculer le D+ et le D-. Ils s'appliquent après le lissage d'élévation (`--smoothing`) et la correction DEM.
+
+### `threshold` (défaut)
+
+Accumule le D+/D- uniquement quand le changement d'élévation depuis le dernier point de référence dépasse le seuil (`--elevation-threshold`). Simple et efficace pour filtrer le bruit GPS.
+
+```bash
+gpx-analyzer analyze trace.gpx --elevation-algo threshold --elevation-threshold 3
+```
+
+### `douglas-peucker`
+
+Simplifie le profil altimétrique (distance cumulée, altitude) par l'algorithme de Douglas-Peucker, puis calcule le D+/D- sur les points retenus. L'epsilon (`--dp-epsilon`) contrôle la déviation verticale maximale tolérée en mètres.
+
+```bash
+gpx-analyzer analyze trace.gpx --elevation-algo douglas-peucker --dp-epsilon 3
+```
+
+Fonctionne bien sur des données GPS sans DEM. Avec DEM, le profil terrain conserve beaucoup de micro-variations légitimes, ce qui limite l'efficacité du filtre.
+
+### `segments`
+
+Découpe le profil en segments de pente quasi-constante par régression linéaire gloutonne. Le D+/D- est calculé sur les élévations ajustées (fitted) aux extrémités de chaque segment.
+
+```bash
+gpx-analyzer analyze trace.gpx --elevation-algo segments --seg-min-length 200 --seg-max-deviation 2
+```
+
+| Paramètre | Description | Défaut |
+|-----------|------------|--------|
+| `--seg-min-length` | Longueur horizontale minimale d'un segment (mètres) | `200.0` |
+| `--seg-max-deviation` | Résidu RMS maximal avant de couper un segment (mètres) | `2.0` |
+
+C'est l'algorithme le plus efficace avec des données DEM : il absorbe le bruit de grille SRTM et donne des résultats proches de la réalité terrain.
+
+---
+
+## Lissage de la trace GPS (`--track-smoothing`)
+
+Applique une moyenne glissante sur les coordonnées lat/lon **avant** la correction DEM. Réduit le bruit horizontal GPS qui cause des oscillations artificielles d'altitude quand les points oscillent entre différentes cellules DEM.
+
+| Preset | Fenêtre | Usage |
+|--------|---------|-------|
+| `none` | _(désactivé)_ | Défaut, pas de lissage lat/lon |
+| `light` | 3 points | GPS de bonne qualité |
+| `medium` | 5 points | GPS standard |
+| `heavy` | 9 points | GPS très bruité |
+
+```bash
+gpx-analyzer analyze trace.gpx --track-smoothing medium --elevation-algo douglas-peucker
+```
+
+**Attention** : le lissage lat/lon modifie les coordonnées utilisées pour le calcul de distance et la détection d'arrêts. La distance totale sera légèrement réduite (le bruit horizontal est filtré).
+
+### Pipeline complet
+
+L'ordre de traitement est :
+
+```
+Track smoothing (lat/lon) → Correction DEM → Lissage élévation (--smoothing) → Calcul distances → Algorithme dénivelé
+```
 
 ---
 
@@ -409,6 +493,26 @@ done
 
 # Obtenir le D+ total d'un dossier
 gpx-analyzer merge ./traces/ -o /dev/null --analyze --format json | jq '.elevation_gain_m'
+```
+
+### Obtenir le D+ le plus précis possible (DEM + segments)
+
+```bash
+gpx-analyzer analyze pct.gpx --elevation-algo segments
+```
+
+### Comparer les algorithmes de dénivelé
+
+```bash
+gpx-analyzer analyze trace.gpx --elevation-algo threshold --elevation-threshold 5
+gpx-analyzer analyze trace.gpx --elevation-algo douglas-peucker --dp-epsilon 3
+gpx-analyzer analyze trace.gpx --elevation-algo segments
+```
+
+### Réduire le bruit horizontal GPS avant correction DEM
+
+```bash
+gpx-analyzer analyze trace.gpx --track-smoothing medium --elevation-algo segments
 ```
 
 ### Analyser une sortie vélo

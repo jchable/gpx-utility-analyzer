@@ -46,6 +46,8 @@ type ComputeConfig struct {
 	StopConfig         StopConfig               // stop detection parameters
 	SmoothingLevel     elevation.SmoothingLevel // elevation smoothing preset
 	DEMSource          *dem.Source              // DEM tile source (nil = disabled)
+	ElevationCfg       ElevationConfig                // elevation algorithm config
+	TrackSmoothing     elevation.TrackSmoothingLevel   // lat/lon smoothing before DEM
 }
 
 // DefaultConfig returns a default computation configuration using the hiking preset.
@@ -68,7 +70,8 @@ func Compute(points []gpx.TrackPoint, segmentCount int, cfg ComputeConfig) Summa
 		return s
 	}
 
-	// Pre-process elevations: DEM correction then smoothing
+	// Pre-process: track smoothing (lat/lon) → DEM correction → elevation smoothing
+	elevation.SmoothTrack(points, cfg.TrackSmoothing)
 	if cfg.DEMSource != nil {
 		dem.CorrectElevations(points, cfg.DEMSource)
 	}
@@ -86,8 +89,15 @@ func Compute(points []gpx.TrackPoint, segmentCount int, cfg ComputeConfig) Summa
 		)
 	}
 
-	// Elevation
-	s.Elevation = ComputeElevation(points, cfg.ElevationThreshold)
+	// Elevation — use configured algorithm (defaults to threshold)
+	elevCfg := cfg.ElevationCfg
+	if elevCfg.Algo == "" {
+		elevCfg.Algo = AlgoThreshold
+	}
+	if elevCfg.Threshold == 0 {
+		elevCfg.Threshold = cfg.ElevationThreshold
+	}
+	s.Elevation = ComputeElevationWithAlgo(points, elevCfg)
 
 	// Time
 	s.StartTime = points[0].Time

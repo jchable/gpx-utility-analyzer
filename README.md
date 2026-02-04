@@ -48,6 +48,18 @@ gpx-analyzer analyze ma-rando.gpx --format json
 gpx-analyzer analyze trace.gpx --smoothing heavy
 ```
 
+**Algorithme par segments de pente constante (meilleur D+ avec DEM) :**
+
+```bash
+gpx-analyzer analyze pct.gpx --elevation-algo segments
+```
+
+**Lissage de la trace GPS + Douglas-Peucker :**
+
+```bash
+gpx-analyzer analyze pct.gpx --track-smoothing medium --elevation-algo douglas-peucker
+```
+
 Pour la documentation complète des commandes, flags et exemples avancés, voir [docs/CLI_USAGE.md](docs/CLI_USAGE.md).
 
 ## Développement

@@ -15,14 +15,19 @@ import (
 )
 
 var (
-	presetFlag       string
-	stopSpeedFlag    float64
-	stopDurationFlag time.Duration
-	elevThreshold    float64
-	smoothingFlag    string
-	demDirFlag       string
-	demCacheFlag     string
-	demAutoDownload  bool
+	presetFlag        string
+	stopSpeedFlag     float64
+	stopDurationFlag  time.Duration
+	elevThreshold     float64
+	smoothingFlag     string
+	demDirFlag        string
+	demCacheFlag      string
+	demAutoDownload   bool
+	elevAlgoFlag      string
+	trackSmoothFlag   string
+	dpEpsilonFlag     float64
+	segMinLenFlag     float64
+	segMaxDevFlag     float64
 )
 
 var analyzeCmd = &cobra.Command{
@@ -50,6 +55,16 @@ func init() {
 		"Cache directory for auto-downloaded SRTM tiles (default: OS cache dir)")
 	analyzeCmd.Flags().BoolVar(&demAutoDownload, "dem-auto-download", true,
 		"Auto-download missing SRTM tiles from the internet")
+	analyzeCmd.Flags().StringVar(&elevAlgoFlag, "elevation-algo", "threshold",
+		"Elevation algorithm: threshold, douglas-peucker, or segments")
+	analyzeCmd.Flags().StringVar(&trackSmoothFlag, "track-smoothing", "none",
+		"GPS track lat/lon smoothing: none, light, medium, heavy")
+	analyzeCmd.Flags().Float64Var(&dpEpsilonFlag, "dp-epsilon", 3.0,
+		"Douglas-Peucker epsilon: max vertical deviation in meters")
+	analyzeCmd.Flags().Float64Var(&segMinLenFlag, "seg-min-length", 200.0,
+		"Segments algo: minimum segment length in meters")
+	analyzeCmd.Flags().Float64Var(&segMaxDevFlag, "seg-max-deviation", 2.0,
+		"Segments algo: max RMS residual in meters")
 
 	rootCmd.AddCommand(analyzeCmd)
 }
@@ -129,10 +144,32 @@ func buildComputeConfig() stats.ComputeConfig {
 		demSrc = dem.NewAutoSource(cacheDir)
 	}
 
+	// Elevation algorithm
+	elevAlgo := stats.ElevationAlgo(elevAlgoFlag)
+	if !stats.ValidAlgo(elevAlgoFlag) {
+		fmt.Fprintf(os.Stderr, "Warning: unknown elevation algo %q, using threshold\n", elevAlgoFlag)
+		elevAlgo = stats.AlgoThreshold
+	}
+
+	// Track smoothing
+	trackSmooth := elevation.TrackSmoothingLevel(trackSmoothFlag)
+	if !elevation.ValidTrackSmoothingLevel(trackSmoothFlag) {
+		fmt.Fprintf(os.Stderr, "Warning: unknown track smoothing %q, using none\n", trackSmoothFlag)
+		trackSmooth = elevation.TrackSmoothNone
+	}
+
 	return stats.ComputeConfig{
 		ElevationThreshold: elevThreshold,
 		StopConfig:         preset,
 		SmoothingLevel:     level,
 		DEMSource:          demSrc,
+		ElevationCfg: stats.ElevationConfig{
+			Algo:        elevAlgo,
+			Threshold:   elevThreshold,
+			Epsilon:     dpEpsilonFlag,
+			MinSegLen:   segMinLenFlag,
+			MaxSlopeDev: segMaxDevFlag,
+		},
+		TrackSmoothing: trackSmooth,
 	}
 }

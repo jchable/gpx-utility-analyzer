@@ -47,6 +47,16 @@ func init() {
 		"Cache directory for auto-downloaded SRTM tiles (default: OS cache dir)")
 	mergeCmd.Flags().BoolVar(&demAutoDownload, "dem-auto-download", true,
 		"Auto-download missing SRTM tiles from the internet")
+	mergeCmd.Flags().StringVar(&elevAlgoFlag, "elevation-algo", "threshold",
+		"Elevation algorithm: threshold, douglas-peucker, or segments")
+	mergeCmd.Flags().StringVar(&trackSmoothFlag, "track-smoothing", "none",
+		"GPS track lat/lon smoothing: none, light, medium, heavy")
+	mergeCmd.Flags().Float64Var(&dpEpsilonFlag, "dp-epsilon", 3.0,
+		"Douglas-Peucker epsilon: max vertical deviation in meters")
+	mergeCmd.Flags().Float64Var(&segMinLenFlag, "seg-min-length", 200.0,
+		"Segments algo: minimum segment length in meters")
+	mergeCmd.Flags().Float64Var(&segMaxDevFlag, "seg-max-deviation", 2.0,
+		"Segments algo: max RMS residual in meters")
 
 	rootCmd.AddCommand(mergeCmd)
 }
