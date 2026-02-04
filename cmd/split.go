@@ -49,6 +49,10 @@ func init() {
 		"Elevation smoothing: none, light, medium, heavy")
 	splitCmd.Flags().StringVar(&demDirFlag, "dem-dir", "",
 		"Directory containing SRTM .hgt files for DEM elevation correction")
+	splitCmd.Flags().StringVar(&demCacheFlag, "dem-cache", "",
+		"Cache directory for auto-downloaded SRTM tiles (default: OS cache dir)")
+	splitCmd.Flags().BoolVar(&demAutoDownload, "dem-auto-download", true,
+		"Auto-download missing SRTM tiles from the internet")
 
 	rootCmd.AddCommand(splitCmd)
 }

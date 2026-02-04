@@ -33,6 +33,8 @@ gpx-analyzer analyze [fichiers...] [flags]
 | `--format` | Format de sortie : `text` ou `json` | `text` |
 | `--smoothing` | Lissage d'élévation : `none`, `light`, `medium`, `heavy` | `medium` |
 | `--dem-dir` | Répertoire de tuiles SRTM `.hgt` pour correction DEM | _(désactivé)_ |
+| `--dem-auto-download` | Télécharger automatiquement les tuiles SRTM manquantes | `true` |
+| `--dem-cache` | Répertoire de cache pour les tuiles téléchargées | _(OS cache dir)_ |
 | `--elevation-threshold` | Seuil minimum de changement d'élévation (mètres) | `2.0` |
 | `--preset` | Preset de détection d'arrêts : `hiking`, `trail`, `cycling` | `hiking` |
 | `--stop-speed` | Surcharge de la vitesse max pour un arrêt (m/s) | _(selon preset)_ |
@@ -138,6 +140,8 @@ gpx-analyzer split <fichier> [flags]
 | `--format` | Format de sortie des stats : `text` ou `json` | `text` |
 | `--smoothing` | Lissage d'élévation | `medium` |
 | `--dem-dir` | Répertoire de tuiles SRTM | _(désactivé)_ |
+| `--dem-auto-download` | Télécharger automatiquement les tuiles SRTM manquantes | `true` |
+| `--dem-cache` | Répertoire de cache pour les tuiles téléchargées | _(OS cache dir)_ |
 | `--elevation-threshold` | Seuil de bruit d'élévation (mètres) | `2.0` |
 | `--preset` | Preset de détection d'arrêts | `hiking` |
 | `--stop-speed` | Surcharge vitesse max pour arrêt (m/s) | _(selon preset)_ |
@@ -214,6 +218,8 @@ gpx-analyzer merge [fichiers...] [flags]
 | `--format` | Format de sortie des stats (si `--analyze`) | `text` |
 | `--smoothing` | Lissage d'élévation (si `--analyze`) | `medium` |
 | `--dem-dir` | Répertoire de tuiles SRTM (si `--analyze`) | _(désactivé)_ |
+| `--dem-auto-download` | Télécharger automatiquement les tuiles SRTM manquantes | `true` |
+| `--dem-cache` | Répertoire de cache pour les tuiles téléchargées | _(OS cache dir)_ |
 | `--elevation-threshold` | Seuil de bruit d'élévation (si `--analyze`) | `2.0` |
 | `--preset` | Preset de détection d'arrêts (si `--analyze`) | `hiking` |
 
@@ -283,19 +289,55 @@ Filtre en deux passes appliqué aux données d'élévation avant tout calcul :
 | `medium` | 5 points | 5 points | Usage général (défaut) |
 | `heavy` | 7 points | 11 points | GPS très bruité (montre, téléphone) |
 
-### Correction DEM/SRTM (`--dem-dir`)
+### Correction DEM/SRTM
 
 Remplace les altitudes GPS par celles d'un modèle numérique de terrain (NASA SRTM). C'est la méthode la plus précise.
 
-**Comment l'utiliser :**
+#### Téléchargement automatique (par défaut)
+
+Par défaut, les tuiles SRTM manquantes sont **téléchargées automatiquement** depuis le service AWS Elevation Tiles (SRTM1, résolution 30m quand disponible). Les tuiles sont mises en cache localement :
+
+- **Windows** : `%LOCALAPPDATA%\gpx-utility-analyzer\srtm\`
+- **macOS** : `~/Library/Caches/gpx-utility-analyzer/srtm/`
+- **Linux** : `~/.cache/gpx-utility-analyzer/srtm/`
+
+```bash
+# Fonctionne directement, les tuiles sont téléchargées à la volée
+gpx-analyzer analyze ma-rando.gpx
+```
+
+Pour désactiver le téléchargement automatique :
+
+```bash
+gpx-analyzer analyze ma-rando.gpx --dem-auto-download=false
+```
+
+Pour changer le répertoire de cache :
+
+```bash
+gpx-analyzer analyze ma-rando.gpx --dem-cache /path/to/cache
+```
+
+#### Tuiles locales (`--dem-dir`)
+
+Pour utiliser des tuiles SRTM1 (30m, plus précises) ou travailler hors-ligne :
 
 1. Télécharger les tuiles SRTM couvrant votre trace depuis [NASA Earthdata](https://earthexplorer.usgs.gov/) ou [CGIAR-CSI](https://srtm.csi.cgiar.org/)
 2. Placer les fichiers `.hgt` dans un dossier (ex: `./srtm/`)
 3. Passer `--dem-dir ./srtm/`
 
+```bash
+gpx-analyzer analyze pct.gpx --dem-dir ./srtm-tiles/
+```
+
 Les fichiers sont au format HGT standard (SRTM1 à 30m ou SRTM3 à 90m de résolution). Le nommage suit la convention `N48W003.hgt` (coordonnées du coin sud-ouest de la tuile).
 
-Si une tuile est manquante pour certains points, l'outil conserve l'altitude GPS et affiche un avertissement.
+Quand `--dem-dir` est fourni avec `--dem-auto-download` (défaut), les tuiles locales sont prioritaires. Si une tuile est absente localement, elle est téléchargée dans le cache. Si le téléchargement échoue, l'altitude GPS est conservée avec un avertissement.
+
+#### Limitations
+
+- Le téléchargement automatique nécessite une connexion internet
+- Le service AWS fournit des tuiles SRTM1 (30m) entre 60°N et 56°S, et SRTM3 (90m) ailleurs
 
 **Exemple : impact sur une trace de 4000+ km (PCT de Karel Sabbe)**
 

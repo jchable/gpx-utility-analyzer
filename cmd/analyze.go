@@ -21,6 +21,8 @@ var (
 	elevThreshold    float64
 	smoothingFlag    string
 	demDirFlag       string
+	demCacheFlag     string
+	demAutoDownload  bool
 )
 
 var analyzeCmd = &cobra.Command{
@@ -44,6 +46,10 @@ func init() {
 		"Elevation smoothing: none, light, medium, heavy")
 	analyzeCmd.Flags().StringVar(&demDirFlag, "dem-dir", "",
 		"Directory containing SRTM .hgt files for DEM elevation correction")
+	analyzeCmd.Flags().StringVar(&demCacheFlag, "dem-cache", "",
+		"Cache directory for auto-downloaded SRTM tiles (default: OS cache dir)")
+	analyzeCmd.Flags().BoolVar(&demAutoDownload, "dem-auto-download", true,
+		"Auto-download missing SRTM tiles from the internet")
 
 	rootCmd.AddCommand(analyzeCmd)
 }
@@ -110,8 +116,17 @@ func buildComputeConfig() stats.ComputeConfig {
 
 	// DEM source
 	var demSrc *dem.Source
-	if demDirFlag != "" {
-		demSrc = dem.NewSource(demDirFlag)
+	cacheDir := demCacheFlag
+	if cacheDir == "" {
+		cacheDir = dem.DefaultCacheDir()
+	}
+	switch {
+	case demDirFlag != "" && demAutoDownload:
+		demSrc = dem.NewSourceWithCache(demDirFlag, cacheDir, true)
+	case demDirFlag != "":
+		demSrc = dem.NewSourceWithCache(demDirFlag, cacheDir, false)
+	case demAutoDownload:
+		demSrc = dem.NewAutoSource(cacheDir)
 	}
 
 	return stats.ComputeConfig{

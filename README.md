@@ -1,6 +1,6 @@
 # gpx-analyzer
 
-Outil en ligne de commande en Go pour analyser des fichiers GPX : distance, dénivelé, vitesse, détection d'arrêts, découpage temporel et fusion de fichiers. Inclut un lissage d'élévation et une correction optionnelle par modèle numérique de terrain (SRTM).
+Outil en ligne de commande en Go pour analyser des fichiers GPX : distance, dénivelé, vitesse, détection d'arrêts, découpage temporel et fusion de fichiers. Inclut un lissage d'élévation et une correction automatique par modèle numérique de terrain (SRTM avec téléchargement auto des tuiles).
 
 ## Installation
 
