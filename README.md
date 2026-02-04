@@ -1,6 +1,6 @@
 # gpx-analyzer
 
-Outil en ligne de commande pour analyser des fichiers GPX : distance, dénivelé, vitesse, détection d'arrêts, découpage temporel et fusion de fichiers.
+Outil en ligne de commande en Go pour analyser des fichiers GPX : distance, dénivelé, vitesse, détection d'arrêts, découpage temporel et fusion de fichiers. Inclut un lissage d'élévation et une correction optionnelle par modèle numérique de terrain (SRTM).
 
 ## Installation
 
@@ -16,62 +16,53 @@ cd gpx-utility-analyzer
 go build -o gpx-analyzer .
 ```
 
-## Utilisation
+## Utilisation rapide
 
-### Analyser un fichier GPX
-
-```bash
-gpx-analyzer analyze track.gpx
-gpx-analyzer analyze track.gpx --format json
-gpx-analyzer analyze *.gpx
-gpx-analyzer analyze ./mes-traces/
-```
-
-### Options d'analyse
-
-| Flag | Description | Défaut |
-|------|------------|--------|
-| `--format` | Format de sortie : `text` ou `json` | `text` |
-| `--preset` | Preset de détection d'arrêts : `hiking`, `trail`, `cycling` | `hiking` |
-| `--stop-speed` | Vitesse max pour un arrêt (m/s) | selon preset |
-| `--stop-duration` | Durée min pour un arrêt (ex: `2m`) | selon preset |
-| `--elevation-threshold` | Seuil de bruit pour le dénivelé (mètres) | `2.0` |
-
-### Découper un GPX par intervalles de temps
+**Analyser un fichier GPX :**
 
 ```bash
-gpx-analyzer split track.gpx --interval 24h
-gpx-analyzer split track.gpx --interval 12h --output-dir jour-par-jour --prefix etape
+gpx-analyzer analyze ma-rando.gpx
 ```
 
-Produit un fichier GPX par tranche + affiche les statistiques de chaque segment.
-
-### Fusionner plusieurs GPX
+**Découper une trace multi-jours en segments de 24h :**
 
 ```bash
-gpx-analyzer merge jour1.gpx jour2.gpx jour3.gpx -o complet.gpx
-gpx-analyzer merge ./splits/ -o complet.gpx --analyze
+gpx-analyzer split traversee-alpes.gpx
 ```
 
-## Statistiques calculées
+**Fusionner plusieurs fichiers :**
 
-- **Distance** : 2D (Haversine) et 3D (avec pente)
-- **Dénivelé** : D+ / D- avec filtre de bruit, altitude max/min
-- **Temps** : durée totale, temps en mouvement, temps à l'arrêt
-- **Vitesse** : moyenne, moyenne en mouvement, max
-- **Allure** : min/km moyenne et en mouvement
-- **Arrêts** : nombre, durée totale, arrêt le plus long, durée moyenne
-- **Métadonnées** : nombre de points, segments, densité points/km
+```bash
+gpx-analyzer merge jour1.gpx jour2.gpx jour3.gpx -o randonnee-complete.gpx
+```
 
-## Presets de détection d'arrêts
+**Sortie JSON :**
 
-| Preset | Vitesse max | Durée min |
-|--------|------------|-----------|
-| `hiking` | 0.3 m/s (1.1 km/h) | 2 min |
-| `trail` | 0.5 m/s (1.8 km/h) | 1 min |
-| `cycling` | 1.0 m/s (3.6 km/h) | 30 sec |
+```bash
+gpx-analyzer analyze ma-rando.gpx --format json
+```
 
-## Tests
+**Lissage fort pour GPS bruité :**
+
+```bash
+gpx-analyzer analyze trace.gpx --smoothing heavy
+```
+
+Pour la documentation complète des commandes, flags et exemples avancés, voir [docs/CLI_USAGE.md](docs/CLI_USAGE.md).
+
+## Développement
+
+### Prérequis
+
+- Go 1.22+
+
+### Build
+
+```bash
+go build -o gpx-analyzer .
+```
+
+### Tests
 
 ```bash
 go test ./...
