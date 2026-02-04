@@ -39,6 +39,10 @@ func init() {
 		"Stop detection preset: hiking, trail, or cycling")
 	mergeCmd.Flags().Float64Var(&elevThreshold, "elevation-threshold", 2.0,
 		"Min elevation change to count (meters, noise filter)")
+	mergeCmd.Flags().StringVar(&smoothingFlag, "smoothing", "medium",
+		"Elevation smoothing: none, light, medium, heavy")
+	mergeCmd.Flags().StringVar(&demDirFlag, "dem-dir", "",
+		"Directory containing SRTM .hgt files for DEM elevation correction")
 
 	rootCmd.AddCommand(mergeCmd)
 }

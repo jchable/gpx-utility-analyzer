@@ -3,6 +3,8 @@ package stats
 import (
 	"time"
 
+	"github.com/jchable/gpx-utility-analyzer/internal/dem"
+	"github.com/jchable/gpx-utility-analyzer/internal/elevation"
 	"github.com/jchable/gpx-utility-analyzer/internal/gpx"
 )
 
@@ -40,8 +42,10 @@ type Summary struct {
 
 // ComputeConfig holds parameters for the summary computation.
 type ComputeConfig struct {
-	ElevationThreshold float64    // meters, for noise filtering
-	StopConfig         StopConfig // stop detection parameters
+	ElevationThreshold float64                  // meters, for noise filtering
+	StopConfig         StopConfig               // stop detection parameters
+	SmoothingLevel     elevation.SmoothingLevel // elevation smoothing preset
+	DEMSource          *dem.Source              // DEM tile source (nil = disabled)
 }
 
 // DefaultConfig returns a default computation configuration using the hiking preset.
@@ -49,6 +53,7 @@ func DefaultConfig() ComputeConfig {
 	return ComputeConfig{
 		ElevationThreshold: 2.0,
 		StopConfig:         Presets[PresetHiking],
+		SmoothingLevel:     elevation.SmoothMedium,
 	}
 }
 
@@ -62,6 +67,12 @@ func Compute(points []gpx.TrackPoint, segmentCount int, cfg ComputeConfig) Summa
 	if len(points) == 0 {
 		return s
 	}
+
+	// Pre-process elevations: DEM correction then smoothing
+	if cfg.DEMSource != nil {
+		dem.CorrectElevations(points, cfg.DEMSource)
+	}
+	elevation.SmoothElevations(points, cfg.SmoothingLevel)
 
 	// Enrich points with distance and speed
 	EnrichPoints(points)

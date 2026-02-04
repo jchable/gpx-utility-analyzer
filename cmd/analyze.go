@@ -5,6 +5,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/jchable/gpx-utility-analyzer/internal/dem"
+	"github.com/jchable/gpx-utility-analyzer/internal/elevation"
 	"github.com/jchable/gpx-utility-analyzer/internal/gpx"
 	"github.com/jchable/gpx-utility-analyzer/internal/input"
 	"github.com/jchable/gpx-utility-analyzer/internal/output"
@@ -17,6 +19,8 @@ var (
 	stopSpeedFlag    float64
 	stopDurationFlag time.Duration
 	elevThreshold    float64
+	smoothingFlag    string
+	demDirFlag       string
 )
 
 var analyzeCmd = &cobra.Command{
@@ -36,6 +40,10 @@ func init() {
 		"Override min duration for stop detection (e.g. 2m)")
 	analyzeCmd.Flags().Float64Var(&elevThreshold, "elevation-threshold", 2.0,
 		"Min elevation change to count (meters, noise filter)")
+	analyzeCmd.Flags().StringVar(&smoothingFlag, "smoothing", "medium",
+		"Elevation smoothing: none, light, medium, heavy")
+	analyzeCmd.Flags().StringVar(&demDirFlag, "dem-dir", "",
+		"Directory containing SRTM .hgt files for DEM elevation correction")
 
 	rootCmd.AddCommand(analyzeCmd)
 }
@@ -93,8 +101,23 @@ func buildComputeConfig() stats.ComputeConfig {
 		preset.MinDuration = stopDurationFlag
 	}
 
+	// Smoothing
+	level := elevation.SmoothingLevel(smoothingFlag)
+	if !elevation.ValidLevel(smoothingFlag) {
+		fmt.Fprintf(os.Stderr, "Warning: unknown smoothing level %q, using medium\n", smoothingFlag)
+		level = elevation.SmoothMedium
+	}
+
+	// DEM source
+	var demSrc *dem.Source
+	if demDirFlag != "" {
+		demSrc = dem.NewSource(demDirFlag)
+	}
+
 	return stats.ComputeConfig{
 		ElevationThreshold: elevThreshold,
 		StopConfig:         preset,
+		SmoothingLevel:     level,
+		DEMSource:          demSrc,
 	}
 }

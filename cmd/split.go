@@ -45,6 +45,10 @@ func init() {
 		"Override min duration for stop detection (e.g. 2m)")
 	splitCmd.Flags().Float64Var(&elevThreshold, "elevation-threshold", 2.0,
 		"Min elevation change to count (meters, noise filter)")
+	splitCmd.Flags().StringVar(&smoothingFlag, "smoothing", "medium",
+		"Elevation smoothing: none, light, medium, heavy")
+	splitCmd.Flags().StringVar(&demDirFlag, "dem-dir", "",
+		"Directory containing SRTM .hgt files for DEM elevation correction")
 
 	rootCmd.AddCommand(splitCmd)
 }
