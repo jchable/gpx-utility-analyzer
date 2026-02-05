@@ -17,3 +17,18 @@ Thumbs.db
 
 # Go
 vendor/
+
+# .NET
+**/bin/
+**/obj/
+*.dll
+*.user
+*.suo
+.vs/
+
+# Docusaurus
+docs/content/cli/
+docs/content/dotnet/
+docs/build/
+docs/.docusaurus/
+docs/node_modules/
