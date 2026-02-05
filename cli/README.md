@@ -12,7 +12,7 @@ Ou depuis les sources :
 
 ```bash
 git clone https://github.com/jchable/gpx-utility-analyzer.git
-cd gpx-utility-analyzer
+cd gpx-utility-analyzer/cli
 go build -o gpx-analyzer .
 ```
 
