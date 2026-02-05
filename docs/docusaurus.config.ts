@@ -3,7 +3,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
   title: 'GPX Utility Analyzer',
-  tagline: "Suite d'outils pour l'analyse de fichiers GPX",
+  tagline: "A toolkit for GPX file analysis",
   favicon: 'img/favicon.ico',
 
   url: 'https://jchable.github.io',
@@ -21,12 +21,12 @@ const config: Config = {
   },
 
   i18n: {
-    defaultLocale: 'fr',
-    locales: ['fr'],
+    defaultLocale: 'en',
+    locales: ['en'],
     localeConfigs: {
-      fr: {
-        label: 'Français',
-        htmlLang: 'fr-FR',
+      en: {
+        label: 'English',
+        htmlLang: 'en',
       },
     },
   },
@@ -81,14 +81,14 @@ const config: Config = {
       style: 'dark',
       links: [
         {
-          title: 'Projets',
+          title: 'Projects',
           items: [
             {label: 'gpx-analyzer (CLI)', to: '/docs/cli'},
             {label: 'gpx-ai-analyzer (.NET)', to: '/docs/ai-analyzer'},
           ],
         },
         {
-          title: 'Code source',
+          title: 'Source Code',
           items: [
             {
               label: 'GitHub',

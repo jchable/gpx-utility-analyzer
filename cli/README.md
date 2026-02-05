@@ -1,6 +1,6 @@
 # gpx-analyzer
 
-Outil en ligne de commande en Go pour analyser des fichiers GPX : distance, dénivelé, vitesse, détection d'arrêts, découpage temporel et fusion de fichiers. Inclut un lissage d'élévation et une correction automatique par modèle numérique de terrain (SRTM avec téléchargement auto des tuiles).
+Go command-line tool for analyzing GPX files: distance, elevation gain/loss, speed, stop detection, time-based splitting and file merging. Includes elevation smoothing and automatic correction using a digital elevation model (SRTM with auto-download of tiles).
 
 ## Installation
 
@@ -8,7 +8,7 @@ Outil en ligne de commande en Go pour analyser des fichiers GPX : distance, dén
 go install github.com/jchable/gpx-utility-analyzer@latest
 ```
 
-Ou depuis les sources :
+Or from source:
 
 ```bash
 git clone https://github.com/jchable/gpx-utility-analyzer.git
@@ -16,61 +16,61 @@ cd gpx-utility-analyzer/cli
 go build -o gpx-analyzer .
 ```
 
-## Utilisation rapide
+## Quick Start
 
-**Analyser un fichier GPX :**
-
-```bash
-gpx-analyzer analyze ma-rando.gpx
-```
-
-**Découper une trace multi-jours en segments de 24h :**
+**Analyze a GPX file:**
 
 ```bash
-gpx-analyzer split traversee-alpes.gpx
+gpx-analyzer analyze my-hike.gpx
 ```
 
-**Fusionner plusieurs fichiers :**
+**Split a multi-day track into 24h segments:**
 
 ```bash
-gpx-analyzer merge jour1.gpx jour2.gpx jour3.gpx -o randonnee-complete.gpx
+gpx-analyzer split alps-traverse.gpx
 ```
 
-**Sortie JSON :**
+**Merge multiple files:**
 
 ```bash
-gpx-analyzer analyze ma-rando.gpx --format json
+gpx-analyzer merge day1.gpx day2.gpx day3.gpx -o full-hike.gpx
 ```
 
-**Lissage fort pour GPS bruité :**
+**JSON output:**
+
+```bash
+gpx-analyzer analyze my-hike.gpx --format json
+```
+
+**Heavy smoothing for noisy GPS:**
 
 ```bash
 gpx-analyzer analyze trace.gpx --smoothing heavy
 ```
 
-**Algorithme par segments de pente constante (meilleur D+ avec DEM) :**
+**Constant-slope segment algorithm (best D+ with DEM):**
 
 ```bash
 gpx-analyzer analyze pct.gpx --elevation-algo segments
 ```
 
-**Lissage de la trace GPS + Douglas-Peucker :**
+**GPS track smoothing + Douglas-Peucker:**
 
 ```bash
 gpx-analyzer analyze pct.gpx --track-smoothing medium --elevation-algo douglas-peucker
 ```
 
-**Exporter le GPX avec altitudes corrigées :**
+**Export GPX with corrected elevations:**
 
 ```bash
-gpx-analyzer analyze ma-rando.gpx --export ./processed/
+gpx-analyzer analyze my-hike.gpx --export ./processed/
 ```
 
-Pour la documentation complète des commandes, flags et exemples avancés, voir [docs/CLI_USAGE.md](docs/CLI_USAGE.md).
+For complete command documentation, flags and advanced examples, see [docs/CLI_USAGE.md](docs/CLI_USAGE.md).
 
-## Développement
+## Development
 
-### Prérequis
+### Prerequisites
 
 - Go 1.22+
 

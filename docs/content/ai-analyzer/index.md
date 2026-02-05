@@ -1,29 +1,29 @@
 ---
-title: "gpx-ai-analyzer — Outil .NET"
-sidebar_label: "Présentation"
+title: "gpx-ai-analyzer — .NET Tool"
+sidebar_label: "Overview"
 sidebar_position: 1
 slug: "/ai-analyzer"
 ---
 
 # gpx-ai-analyzer
 
-Outil CLI en .NET utilisant Microsoft Agent Framework pour produire des rapports
-d'analyse intelligents (difficulté, segments clés, recommandations) à partir
-des statistiques GPX.
+.NET CLI tool using Microsoft Agent Framework to produce intelligent
+analysis reports (difficulty, key segments, recommendations) from
+GPX statistics.
 
-:::info En cours de développement
-Ce projet est en phase de développement initial. La documentation sera enrichie
-au fur et à mesure de l'avancement.
+:::info Under development
+This project is in early development. Documentation will be enriched
+as development progresses.
 :::
 
-## Fournisseurs IA supportés
+## Supported AI providers
 
 - Azure OpenAI
 - OpenAI
 - Anthropic
 - Ollama (local)
 
-## Pipeline avec gpx-analyzer
+## Pipeline with gpx-analyzer
 
 ```bash
 cli/gpx-analyzer analyze --format json track.gpx | ai-analyzer/gpx-ai-analyzer analyze --provider azure-openai

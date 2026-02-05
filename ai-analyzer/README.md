@@ -1,11 +1,11 @@
 # gpx-ai-analyzer
 
-Outil CLI en .NET pour l'analyse intelligente de traces GPX par IA. Consomme la sortie JSON de `gpx-analyzer` (CLI Go) et produit des rapports structurés : difficulté, segments clés, recommandations, estimation d'effort.
+.NET CLI tool for AI-powered intelligent analysis of GPX tracks. Consumes JSON output from `gpx-analyzer` (Go CLI) and produces structured reports: difficulty, key segments, recommendations, effort estimation.
 
-## Prérequis
+## Prerequisites
 
 - .NET 9.0+
-- Un fournisseur IA configuré (Azure OpenAI, OpenAI, Anthropic, ou Ollama local)
+- A configured AI provider (Azure OpenAI, OpenAI, Anthropic, or local Ollama)
 
 ## Build
 
@@ -19,21 +19,21 @@ dotnet build src/GpxAiAnalyzer/GpxAiAnalyzer.csproj -c Release
 dotnet test tests/GpxAiAnalyzer.Tests/
 ```
 
-## Utilisation
+## Usage
 
-### Pipeline avec le CLI Go
+### Pipeline with the Go CLI
 
 ```bash
-gpx-analyzer analyze --format json ma-rando.gpx | gpx-ai-analyzer analyze --provider openai
+gpx-analyzer analyze --format json my-hike.gpx | gpx-ai-analyzer analyze --provider openai
 ```
 
-### Depuis un fichier JSON pré-calculé
+### From a pre-computed JSON file
 
 ```bash
 gpx-ai-analyzer analyze --provider azure-openai --input stats.json
 ```
 
-### Sortie JSON
+### JSON output
 
 ```bash
 gpx-ai-analyzer analyze --provider anthropic --input stats.json --format json
@@ -41,40 +41,40 @@ gpx-ai-analyzer analyze --provider anthropic --input stats.json --format json
 
 ### Options
 
-| Option | Requis | Description |
-|--------|--------|-------------|
-| `--provider` | Oui | Fournisseur IA : `azure-openai`, `openai`, `anthropic`, `ollama` |
-| `--input` | Non | Fichier JSON (sinon lit stdin) |
-| `--api-key` | Non | Clé API (override la variable d'environnement) |
-| `--endpoint` | Non | URL du endpoint (override la variable d'environnement) |
-| `--model` | Non | Nom du modèle (défaut spécifique au provider) |
-| `--format` | Non | Format de sortie : `text` (défaut) ou `json` |
+| Option | Required | Description |
+|--------|----------|-------------|
+| `--provider` | Yes | AI provider: `azure-openai`, `openai`, `anthropic`, `ollama` |
+| `--input` | No | JSON file (reads stdin otherwise) |
+| `--api-key` | No | API key (overrides environment variable) |
+| `--endpoint` | No | Endpoint URL (overrides environment variable) |
+| `--model` | No | Model name (provider-specific default) |
+| `--format` | No | Output format: `text` (default) or `json` |
 
-## Configuration des providers
+## Provider configuration
 
-Chaque provider lit ses paramètres depuis les arguments CLI, puis les variables d'environnement en fallback :
+Each provider reads its parameters from CLI arguments, then falls back to environment variables:
 
-| Provider | Variables d'environnement | Modèle par défaut |
-|----------|--------------------------|-------------------|
+| Provider | Environment variables | Default model |
+|----------|----------------------|---------------|
 | `azure-openai` | `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY` | `gpt-4o-mini` |
 | `openai` | `OPENAI_API_KEY` | `gpt-4o-mini` |
 | `anthropic` | `ANTHROPIC_API_KEY` | `claude-haiku-4-5` |
-| `ollama` | `OLLAMA_ENDPOINT` (défaut: `http://localhost:11434`) | `llama3.1` |
+| `ollama` | `OLLAMA_ENDPOINT` (default: `http://localhost:11434`) | `llama3.1` |
 
-## Ajouter un nouveau provider
+## Adding a new provider
 
-1. Créer une classe implémentant `IChatClientProvider` dans `Providers/`
-2. Enregistrer dans `Program.cs` : `registry.Register(new MonProvider());`
-3. Ajouter le package NuGet du SDK
+1. Create a class implementing `IChatClientProvider` in `Providers/`
+2. Register in `Program.cs`: `registry.Register(new MyProvider());`
+3. Add the SDK NuGet package
 
 ## Architecture
 
 ```text
 src/GpxAiAnalyzer/
-├── Program.cs              # Point d'entrée, enregistrement providers
-├── Commands/               # Commandes CLI (System.CommandLine)
-├── Models/                 # GpxStats (contrat JSON Go), TrackReport (rapport IA)
-├── Providers/              # IChatClientProvider + 4 implémentations
+├── Program.cs              # Entry point, provider registration
+├── Commands/               # CLI commands (System.CommandLine)
+├── Models/                 # GpxStats (Go JSON contract), TrackReport (AI report)
+├── Providers/              # IChatClientProvider + 4 implementations
 ├── Analysis/               # TrackAnalyzer, PromptBuilder, AnalysisTools
-└── Output/                 # ReportFormatter (texte/JSON)
+└── Output/                 # ReportFormatter (text/JSON)
 ```

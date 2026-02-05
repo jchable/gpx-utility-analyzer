@@ -9,7 +9,7 @@ Mono-repo containing two autonomous tools for GPX file analysis:
 - **cli/** (Go) — CLI for computing track statistics (distance, elevation, speed, stops) with DEM correction
 - **ai-analyzer/** (.NET) — AI-powered analysis using Microsoft Agent Framework, consuming the Go CLI's JSON output
 
-Documentation (README, CLI_USAGE) is in French.
+Documentation (README, CLI_USAGE) is in English.
 
 ## Repository Structure
 

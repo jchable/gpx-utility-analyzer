@@ -1,76 +1,76 @@
 # CLI Usage — gpx-analyzer
 
-Documentation complète de toutes les commandes, flags et exemples d'utilisation.
+Complete documentation of all commands, flags and usage examples.
 
 ---
 
-## Table des matières
+## Table of contents
 
-- [analyze — Analyser des fichiers GPX](#analyze--analyser-des-fichiers-gpx)
-- [split — Découper un GPX par intervalles de temps](#split--découper-un-gpx-par-intervalles-de-temps)
-- [merge — Fusionner plusieurs GPX](#merge--fusionner-plusieurs-gpx)
-- [Statistiques calculées](#statistiques-calculées)
-- [Correction d'élévation](#correction-délévation)
-- [Algorithmes de calcul du dénivelé](#algorithmes-de-calcul-du-dénivelé---elevation-algo)
-- [Lissage de la trace GPS](#lissage-de-la-trace-gps---track-smoothing)
-- [Presets de détection d'arrêts](#presets-de-détection-darrêts)
-- [Cas d'usage courants](#cas-dusage-courants)
+- [analyze — Analyze GPX files](#analyze--analyze-gpx-files)
+- [split — Split a GPX by time intervals](#split--split-a-gpx-by-time-intervals)
+- [merge — Merge multiple GPX files](#merge--merge-multiple-gpx-files)
+- [Computed statistics](#computed-statistics)
+- [Elevation correction](#elevation-correction)
+- [Elevation gain algorithms](#elevation-gain-algorithms---elevation-algo)
+- [GPS track smoothing](#gps-track-smoothing---track-smoothing)
+- [Stop detection presets](#stop-detection-presets)
+- [Common use cases](#common-use-cases)
 
 ---
 
-## `analyze` — Analyser des fichiers GPX
+## `analyze` — Analyze GPX files
 
-Calcule les statistiques complètes d'un ou plusieurs fichiers GPX.
+Computes full statistics for one or more GPX files.
 
 ```bash
-gpx-analyzer analyze [fichiers...] [flags]
+gpx-analyzer analyze [files...] [flags]
 ```
 
-**Entrées acceptées** : fichiers `.gpx`, répertoires (analyse tous les `.gpx` qu'ils contiennent), ou patterns glob (`*.gpx`).
+**Accepted inputs**: `.gpx` files, directories (analyzes all `.gpx` files they contain), or glob patterns (`*.gpx`).
 
 ### Flags
 
-| Flag | Description | Défaut |
-|------|------------|--------|
-| `--format` | Format de sortie : `text` ou `json` | `text` |
-| `--smoothing` | Lissage d'élévation : `none`, `light`, `medium`, `heavy` | `medium` |
-| `--dem-dir` | Répertoire de tuiles SRTM `.hgt` pour correction DEM | _(désactivé)_ |
-| `--dem-auto-download` | Télécharger automatiquement les tuiles SRTM manquantes | `true` |
-| `--dem-cache` | Répertoire de cache pour les tuiles téléchargées | _(OS cache dir)_ |
-| `--elevation-threshold` | Seuil minimum de changement d'élévation (mètres) | `2.0` |
-| `--elevation-algo` | Algorithme de dénivelé : `threshold`, `douglas-peucker`, `segments` | `threshold` |
-| `--track-smoothing` | Lissage lat/lon de la trace GPS : `none`, `light`, `medium`, `heavy` | `none` |
-| `--dp-epsilon` | Douglas-Peucker : déviation verticale max tolérée (mètres) | `3.0` |
-| `--seg-min-length` | Segments : longueur min d'un segment (mètres) | `200.0` |
-| `--seg-max-deviation` | Segments : résidu RMS max par segment (mètres) | `2.0` |
-| `--preset` | Preset de détection d'arrêts : `hiking`, `trail`, `cycling` | `hiking` |
-| `--stop-speed` | Surcharge de la vitesse max pour un arrêt (m/s) | _(selon preset)_ |
-| `--stop-duration` | Surcharge de la durée min pour un arrêt (ex: `2m`) | _(selon preset)_ |
-| `--export` | Exporter les GPX retraités (DEM + lissage) dans ce répertoire | _(désactivé)_ |
+| Flag | Description | Default |
+|------|------------|---------|
+| `--format` | Output format: `text` or `json` | `text` |
+| `--smoothing` | Elevation smoothing: `none`, `light`, `medium`, `heavy` | `medium` |
+| `--dem-dir` | Directory of SRTM `.hgt` tiles for DEM correction | _(disabled)_ |
+| `--dem-auto-download` | Automatically download missing SRTM tiles | `true` |
+| `--dem-cache` | Cache directory for downloaded tiles | _(OS cache dir)_ |
+| `--elevation-threshold` | Minimum elevation change threshold (meters) | `2.0` |
+| `--elevation-algo` | Elevation gain algorithm: `threshold`, `douglas-peucker`, `segments` | `threshold` |
+| `--track-smoothing` | GPS track lat/lon smoothing: `none`, `light`, `medium`, `heavy` | `none` |
+| `--dp-epsilon` | Douglas-Peucker: max tolerated vertical deviation (meters) | `3.0` |
+| `--seg-min-length` | Segments: minimum segment length (meters) | `200.0` |
+| `--seg-max-deviation` | Segments: max RMS residual per segment (meters) | `2.0` |
+| `--preset` | Stop detection preset: `hiking`, `trail`, `cycling` | `hiking` |
+| `--stop-speed` | Override max speed for a stop (m/s) | _(per preset)_ |
+| `--stop-duration` | Override min duration for a stop (e.g., `2m`) | _(per preset)_ |
+| `--export` | Export reprocessed GPX files (DEM + smoothing) to this directory | _(disabled)_ |
 
-### Exemples
+### Examples
 
-**Analyse simple d'un fichier :**
+**Simple analysis of a file:**
 
 ```bash
-gpx-analyzer analyze ma-rando.gpx
+gpx-analyzer analyze my-hike.gpx
 ```
 
-**Analyse de tous les GPX d'un dossier :**
+**Analyze all GPX files in a directory:**
 
 ```bash
-gpx-analyzer analyze ./mes-traces/
+gpx-analyzer analyze ./my-tracks/
 ```
 
-**Sortie JSON pour intégration avec d'autres outils :**
+**JSON output for integration with other tools:**
 
 ```bash
-gpx-analyzer analyze ma-rando.gpx --format json
+gpx-analyzer analyze my-hike.gpx --format json
 ```
 
 ```json
 {
-  "filename": "ma-rando.gpx",
+  "filename": "my-hike.gpx",
   "total_distance_m": 24532.5,
   "total_distance_km": 24.5,
   "elevation_gain_m": 1250.0,
@@ -80,63 +80,63 @@ gpx-analyzer analyze ma-rando.gpx --format json
 }
 ```
 
-**Extraire une seule valeur avec `jq` :**
+**Extract a single value with `jq`:**
 
 ```bash
-gpx-analyzer analyze ma-rando.gpx --format json | jq '.elevation_gain_m'
+gpx-analyzer analyze my-hike.gpx --format json | jq '.elevation_gain_m'
 ```
 
-**Désactiver le lissage d'élévation (données brutes GPS) :**
+**Disable elevation smoothing (raw GPS data):**
 
 ```bash
-gpx-analyzer analyze ma-rando.gpx --smoothing none
+gpx-analyzer analyze my-hike.gpx --smoothing none
 ```
 
-**Lissage fort pour des données GPS très bruitées :**
+**Heavy smoothing for very noisy GPS data:**
 
 ```bash
-gpx-analyzer analyze trace-montre-gps.gpx --smoothing heavy
+gpx-analyzer analyze gps-watch-track.gpx --smoothing heavy
 ```
 
-**Correction d'élévation par DEM (tuiles SRTM) :**
+**DEM elevation correction (SRTM tiles):**
 
 ```bash
 gpx-analyzer analyze pct.gpx --dem-dir ./srtm-tiles/
 ```
 
-**Combiner DEM + lissage léger + seuil de 3m :**
+**Combine DEM + light smoothing + 3m threshold:**
 
 ```bash
 gpx-analyzer analyze pct.gpx --dem-dir ./srtm-tiles/ --smoothing light --elevation-threshold 3
 ```
 
-**Utiliser le preset vélo pour la détection d'arrêts :**
+**Use the cycling preset for stop detection:**
 
 ```bash
-gpx-analyzer analyze sortie-velo.gpx --preset cycling
+gpx-analyzer analyze bike-ride.gpx --preset cycling
 ```
 
-**Personnaliser les seuils d'arrêt (vitesse < 0.2 m/s pendant > 5 min) :**
+**Customize stop thresholds (speed < 0.2 m/s for > 5 min):**
 
 ```bash
 gpx-analyzer analyze ultra-trail.gpx --stop-speed 0.2 --stop-duration 5m
 ```
 
-**Analyser plusieurs fichiers avec des patterns glob :**
+**Analyze multiple files with glob patterns:**
 
 ```bash
-gpx-analyzer analyze vacances-*.gpx --format json
+gpx-analyzer analyze vacation-*.gpx --format json
 ```
 
-**Exporter le GPX avec altitudes corrigées par DEM :**
+**Export GPX with DEM-corrected elevations:**
 
 ```bash
-gpx-analyzer analyze ma-rando.gpx --export ./processed/
+gpx-analyzer analyze my-hike.gpx --export ./processed/
 ```
 
-Produit `./processed/ma-rando_processed.gpx` avec les altitudes DEM + lissage appliqués.
+Produces `./processed/my-hike_processed.gpx` with DEM + smoothing elevations applied.
 
-**Exporter après retraitement complet (DEM + segments) :**
+**Export after full reprocessing (DEM + segments):**
 
 ```bash
 gpx-analyzer analyze pct.gpx --elevation-algo segments --export ./processed/
@@ -144,82 +144,82 @@ gpx-analyzer analyze pct.gpx --elevation-algo segments --export ./processed/
 
 ---
 
-## `split` — Découper un GPX par intervalles de temps
+## `split` — Split a GPX by time intervals
 
-Découpe un fichier GPX en segments temporels. Produit un fichier GPX par tranche et affiche les statistiques de chaque segment.
+Splits a GPX file into time-based segments. Produces one GPX file per interval and displays statistics for each segment.
 
 ```
-gpx-analyzer split <fichier> [flags]
+gpx-analyzer split <file> [flags]
 ```
 
 ### Flags
 
-| Flag | Description | Défaut |
-|------|------------|--------|
-| `--interval` | Intervalle de découpe (ex: `24h`, `12h`, `30m`) | `24h` |
-| `--output-dir` | Répertoire de sortie pour les fichiers GPX | `splits` |
-| `--prefix` | Préfixe des noms de fichiers générés | `segment` |
-| `--format` | Format de sortie des stats : `text` ou `json` | `text` |
-| `--smoothing` | Lissage d'élévation | `medium` |
-| `--dem-dir` | Répertoire de tuiles SRTM | _(désactivé)_ |
-| `--dem-auto-download` | Télécharger automatiquement les tuiles SRTM manquantes | `true` |
-| `--dem-cache` | Répertoire de cache pour les tuiles téléchargées | _(OS cache dir)_ |
-| `--elevation-threshold` | Seuil de bruit d'élévation (mètres) | `2.0` |
-| `--elevation-algo` | Algorithme de dénivelé : `threshold`, `douglas-peucker`, `segments` | `threshold` |
-| `--track-smoothing` | Lissage lat/lon de la trace GPS | `none` |
-| `--dp-epsilon` | Douglas-Peucker : déviation verticale max (mètres) | `3.0` |
-| `--seg-min-length` | Segments : longueur min d'un segment (mètres) | `200.0` |
-| `--seg-max-deviation` | Segments : résidu RMS max (mètres) | `2.0` |
-| `--preset` | Preset de détection d'arrêts | `hiking` |
-| `--stop-speed` | Surcharge vitesse max pour arrêt (m/s) | _(selon preset)_ |
-| `--stop-duration` | Surcharge durée min pour arrêt | _(selon preset)_ |
+| Flag | Description | Default |
+|------|------------|---------|
+| `--interval` | Split interval (e.g., `24h`, `12h`, `30m`) | `24h` |
+| `--output-dir` | Output directory for GPX files | `splits` |
+| `--prefix` | Prefix for generated file names | `segment` |
+| `--format` | Stats output format: `text` or `json` | `text` |
+| `--smoothing` | Elevation smoothing | `medium` |
+| `--dem-dir` | SRTM tiles directory | _(disabled)_ |
+| `--dem-auto-download` | Automatically download missing SRTM tiles | `true` |
+| `--dem-cache` | Cache directory for downloaded tiles | _(OS cache dir)_ |
+| `--elevation-threshold` | Elevation noise threshold (meters) | `2.0` |
+| `--elevation-algo` | Elevation gain algorithm: `threshold`, `douglas-peucker`, `segments` | `threshold` |
+| `--track-smoothing` | GPS track lat/lon smoothing | `none` |
+| `--dp-epsilon` | Douglas-Peucker: max vertical deviation (meters) | `3.0` |
+| `--seg-min-length` | Segments: minimum segment length (meters) | `200.0` |
+| `--seg-max-deviation` | Segments: max RMS residual (meters) | `2.0` |
+| `--preset` | Stop detection preset | `hiking` |
+| `--stop-speed` | Override max speed for stop (m/s) | _(per preset)_ |
+| `--stop-duration` | Override min duration for stop | _(per preset)_ |
 
-### Exemples
+### Examples
 
-**Découper une trace multi-jours en segments de 24h :**
+**Split a multi-day track into 24h segments:**
 
 ```bash
-gpx-analyzer split traversee-alpes.gpx
+gpx-analyzer split alps-traverse.gpx
 ```
 
-Produit :
+Produces:
 ```
 splits/
-  segment-001.gpx    # Jour 1
-  segment-002.gpx    # Jour 2
-  segment-003.gpx    # Jour 3
+  segment-001.gpx    # Day 1
+  segment-002.gpx    # Day 2
+  segment-003.gpx    # Day 3
   ...
 ```
 
-Chaque segment est accompagné de ses statistiques dans le terminal.
+Each segment comes with its statistics displayed in the terminal.
 
-**Découper par demi-journées avec un préfixe personnalisé :**
+**Split into half-days with a custom prefix:**
 
 ```bash
-gpx-analyzer split gr20.gpx --interval 12h --prefix etape --output-dir gr20-etapes
+gpx-analyzer split gr20.gpx --interval 12h --prefix stage --output-dir gr20-stages
 ```
 
-Produit :
+Produces:
 ```
-gr20-etapes/
-  etape-001.gpx
-  etape-002.gpx
+gr20-stages/
+  stage-001.gpx
+  stage-002.gpx
   ...
 ```
 
-**Découper en tranches de 30 minutes (utile pour analyser un effort) :**
+**Split into 30-minute intervals (useful for effort analysis):**
 
 ```bash
 gpx-analyzer split marathon.gpx --interval 30m --preset trail
 ```
 
-**Découper avec stats en JSON (pour un traitement automatisé) :**
+**Split with JSON stats (for automated processing):**
 
 ```bash
-gpx-analyzer split tour-du-mont-blanc.gpx --format json > etapes.json
+gpx-analyzer split tour-du-mont-blanc.gpx --format json > stages.json
 ```
 
-**Découper un FKT avec lissage fort et DEM :**
+**Split an FKT with heavy smoothing and DEM:**
 
 ```bash
 gpx-analyzer split pct-karel-sabbe.gpx --interval 24h --dem-dir ./srtm/ --smoothing heavy
@@ -227,171 +227,171 @@ gpx-analyzer split pct-karel-sabbe.gpx --interval 24h --dem-dir ./srtm/ --smooth
 
 ---
 
-## `merge` — Fusionner plusieurs GPX
+## `merge` — Merge multiple GPX files
 
-Combine plusieurs fichiers GPX en un seul. Les points sont triés par ordre chronologique par défaut.
+Combines multiple GPX files into one. Points are sorted chronologically by default.
 
 ```
-gpx-analyzer merge [fichiers...] [flags]
+gpx-analyzer merge [files...] [flags]
 ```
 
 ### Flags
 
-| Flag | Description | Défaut |
-|------|------------|--------|
-| `-o`, `--output` | Chemin du fichier de sortie | `merged.gpx` |
-| `--sort` | Trier les points par temps | `true` |
-| `--analyze` | Afficher les statistiques du résultat fusionné | `false` |
-| `--format` | Format de sortie des stats (si `--analyze`) | `text` |
-| `--smoothing` | Lissage d'élévation (si `--analyze`) | `medium` |
-| `--dem-dir` | Répertoire de tuiles SRTM (si `--analyze`) | _(désactivé)_ |
-| `--dem-auto-download` | Télécharger automatiquement les tuiles SRTM manquantes | `true` |
-| `--dem-cache` | Répertoire de cache pour les tuiles téléchargées | _(OS cache dir)_ |
-| `--elevation-threshold` | Seuil de bruit d'élévation (si `--analyze`) | `2.0` |
-| `--elevation-algo` | Algorithme de dénivelé (si `--analyze`) | `threshold` |
-| `--track-smoothing` | Lissage lat/lon de la trace GPS (si `--analyze`) | `none` |
-| `--dp-epsilon` | Douglas-Peucker : déviation verticale max (si `--analyze`) | `3.0` |
-| `--seg-min-length` | Segments : longueur min d'un segment (si `--analyze`) | `200.0` |
-| `--seg-max-deviation` | Segments : résidu RMS max (si `--analyze`) | `2.0` |
-| `--preset` | Preset de détection d'arrêts (si `--analyze`) | `hiking` |
+| Flag | Description | Default |
+|------|------------|---------|
+| `-o`, `--output` | Output file path | `merged.gpx` |
+| `--sort` | Sort points by time | `true` |
+| `--analyze` | Display statistics for the merged result | `false` |
+| `--format` | Stats output format (if `--analyze`) | `text` |
+| `--smoothing` | Elevation smoothing (if `--analyze`) | `medium` |
+| `--dem-dir` | SRTM tiles directory (if `--analyze`) | _(disabled)_ |
+| `--dem-auto-download` | Automatically download missing SRTM tiles | `true` |
+| `--dem-cache` | Cache directory for downloaded tiles | _(OS cache dir)_ |
+| `--elevation-threshold` | Elevation noise threshold (if `--analyze`) | `2.0` |
+| `--elevation-algo` | Elevation gain algorithm (if `--analyze`) | `threshold` |
+| `--track-smoothing` | GPS track lat/lon smoothing (if `--analyze`) | `none` |
+| `--dp-epsilon` | Douglas-Peucker: max vertical deviation (if `--analyze`) | `3.0` |
+| `--seg-min-length` | Segments: minimum segment length (if `--analyze`) | `200.0` |
+| `--seg-max-deviation` | Segments: max RMS residual (if `--analyze`) | `2.0` |
+| `--preset` | Stop detection preset (if `--analyze`) | `hiking` |
 
-### Exemples
+### Examples
 
-**Fusionner plusieurs fichiers :**
-
-```bash
-gpx-analyzer merge jour1.gpx jour2.gpx jour3.gpx -o randonnee-complete.gpx
-```
-
-**Fusionner tous les GPX d'un dossier et afficher les stats :**
+**Merge multiple files:**
 
 ```bash
-gpx-analyzer merge ./traces-vacances/ -o vacances.gpx --analyze
+gpx-analyzer merge day1.gpx day2.gpx day3.gpx -o full-hike.gpx
 ```
 
-**Fusionner les segments d'un split précédent :**
+**Merge all GPX files in a directory and display stats:**
 
 ```bash
-gpx-analyzer merge ./splits/ -o reconstitue.gpx --analyze
+gpx-analyzer merge ./vacation-tracks/ -o vacation.gpx --analyze
 ```
 
-**Fusionner sans trier (garder l'ordre des fichiers) :**
+**Merge segments from a previous split:**
+
+```bash
+gpx-analyzer merge ./splits/ -o reassembled.gpx --analyze
+```
+
+**Merge without sorting (keep file order):**
 
 ```bash
 gpx-analyzer merge a.gpx b.gpx c.gpx -o concat.gpx --sort=false
 ```
 
-**Fusionner avec analyse JSON et DEM :**
+**Merge with JSON analysis and DEM:**
 
 ```bash
-gpx-analyzer merge ./etapes/ -o complet.gpx --analyze --format json --dem-dir ./srtm/
+gpx-analyzer merge ./stages/ -o full.gpx --analyze --format json --dem-dir ./srtm/
 ```
 
 ---
 
-## Statistiques calculées
+## Computed statistics
 
-| Catégorie | Statistiques |
-|-----------|-------------|
-| **Distance** | Distance totale 2D (Haversine), distance 3D (avec pente) |
-| **Dénivelé** | D+ / D- (3 algorithmes au choix), altitude max, altitude min |
-| **Temps** | Durée totale, temps en mouvement, temps à l'arrêt, date de début, date de fin |
-| **Vitesse** | Vitesse moyenne, vitesse moyenne en mouvement, vitesse max |
-| **Allure** | Allure moyenne (min/km), allure moyenne en mouvement |
-| **Arrêts** | Nombre d'arrêts, durée totale, arrêt le plus long, durée moyenne |
-| **Métadonnées** | Nombre de points, nombre de segments, densité de points par km |
+| Category | Statistics |
+|----------|-----------|
+| **Distance** | Total 2D distance (Haversine), 3D distance (with slope) |
+| **Elevation** | D+ / D- (3 algorithms available), max altitude, min altitude |
+| **Time** | Total duration, moving time, stopped time, start date, end date |
+| **Speed** | Average speed, average moving speed, max speed |
+| **Pace** | Average pace (min/km), average moving pace |
+| **Stops** | Number of stops, total duration, longest stop, average duration |
+| **Metadata** | Number of points, number of segments, point density per km |
 
 ---
 
-## Correction d'élévation
+## Elevation correction
 
-Les altitudes GPS brutes sont souvent très bruitées (erreur de 10 à 50 mètres courant). Cela gonfle artificiellement le D+ et le D-. L'outil propose deux mécanismes de correction, cumulables.
+Raw GPS elevations are often very noisy (10 to 50 meter errors are common). This artificially inflates D+ and D-. The tool offers two correction mechanisms that can be combined.
 
-### Lissage logiciel (`--smoothing`)
+### Software smoothing (`--smoothing`)
 
-Filtre en deux passes appliqué aux données d'élévation avant tout calcul :
+Two-pass filter applied to elevation data before any computation:
 
-1. **Filtre médian** — supprime les spikes isolés (un point aberrant est remplacé par la valeur médiane de ses voisins)
-2. **Moyenne glissante** — lisse le bruit haute fréquence restant
+1. **Median filter** — removes isolated spikes (an outlier point is replaced by the median value of its neighbors)
+2. **Moving average** — smooths remaining high-frequency noise
 
-| Preset | Fenêtre médiane | Fenêtre moyenne | Usage recommandé |
-|--------|----------------|-----------------|------------------|
-| `none` | _(désactivé)_ | _(désactivé)_ | Données déjà propres ou debug |
-| `light` | 3 points | 3 points | GPS de bonne qualité (Garmin récent) |
-| `medium` | 5 points | 5 points | Usage général (défaut) |
-| `heavy` | 7 points | 11 points | GPS très bruité (montre, téléphone) |
+| Preset | Median window | Average window | Recommended use |
+|--------|--------------|----------------|-----------------|
+| `none` | _(disabled)_ | _(disabled)_ | Already clean data or debugging |
+| `light` | 3 points | 3 points | Good quality GPS (recent Garmin) |
+| `medium` | 5 points | 5 points | General use (default) |
+| `heavy` | 7 points | 11 points | Very noisy GPS (watch, phone) |
 
-### Correction DEM/SRTM
+### DEM/SRTM correction
 
-Remplace les altitudes GPS par celles d'un modèle numérique de terrain (NASA SRTM). C'est la méthode la plus précise.
+Replaces GPS elevations with those from a digital elevation model (NASA SRTM). This is the most accurate method.
 
-#### Téléchargement automatique (par défaut)
+#### Automatic download (default)
 
-Par défaut, les tuiles SRTM manquantes sont **téléchargées automatiquement** depuis le service AWS Elevation Tiles (SRTM1, résolution 30m quand disponible). Les tuiles sont mises en cache localement :
+By default, missing SRTM tiles are **automatically downloaded** from the AWS Elevation Tiles service (SRTM1, 30m resolution when available). Tiles are cached locally:
 
-- **Windows** : `%LOCALAPPDATA%\gpx-utility-analyzer\srtm\`
-- **macOS** : `~/Library/Caches/gpx-utility-analyzer/srtm/`
-- **Linux** : `~/.cache/gpx-utility-analyzer/srtm/`
-
-```bash
-# Fonctionne directement, les tuiles sont téléchargées à la volée
-gpx-analyzer analyze ma-rando.gpx
-```
-
-Pour désactiver le téléchargement automatique :
+- **Windows**: `%LOCALAPPDATA%\gpx-utility-analyzer\srtm\`
+- **macOS**: `~/Library/Caches/gpx-utility-analyzer/srtm/`
+- **Linux**: `~/.cache/gpx-utility-analyzer/srtm/`
 
 ```bash
-gpx-analyzer analyze ma-rando.gpx --dem-auto-download=false
+# Works out of the box, tiles are downloaded on the fly
+gpx-analyzer analyze my-hike.gpx
 ```
 
-Pour changer le répertoire de cache :
+To disable automatic download:
 
 ```bash
-gpx-analyzer analyze ma-rando.gpx --dem-cache /path/to/cache
+gpx-analyzer analyze my-hike.gpx --dem-auto-download=false
 ```
 
-#### Tuiles locales (`--dem-dir`)
+To change the cache directory:
 
-Pour utiliser des tuiles SRTM1 (30m, plus précises) ou travailler hors-ligne :
+```bash
+gpx-analyzer analyze my-hike.gpx --dem-cache /path/to/cache
+```
 
-1. Télécharger les tuiles SRTM couvrant votre trace depuis [NASA Earthdata](https://earthexplorer.usgs.gov/) ou [CGIAR-CSI](https://srtm.csi.cgiar.org/)
-2. Placer les fichiers `.hgt` dans un dossier (ex: `./srtm/`)
-3. Passer `--dem-dir ./srtm/`
+#### Local tiles (`--dem-dir`)
+
+To use SRTM1 tiles (30m, more accurate) or work offline:
+
+1. Download SRTM tiles covering your track from [NASA Earthdata](https://earthexplorer.usgs.gov/) or [CGIAR-CSI](https://srtm.csi.cgiar.org/)
+2. Place the `.hgt` files in a directory (e.g., `./srtm/`)
+3. Pass `--dem-dir ./srtm/`
 
 ```bash
 gpx-analyzer analyze pct.gpx --dem-dir ./srtm-tiles/
 ```
 
-Les fichiers sont au format HGT standard (SRTM1 à 30m ou SRTM3 à 90m de résolution). Le nommage suit la convention `N48W003.hgt` (coordonnées du coin sud-ouest de la tuile).
+Files use the standard HGT format (SRTM1 at 30m or SRTM3 at 90m resolution). Naming follows the convention `N48W003.hgt` (coordinates of the tile's southwest corner).
 
-Quand `--dem-dir` est fourni avec `--dem-auto-download` (défaut), les tuiles locales sont prioritaires. Si une tuile est absente localement, elle est téléchargée dans le cache. Si le téléchargement échoue, l'altitude GPS est conservée avec un avertissement.
+When `--dem-dir` is provided with `--dem-auto-download` (default), local tiles take priority. If a tile is missing locally, it is downloaded to the cache. If the download fails, the GPS elevation is kept with a warning.
 
 #### Limitations
 
-- Le téléchargement automatique nécessite une connexion internet
-- Le service AWS fournit des tuiles SRTM1 (30m) entre 60°N et 56°S, et SRTM3 (90m) ailleurs
+- Automatic download requires an internet connection
+- The AWS service provides SRTM1 tiles (30m) between 60°N and 56°S, and SRTM3 (90m) elsewhere
 
-**Exemple : impact sur une trace de 4000+ km (PCT de Karel Sabbe)**
+**Example: impact on a 4000+ km track (Karel Sabbe's PCT)**
 
 | Configuration | D+ | Max altitude |
 |--------------|-----|-------------|
 | `--smoothing none` | 599 323 m | 7 583 m |
-| `--smoothing medium` (défaut) | 226 908 m | 5 720 m |
+| `--smoothing medium` (default) | 226 908 m | 5 720 m |
 | `--smoothing heavy` | 155 015 m | 5 645 m |
-| DEM + `--smoothing medium` + seuil 5m | ~126 000 m | ~4 001 m |
+| DEM + `--smoothing medium` + 5m threshold | ~126 000 m | ~4 001 m |
 | DEM + `--elevation-algo segments` | **~104 000 m** | ~4 001 m |
 
-Le D+ réel du PCT est d'environ 96 000 m. L'algorithme `segments` combiné au DEM donne le résultat le plus proche.
+The actual D+ of the PCT is approximately 96 000 m. The `segments` algorithm combined with DEM gives the closest result.
 
 ---
 
-## Algorithmes de calcul du dénivelé (`--elevation-algo`)
+## Elevation gain algorithms (`--elevation-algo`)
 
-Trois algorithmes sont disponibles pour calculer le D+ et le D-. Ils s'appliquent après le lissage d'élévation (`--smoothing`) et la correction DEM.
+Three algorithms are available for computing D+ and D-. They are applied after elevation smoothing (`--smoothing`) and DEM correction.
 
-### `threshold` (défaut)
+### `threshold` (default)
 
-Accumule le D+/D- uniquement quand le changement d'élévation depuis le dernier point de référence dépasse le seuil (`--elevation-threshold`). Simple et efficace pour filtrer le bruit GPS.
+Accumulates D+/D- only when the elevation change since the last reference point exceeds the threshold (`--elevation-threshold`). Simple and effective for filtering GPS noise.
 
 ```bash
 gpx-analyzer analyze trace.gpx --elevation-algo threshold --elevation-threshold 3
@@ -399,124 +399,124 @@ gpx-analyzer analyze trace.gpx --elevation-algo threshold --elevation-threshold 
 
 ### `douglas-peucker`
 
-Simplifie le profil altimétrique (distance cumulée, altitude) par l'algorithme de Douglas-Peucker, puis calcule le D+/D- sur les points retenus. L'epsilon (`--dp-epsilon`) contrôle la déviation verticale maximale tolérée en mètres.
+Simplifies the elevation profile (cumulative distance, altitude) using the Douglas-Peucker algorithm, then computes D+/D- on the retained points. The epsilon (`--dp-epsilon`) controls the maximum tolerated vertical deviation in meters.
 
 ```bash
 gpx-analyzer analyze trace.gpx --elevation-algo douglas-peucker --dp-epsilon 3
 ```
 
-Fonctionne bien sur des données GPS sans DEM. Avec DEM, le profil terrain conserve beaucoup de micro-variations légitimes, ce qui limite l'efficacité du filtre.
+Works well on GPS data without DEM. With DEM, the terrain profile retains many legitimate micro-variations, which limits the filter's effectiveness.
 
 ### `segments`
 
-Découpe le profil en segments de pente quasi-constante par régression linéaire gloutonne. Le D+/D- est calculé sur les élévations ajustées (fitted) aux extrémités de chaque segment.
+Divides the profile into quasi-constant slope segments using greedy linear regression. D+/D- is computed from the fitted elevations at segment endpoints.
 
 ```bash
 gpx-analyzer analyze trace.gpx --elevation-algo segments --seg-min-length 200 --seg-max-deviation 2
 ```
 
-| Paramètre | Description | Défaut |
-|-----------|------------|--------|
-| `--seg-min-length` | Longueur horizontale minimale d'un segment (mètres) | `200.0` |
-| `--seg-max-deviation` | Résidu RMS maximal avant de couper un segment (mètres) | `2.0` |
+| Parameter | Description | Default |
+|-----------|------------|---------|
+| `--seg-min-length` | Minimum horizontal segment length (meters) | `200.0` |
+| `--seg-max-deviation` | Maximum RMS residual before splitting a segment (meters) | `2.0` |
 
-C'est l'algorithme le plus efficace avec des données DEM : il absorbe le bruit de grille SRTM et donne des résultats proches de la réalité terrain.
+This is the most effective algorithm with DEM data: it absorbs SRTM grid noise and produces results close to actual terrain.
 
 ---
 
-## Lissage de la trace GPS (`--track-smoothing`)
+## GPS track smoothing (`--track-smoothing`)
 
-Applique une moyenne glissante sur les coordonnées lat/lon **avant** la correction DEM. Réduit le bruit horizontal GPS qui cause des oscillations artificielles d'altitude quand les points oscillent entre différentes cellules DEM.
+Applies a moving average to lat/lon coordinates **before** DEM correction. Reduces horizontal GPS noise that causes artificial altitude oscillations when points oscillate between different DEM cells.
 
-| Preset | Fenêtre | Usage |
-|--------|---------|-------|
-| `none` | _(désactivé)_ | Défaut, pas de lissage lat/lon |
-| `light` | 3 points | GPS de bonne qualité |
-| `medium` | 5 points | GPS standard |
-| `heavy` | 9 points | GPS très bruité |
+| Preset | Window | Use |
+|--------|--------|-----|
+| `none` | _(disabled)_ | Default, no lat/lon smoothing |
+| `light` | 3 points | Good quality GPS |
+| `medium` | 5 points | Standard GPS |
+| `heavy` | 9 points | Very noisy GPS |
 
 ```bash
 gpx-analyzer analyze trace.gpx --track-smoothing medium --elevation-algo douglas-peucker
 ```
 
-**Attention** : le lissage lat/lon modifie les coordonnées utilisées pour le calcul de distance et la détection d'arrêts. La distance totale sera légèrement réduite (le bruit horizontal est filtré).
+**Note**: lat/lon smoothing modifies the coordinates used for distance calculation and stop detection. Total distance will be slightly reduced (horizontal noise is filtered out).
 
-### Pipeline complet
+### Full pipeline
 
-L'ordre de traitement est :
+The processing order is:
 
 ```
-Track smoothing (lat/lon) → Correction DEM → Lissage élévation (--smoothing) → Calcul distances → Algorithme dénivelé
+Track smoothing (lat/lon) → DEM correction → Elevation smoothing (--smoothing) → Distance calculation → Elevation gain algorithm
 ```
 
 ---
 
-## Presets de détection d'arrêts
+## Stop detection presets
 
-| Preset | Vitesse max | Durée min | Usage |
-|--------|------------|-----------|-------|
-| `hiking` | 0.3 m/s (1.1 km/h) | 2 min | Randonnée, marche |
-| `trail` | 0.5 m/s (1.8 km/h) | 1 min | Trail, course en montagne |
-| `cycling` | 1.0 m/s (3.6 km/h) | 30 sec | Vélo, VTT |
+| Preset | Max speed | Min duration | Use |
+|--------|----------|-------------|-----|
+| `hiking` | 0.3 m/s (1.1 km/h) | 2 min | Hiking, walking |
+| `trail` | 0.5 m/s (1.8 km/h) | 1 min | Trail running, mountain running |
+| `cycling` | 1.0 m/s (3.6 km/h) | 30 sec | Cycling, mountain biking |
 
-Un arrêt est détecté quand la vitesse calculée (distance entre points / temps écoulé) reste en dessous du seuil pendant au moins la durée minimum. Les seuils sont personnalisables avec `--stop-speed` et `--stop-duration`.
+A stop is detected when the computed speed (distance between points / elapsed time) remains below the threshold for at least the minimum duration. Thresholds can be customized with `--stop-speed` and `--stop-duration`.
 
 ---
 
-## Cas d'usage courants
+## Common use cases
 
-### Analyser une randonnée à la journée
+### Analyze a day hike
 
 ```bash
-gpx-analyzer analyze rando-chartreuse.gpx
+gpx-analyzer analyze chartreuse-hike.gpx
 ```
 
-### Analyser un ultra-trail avec détection d'arrêts fine
+### Analyze an ultra-trail with fine stop detection
 
 ```bash
 gpx-analyzer analyze utmb.gpx --preset trail --stop-duration 30s
 ```
 
-### Découper et analyser un trek multi-jours
+### Split and analyze a multi-day trek
 
 ```bash
-# Découper en jours
-gpx-analyzer split gr20-complet.gpx --interval 24h --output-dir gr20-jours
+# Split into days
+gpx-analyzer split gr20-full.gpx --interval 24h --output-dir gr20-days
 
-# Voir les stats de chaque jour séparément
-gpx-analyzer analyze ./gr20-jours/
+# View stats for each day separately
+gpx-analyzer analyze ./gr20-days/
 
-# Reconstituer et vérifier
-gpx-analyzer merge ./gr20-jours/ -o gr20-verifie.gpx --analyze
+# Reassemble and verify
+gpx-analyzer merge ./gr20-days/ -o gr20-verified.gpx --analyze
 ```
 
-### Comparer les stats avec et sans lissage
+### Compare stats with and without smoothing
 
 ```bash
 gpx-analyzer analyze trace.gpx --smoothing none
 gpx-analyzer analyze trace.gpx --smoothing heavy
 ```
 
-### Pipeline automatisé (JSON + jq)
+### Automated pipeline (JSON + jq)
 
 ```bash
-# Extraire la distance de chaque fichier
+# Extract distance from each file
 for f in *.gpx; do
   dist=$(gpx-analyzer analyze "$f" --format json | jq '.total_distance_km')
   echo "$f: ${dist} km"
 done
 
-# Obtenir le D+ total d'un dossier
+# Get total D+ for a directory
 gpx-analyzer merge ./traces/ -o /dev/null --analyze --format json | jq '.elevation_gain_m'
 ```
 
-### Obtenir le D+ le plus précis possible (DEM + segments)
+### Get the most accurate D+ possible (DEM + segments)
 
 ```bash
 gpx-analyzer analyze pct.gpx --elevation-algo segments
 ```
 
-### Comparer les algorithmes de dénivelé
+### Compare elevation gain algorithms
 
 ```bash
 gpx-analyzer analyze trace.gpx --elevation-algo threshold --elevation-threshold 5
@@ -524,26 +524,26 @@ gpx-analyzer analyze trace.gpx --elevation-algo douglas-peucker --dp-epsilon 3
 gpx-analyzer analyze trace.gpx --elevation-algo segments
 ```
 
-### Réduire le bruit horizontal GPS avant correction DEM
+### Reduce horizontal GPS noise before DEM correction
 
 ```bash
 gpx-analyzer analyze trace.gpx --track-smoothing medium --elevation-algo segments
 ```
 
-### Exporter un GPX avec altitudes corrigées
+### Export a GPX with corrected elevations
 
 ```bash
-# Exporter avec correction DEM pour utiliser dans un autre outil
-gpx-analyzer analyze ma-rando.gpx --export ./processed/
+# Export with DEM correction for use in another tool
+gpx-analyzer analyze my-hike.gpx --export ./processed/
 
-# Exporter avec le meilleur retraitement possible
+# Export with the best possible reprocessing
 gpx-analyzer analyze pct.gpx --elevation-algo segments --smoothing medium --export ./clean/
 ```
 
-Le fichier exporté contient les coordonnées et altitudes après l'ensemble du pipeline de retraitement (lissage lat/lon, correction DEM, lissage élévation). Il peut être importé dans n'importe quel outil compatible GPX.
+The exported file contains coordinates and elevations after the full reprocessing pipeline (lat/lon smoothing, DEM correction, elevation smoothing). It can be imported into any GPX-compatible tool.
 
-### Analyser une sortie vélo
+### Analyze a bike ride
 
 ```bash
-gpx-analyzer analyze sortie-col.gpx --preset cycling --smoothing light
+gpx-analyzer analyze mountain-pass-ride.gpx --preset cycling --smoothing light
 ```

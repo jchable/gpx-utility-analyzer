@@ -1,28 +1,28 @@
 # GPX Utility Analyzer
 
-Suite d'outils pour l'analyse, le traitement et la transformation de fichiers GPX.
+A toolkit for analyzing, processing and transforming GPX files.
 
-## Projets
+## Projects
 
 ### [cli/](cli/) — gpx-analyzer (Go)
 
-Outil CLI en Go pour analyser des fichiers GPX : distance, dénivelé, vitesse, détection d'arrêts, découpage temporel, fusion de fichiers. Inclut la correction d'altitude par modèle numérique de terrain (SRTM).
+Go CLI tool for analyzing GPX files: distance, elevation gain/loss, speed, stop detection, time-based splitting, file merging. Includes altitude correction using a digital elevation model (SRTM).
 
 ```bash
 cd cli
 go build -o gpx-analyzer .
-gpx-analyzer analyze ma-rando.gpx
+gpx-analyzer analyze my-hike.gpx
 ```
 
-Voir [cli/README.md](cli/README.md) et [cli/docs/CLI_USAGE.md](cli/docs/CLI_USAGE.md) pour la documentation complète.
+See [cli/README.md](cli/README.md) and [cli/docs/CLI_USAGE.md](cli/docs/CLI_USAGE.md) for complete documentation.
 
 ### [ai-analyzer/](ai-analyzer/) — gpx-ai-analyzer (.NET)
 
-Outil CLI en .NET utilisant Microsoft Agent Framework pour produire des rapports d'analyse intelligents (difficulté, segments clés, recommandations) à partir des statistiques GPX. Supporte plusieurs fournisseurs IA (Azure OpenAI, OpenAI, Anthropic, Ollama).
+.NET CLI tool using Microsoft Agent Framework to produce intelligent analysis reports (difficulty, key segments, recommendations) from GPX statistics. Supports multiple AI providers (Azure OpenAI, OpenAI, Anthropic, Ollama).
 
 ```bash
-# Pipeline : statistiques Go → analyse IA .NET
+# Pipeline: Go statistics → .NET AI analysis
 cli/gpx-analyzer analyze --format json track.gpx | ai-analyzer/gpx-ai-analyzer analyze --provider azure-openai
 ```
 
-Voir [ai-analyzer/README.md](ai-analyzer/README.md) pour la documentation complète.
+See [ai-analyzer/README.md](ai-analyzer/README.md) for complete documentation.
