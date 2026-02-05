@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Mono-repo containing two autonomous tools for GPX file analysis:
 
 - **cli/** (Go) — CLI for computing track statistics (distance, elevation, speed, stops) with DEM correction
-- **dotnet/** (.NET) — AI-powered analysis using Microsoft Agent Framework, consuming the Go CLI's JSON output
+- **ai-analyzer/** (.NET) — AI-powered analysis using Microsoft Agent Framework, consuming the Go CLI's JSON output
 
 Documentation (README, CLI_USAGE) is in French.
 
@@ -15,7 +15,7 @@ Documentation (README, CLI_USAGE) is in French.
 
 ```text
 cli/           → Go CLI project (gpx-analyzer)
-dotnet/        → .NET AI analysis project (gpx-ai-analyzer)
+ai-analyzer/   → .NET AI analysis project (gpx-ai-analyzer)
 ```
 
 ## Go Project — cli/
@@ -60,13 +60,13 @@ Requires Go 1.25.7+.
 
 The JSON output from `analyze --format json` (defined in `internal/output/json.go`) is the contract between Go and .NET projects.
 
-## .NET Project — dotnet/
+## .NET Project — ai-analyzer/
 
 ### .NET Build & Test
 
 ```bash
-dotnet build dotnet/src/GpxAiAnalyzer/GpxAiAnalyzer.csproj
-dotnet test dotnet/tests/GpxAiAnalyzer.Tests/
+dotnet build ai-analyzer/src/GpxAiAnalyzer/GpxAiAnalyzer.csproj
+dotnet test ai-analyzer/tests/GpxAiAnalyzer.Tests/
 ```
 
 Requires .NET 9.0+.

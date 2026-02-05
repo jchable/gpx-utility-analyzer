@@ -17,7 +17,7 @@ const sidebars: SidebarsConfig = {
       label: 'gpx-ai-analyzer (.NET)',
       collapsed: true,
       items: [
-        'dotnet/index',
+        'ai-analyzer/index',
       ],
     },
   ],

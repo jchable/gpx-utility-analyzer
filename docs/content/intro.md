@@ -25,7 +25,7 @@ Outil CLI utilisant Microsoft Agent Framework pour produire des rapports
 d'analyse intelligents à partir des statistiques GPX. Supporte plusieurs
 fournisseurs IA (Azure OpenAI, OpenAI, Anthropic, Ollama).
 
-[Voir la documentation →](/gpx-utility-analyzer/docs/dotnet)
+[Voir la documentation →](/gpx-utility-analyzer/docs/ai-analyzer)
 
 ## Pipeline
 
@@ -33,5 +33,5 @@ Les deux outils fonctionnent ensemble :
 
 ```bash
 # Statistiques Go → analyse IA .NET
-cli/gpx-analyzer analyze --format json track.gpx | dotnet/gpx-ai-analyzer analyze --provider azure-openai
+cli/gpx-analyzer analyze --format json track.gpx | ai-analyzer/gpx-ai-analyzer analyze --provider azure-openai
 ```

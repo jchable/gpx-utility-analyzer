@@ -16,13 +16,13 @@ gpx-analyzer analyze ma-rando.gpx
 
 Voir [cli/README.md](cli/README.md) et [cli/docs/CLI_USAGE.md](cli/docs/CLI_USAGE.md) pour la documentation complète.
 
-### [dotnet/](dotnet/) — gpx-ai-analyzer (.NET)
+### [ai-analyzer/](ai-analyzer/) — gpx-ai-analyzer (.NET)
 
 Outil CLI en .NET utilisant Microsoft Agent Framework pour produire des rapports d'analyse intelligents (difficulté, segments clés, recommandations) à partir des statistiques GPX. Supporte plusieurs fournisseurs IA (Azure OpenAI, OpenAI, Anthropic, Ollama).
 
 ```bash
 # Pipeline : statistiques Go → analyse IA .NET
-cli/gpx-analyzer analyze --format json track.gpx | dotnet/gpx-ai-analyzer analyze --provider azure-openai
+cli/gpx-analyzer analyze --format json track.gpx | ai-analyzer/gpx-ai-analyzer analyze --provider azure-openai
 ```
 
-Voir [dotnet/README.md](dotnet/README.md) pour la documentation complète.
+Voir [ai-analyzer/README.md](ai-analyzer/README.md) pour la documentation complète.

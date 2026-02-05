@@ -45,9 +45,9 @@ const config: Config = {
               const file = docPath.replace('cli/index.md', 'README.md').replace('cli/cli-usage.md', 'docs/CLI_USAGE.md');
               return `https://github.com/jchable/gpx-utility-analyzer/edit/main/cli/${file}`;
             }
-            if (docPath.startsWith('dotnet/')) {
-              const file = docPath.replace('dotnet/index.md', 'README.md');
-              return `https://github.com/jchable/gpx-utility-analyzer/edit/main/dotnet/${file}`;
+            if (docPath.startsWith('ai-analyzer/')) {
+              const file = docPath.replace('ai-analyzer/index.md', 'README.md');
+              return `https://github.com/jchable/gpx-utility-analyzer/edit/main/ai-analyzer/${file}`;
             }
             return `https://github.com/jchable/gpx-utility-analyzer/edit/main/docs/content/${docPath}`;
           },
@@ -84,7 +84,7 @@ const config: Config = {
           title: 'Projets',
           items: [
             {label: 'gpx-analyzer (CLI)', to: '/docs/cli'},
-            {label: 'gpx-ai-analyzer (.NET)', to: '/docs/dotnet'},
+            {label: 'gpx-ai-analyzer (.NET)', to: '/docs/ai-analyzer'},
           ],
         },
         {

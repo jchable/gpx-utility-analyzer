@@ -30,7 +30,7 @@
       ]
     },
     {
-      "id": "dotnet",
+      "id": "ai-analyzer",
       "label": "gpx-ai-analyzer (.NET)",
       "sources": []
     }

@@ -8,9 +8,10 @@ on:
       - 'docs/**'
       - 'cli/README.md'
       - 'cli/docs/**'
-      - 'dotnet/README.md'
-      - 'dotnet/docs/**'
+      - 'ai-analyzer/README.md'
+      - 'ai-analyzer/docs/**'
       - 'README.md'
+      - '.github/workflows/deploy-docs.yml'
 
   workflow_dispatch:
 

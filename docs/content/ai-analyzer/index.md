@@ -2,7 +2,7 @@
 title: "gpx-ai-analyzer — Outil .NET"
 sidebar_label: "Présentation"
 sidebar_position: 1
-slug: "/dotnet"
+slug: "/ai-analyzer"
 ---
 
 # gpx-ai-analyzer
@@ -26,5 +26,5 @@ au fur et à mesure de l'avancement.
 ## Pipeline avec gpx-analyzer
 
 ```bash
-cli/gpx-analyzer analyze --format json track.gpx | dotnet/gpx-ai-analyzer analyze --provider azure-openai
+cli/gpx-analyzer analyze --format json track.gpx | ai-analyzer/gpx-ai-analyzer analyze --provider azure-openai
 ```
