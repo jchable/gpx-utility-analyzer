@@ -1,0 +1,45 @@
+{
+  "name": "gpx-utility-analyzer-docs",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "sync": "node scripts/sync-docs.mjs",
+    "prebuild": "npm run sync",
+    "prestart": "npm run sync",
+    "docusaurus": "docusaurus",
+    "start": "docusaurus start",
+    "build": "docusaurus build",
+    "swizzle": "docusaurus swizzle",
+    "deploy": "docusaurus deploy",
+    "clear": "docusaurus clear",
+    "serve": "docusaurus serve"
+  },
+  "dependencies": {
+    "@docusaurus/core": "^3.7",
+    "@docusaurus/preset-classic": "^3.7",
+    "prism-react-renderer": "^2.4",
+    "react": "^19.0",
+    "react-dom": "^19.0"
+  },
+  "devDependencies": {
+    "@docusaurus/module-type-aliases": "^3.7",
+    "@docusaurus/tsconfig": "^3.7",
+    "@docusaurus/types": "^3.7",
+    "typescript": "~5.7"
+  },
+  "browserslist": {
+    "production": [
+      ">0.5%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 3 chrome version",
+      "last 3 firefox version",
+      "last 5 safari version"
+    ]
+  },
+  "engines": {
+    "node": ">=20.0"
+  }
+}

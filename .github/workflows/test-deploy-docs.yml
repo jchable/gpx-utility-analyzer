@@ -1,0 +1,38 @@
+name: Test Documentation Build
+
+on:
+  pull_request:
+    branches:
+      - main
+      - feature/mnt-correction
+    paths:
+      - 'docs/**'
+      - 'cli/README.md'
+      - 'cli/docs/**'
+      - 'dotnet/README.md'
+      - 'dotnet/docs/**'
+      - 'README.md'
+
+jobs:
+  test-build:
+    name: Test Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docs
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test build
+        run: npm run build

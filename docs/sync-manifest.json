@@ -1,0 +1,38 @@
+{
+  "projects": [
+    {
+      "id": "cli",
+      "label": "gpx-analyzer (Go CLI)",
+      "sources": [
+        {
+          "src": "../cli/README.md",
+          "dest": "content/cli/index.md",
+          "frontmatter": {
+            "title": "gpx-analyzer — Outil CLI Go",
+            "sidebar_label": "Présentation",
+            "sidebar_position": 1,
+            "slug": "/cli"
+          },
+          "linkRewrites": {
+            "](docs/CLI_USAGE.md)": "](/gpx-utility-analyzer/docs/cli/commandes)"
+          }
+        },
+        {
+          "src": "../cli/docs/CLI_USAGE.md",
+          "dest": "content/cli/cli-usage.md",
+          "frontmatter": {
+            "title": "Référence des commandes",
+            "sidebar_label": "Commandes",
+            "sidebar_position": 2,
+            "slug": "/cli/commandes"
+          }
+        }
+      ]
+    },
+    {
+      "id": "dotnet",
+      "label": "gpx-ai-analyzer (.NET)",
+      "sources": []
+    }
+  ]
+}
