@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - feature/mnt-correction
     paths:
       - 'docs/**'
       - 'cli/README.md'
