@@ -1,0 +1,37 @@
+# Docker Compose — Production (PostgreSQL)
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
+
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: gpx-db
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=gpxanalyzer
+      - POSTGRES_USER=${POSTGRES_USER:-gpx}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-gpx_secure_password}
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gpx} -d gpxanalyzer"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  api:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - Database__Provider=postgresql
+      - Database__ConnectionStrings__PostgreSql=Host=db;Database=gpxanalyzer;Username=${POSTGRES_USER:-gpx};Password=${POSTGRES_PASSWORD:-gpx_secure_password}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  client:
+    ports:
+      - "80:80"
+
+volumes:
+  pg-data:

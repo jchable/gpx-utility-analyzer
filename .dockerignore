@@ -1,0 +1,37 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+nul
+
+# Node
+ui/client/node_modules
+ui/client/dist
+
+# .NET build artifacts
+**/bin
+**/obj
+
+# Go build artifacts
+cli/gpx-analyzer
+cli/gpx-analyzer.exe
+
+# Data
+ui/api/data
+
+# Docs
+docs/
+
+# Docker
+docker-compose*.yml
+Dockerfile*
+.dockerignore

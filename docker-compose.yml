@@ -1,0 +1,41 @@
+# Docker Compose — Development / Testing (SQLite)
+# Usage: docker compose up --build
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: ui/api/Dockerfile
+    container_name: gpx-api
+    ports:
+      - "5000:5000"
+    volumes:
+      - api-data:/app/data
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - Database__Provider=sqlite
+      - Database__ConnectionStrings__Sqlite=Data Source=/app/data/gpxanalyzer.db
+      - GpxCli__BinaryPath=/usr/local/bin/gpx-analyzer
+      - Storage__GpxDirectory=/app/data/gpx
+      # AI Provider — configure as needed
+      - AiProvider__Name=openai
+      - AiProvider__ApiKey=${AI_API_KEY:-}
+      - AiProvider__Model=${AI_MODEL:-}
+      # Integrations — configure as needed
+      - Integrations__Strava__ClientId=${STRAVA_CLIENT_ID:-}
+      - Integrations__Strava__ClientSecret=${STRAVA_CLIENT_SECRET:-}
+    restart: unless-stopped
+
+  client:
+    build:
+      context: .
+      dockerfile: ui/client/Dockerfile
+    container_name: gpx-client
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  api-data:
