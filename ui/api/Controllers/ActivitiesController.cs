@@ -83,7 +83,7 @@ public class ActivitiesController : ControllerBase
     }
 
     [HttpPost("upload")]
-    public async Task<ActionResult<ActivityDetailDto>> Upload(IFormFile file)
+    public async Task<ActionResult<ActivityDetailDto>> Upload(IFormFile file, [FromForm] string? activityType = null)
     {
         if (file is null || file.Length == 0)
             return BadRequest("No file provided.");
@@ -98,6 +98,7 @@ public class ActivitiesController : ControllerBase
         {
             Id = Guid.NewGuid(),
             Name = Path.GetFileNameWithoutExtension(file.FileName),
+            ActivityType = activityType ?? "hike",
             GpxFilePath = relativePath,
             Source = "upload",
             Status = ProcessingStatus.Pending,

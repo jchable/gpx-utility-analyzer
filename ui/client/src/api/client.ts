@@ -24,9 +24,10 @@ export const api = {
 
   getActivity: (id: string) => fetchJson<ActivityDetail>(`/activities/${id}`),
 
-  uploadGpx: async (file: File): Promise<ActivityDetail> => {
+  uploadGpx: async (file: File, activityType?: string): Promise<ActivityDetail> => {
     const formData = new FormData();
     formData.append('file', file);
+    if (activityType) formData.append('activityType', activityType);
     const res = await fetch(`${BASE}/activities/upload`, {
       method: 'POST',
       body: formData,
