@@ -5,7 +5,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/jchable/gpx-utility-analyzer/internal/stats"
+	"github.com/jchable/gpx-utility-analyzer/cli/internal/stats"
 	"github.com/olekukonko/tablewriter"
 )
 

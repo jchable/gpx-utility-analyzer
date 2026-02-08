@@ -3,7 +3,7 @@ package elevation
 import (
 	"sort"
 
-	"github.com/jchable/gpx-utility-analyzer/internal/gpx"
+	"github.com/jchable/gpx-utility-analyzer/cli/internal/gpx"
 )
 
 // SmoothingLevel represents a named smoothing preset.

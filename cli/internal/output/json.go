@@ -6,7 +6,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/jchable/gpx-utility-analyzer/internal/stats"
+	"github.com/jchable/gpx-utility-analyzer/cli/internal/stats"
 )
 
 // JSONFormatter outputs statistics as JSON.

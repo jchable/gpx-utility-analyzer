@@ -3,7 +3,7 @@ package stats
 import (
 	"math"
 
-	"github.com/jchable/gpx-utility-analyzer/internal/gpx"
+	"github.com/jchable/gpx-utility-analyzer/cli/internal/gpx"
 )
 
 // profilePoint represents a point on the 1D elevation profile.

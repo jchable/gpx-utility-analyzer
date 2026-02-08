@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jchable/gpx-utility-analyzer/internal/dem"
-	"github.com/jchable/gpx-utility-analyzer/internal/elevation"
-	"github.com/jchable/gpx-utility-analyzer/internal/gpx"
-	"github.com/jchable/gpx-utility-analyzer/internal/input"
-	"github.com/jchable/gpx-utility-analyzer/internal/output"
-	"github.com/jchable/gpx-utility-analyzer/internal/stats"
+	"github.com/jchable/gpx-utility-analyzer/cli/internal/dem"
+	"github.com/jchable/gpx-utility-analyzer/cli/internal/elevation"
+	"github.com/jchable/gpx-utility-analyzer/cli/internal/gpx"
+	"github.com/jchable/gpx-utility-analyzer/cli/internal/input"
+	"github.com/jchable/gpx-utility-analyzer/cli/internal/output"
+	"github.com/jchable/gpx-utility-analyzer/cli/internal/stats"
 	"github.com/spf13/cobra"
 )
 

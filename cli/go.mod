@@ -1,4 +1,4 @@
-module github.com/jchable/gpx-utility-analyzer
+module github.com/jchable/gpx-utility-analyzer/cli
 
 go 1.25.7
 

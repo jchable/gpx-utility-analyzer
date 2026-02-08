@@ -5,7 +5,7 @@ Go command-line tool for analyzing GPX files: distance, elevation gain/loss, spe
 ## Installation
 
 ```bash
-go install github.com/jchable/gpx-utility-analyzer@latest
+go install github.com/jchable/gpx-utility-analyzer/cli@latest
 ```
 
 Or from source:

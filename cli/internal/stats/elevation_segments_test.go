@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/jchable/gpx-utility-analyzer/internal/gpx"
+	"github.com/jchable/gpx-utility-analyzer/cli/internal/gpx"
 )
 
 func TestLinearFit_SteadySlope(t *testing.T) {

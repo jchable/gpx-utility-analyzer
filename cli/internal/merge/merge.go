@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/jchable/gpx-utility-analyzer/internal/gpx"
+	"github.com/jchable/gpx-utility-analyzer/cli/internal/gpx"
 )
 
 // Merge combines multiple GPX documents into a single one.

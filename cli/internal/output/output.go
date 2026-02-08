@@ -5,7 +5,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/jchable/gpx-utility-analyzer/internal/stats"
+	"github.com/jchable/gpx-utility-analyzer/cli/internal/stats"
 )
 
 // Formatter defines the interface for outputting statistics.

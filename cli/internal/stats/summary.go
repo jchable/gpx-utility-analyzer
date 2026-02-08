@@ -3,9 +3,9 @@ package stats
 import (
 	"time"
 
-	"github.com/jchable/gpx-utility-analyzer/internal/dem"
-	"github.com/jchable/gpx-utility-analyzer/internal/elevation"
-	"github.com/jchable/gpx-utility-analyzer/internal/gpx"
+	"github.com/jchable/gpx-utility-analyzer/cli/internal/dem"
+	"github.com/jchable/gpx-utility-analyzer/cli/internal/elevation"
+	"github.com/jchable/gpx-utility-analyzer/cli/internal/gpx"
 )
 
 // Summary holds all computed statistics for a GPX file or segment.

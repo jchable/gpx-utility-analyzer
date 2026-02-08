@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jchable/gpx-utility-analyzer/internal/gpx"
+	"github.com/jchable/gpx-utility-analyzer/cli/internal/gpx"
 )
 
 // TimeSegment represents a slice of points within a time interval.

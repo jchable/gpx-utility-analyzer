@@ -3,7 +3,7 @@ package stats
 import (
 	"time"
 
-	"github.com/jchable/gpx-utility-analyzer/internal/gpx"
+	"github.com/jchable/gpx-utility-analyzer/cli/internal/gpx"
 )
 
 // SpeedResult holds computed speed and pace statistics.

@@ -3,7 +3,7 @@ package stats
 import (
 	"testing"
 
-	"github.com/jchable/gpx-utility-analyzer/internal/gpx"
+	"github.com/jchable/gpx-utility-analyzer/cli/internal/gpx"
 )
 
 func TestComputeElevation(t *testing.T) {

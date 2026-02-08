@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/jchable/gpx-utility-analyzer/internal/gpx"
-	"github.com/jchable/gpx-utility-analyzer/internal/output"
-	"github.com/jchable/gpx-utility-analyzer/internal/split"
-	"github.com/jchable/gpx-utility-analyzer/internal/stats"
+	"github.com/jchable/gpx-utility-analyzer/cli/internal/gpx"
+	"github.com/jchable/gpx-utility-analyzer/cli/internal/output"
+	"github.com/jchable/gpx-utility-analyzer/cli/internal/split"
+	"github.com/jchable/gpx-utility-analyzer/cli/internal/stats"
 	"github.com/spf13/cobra"
 )
 

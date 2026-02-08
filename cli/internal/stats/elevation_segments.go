@@ -3,7 +3,7 @@ package stats
 import (
 	"math"
 
-	"github.com/jchable/gpx-utility-analyzer/internal/gpx"
+	"github.com/jchable/gpx-utility-analyzer/cli/internal/gpx"
 )
 
 // segment represents a portion of the elevation profile with a linear fit.

@@ -1,7 +1,7 @@
 package elevation
 
 import (
-	"github.com/jchable/gpx-utility-analyzer/internal/gpx"
+	"github.com/jchable/gpx-utility-analyzer/cli/internal/gpx"
 )
 
 // TrackSmoothingLevel represents a named track smoothing preset for lat/lon.

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jchable/gpx-utility-analyzer/internal/gpx"
+	"github.com/jchable/gpx-utility-analyzer/cli/internal/gpx"
 )
 
 func makeTime(minutesOffset int) time.Time {
