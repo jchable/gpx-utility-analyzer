@@ -1,4 +1,4 @@
-namespace GpxAiAnalyzer.Providers;
+namespace GpxAiAnalyzer.Core.Providers;
 
 using Anthropic.SDK;
 using Microsoft.Extensions.AI;

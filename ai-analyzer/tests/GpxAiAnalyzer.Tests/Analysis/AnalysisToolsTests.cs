@@ -1,6 +1,6 @@
 namespace GpxAiAnalyzer.Tests.Analysis;
 
-using GpxAiAnalyzer.Analysis;
+using GpxAiAnalyzer.Core.Analysis;
 
 public class AnalysisToolsTests
 {

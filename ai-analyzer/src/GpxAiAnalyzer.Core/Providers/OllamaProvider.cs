@@ -1,4 +1,4 @@
-namespace GpxAiAnalyzer.Providers;
+namespace GpxAiAnalyzer.Core.Providers;
 
 using Microsoft.Extensions.AI;
 using OllamaSharp;

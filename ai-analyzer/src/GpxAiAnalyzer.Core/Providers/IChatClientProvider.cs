@@ -1,4 +1,4 @@
-namespace GpxAiAnalyzer.Providers;
+namespace GpxAiAnalyzer.Core.Providers;
 
 using Microsoft.Extensions.AI;
 
@@ -8,7 +8,7 @@ using Microsoft.Extensions.AI;
 /// </summary>
 public interface IChatClientProvider
 {
-    /// <summary>Unique name used in the --provider CLI argument.</summary>
+    /// <summary>Unique name used to identify the provider.</summary>
     string Name { get; }
 
     /// <summary>Creates a configured IChatClient for this provider.</summary>
@@ -16,7 +16,7 @@ public interface IChatClientProvider
 }
 
 /// <summary>
-/// Runtime configuration passed from CLI arguments and environment variables.
+/// Runtime configuration passed from CLI arguments, environment variables, or app settings.
 /// </summary>
 public sealed class ProviderOptions
 {

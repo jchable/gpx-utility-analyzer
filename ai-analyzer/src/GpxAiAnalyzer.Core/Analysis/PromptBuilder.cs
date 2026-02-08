@@ -1,6 +1,6 @@
-namespace GpxAiAnalyzer.Analysis;
+namespace GpxAiAnalyzer.Core.Analysis;
 
-using GpxAiAnalyzer.Models;
+using GpxAiAnalyzer.Core.Models;
 using System.Globalization;
 using System.Text;
 

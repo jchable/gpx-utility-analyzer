@@ -1,9 +1,9 @@
 namespace GpxAiAnalyzer.Commands;
 
-using GpxAiAnalyzer.Analysis;
-using GpxAiAnalyzer.Models;
-using GpxAiAnalyzer.Output;
-using GpxAiAnalyzer.Providers;
+using GpxAiAnalyzer.Core.Analysis;
+using GpxAiAnalyzer.Core.Models;
+using GpxAiAnalyzer.Core.Output;
+using GpxAiAnalyzer.Core.Providers;
 using System.CommandLine;
 using System.CommandLine.Parsing;
 using System.Text.Json;

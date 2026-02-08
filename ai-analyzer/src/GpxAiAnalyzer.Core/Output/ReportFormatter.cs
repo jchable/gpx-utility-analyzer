@@ -1,6 +1,6 @@
-namespace GpxAiAnalyzer.Output;
+namespace GpxAiAnalyzer.Core.Output;
 
-using GpxAiAnalyzer.Models;
+using GpxAiAnalyzer.Core.Models;
 using System.Text.Json;
 
 public static class ReportFormatter

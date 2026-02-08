@@ -1,7 +1,7 @@
 namespace GpxAiAnalyzer.Tests.Analysis;
 
-using GpxAiAnalyzer.Analysis;
-using GpxAiAnalyzer.Models;
+using GpxAiAnalyzer.Core.Analysis;
+using GpxAiAnalyzer.Core.Models;
 
 public class PromptBuilderTests
 {

@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <RootNamespace>GpxAiAnalyzer.Core</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Microsoft.Extensions.AI core -->
+    <PackageReference Include="Microsoft.Extensions.AI" Version="*" />
+    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="*" />
+
+    <!-- OpenAI / Azure OpenAI -->
+    <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="*-*" />
+    <PackageReference Include="Azure.AI.OpenAI" Version="2.*" />
+    <PackageReference Include="Azure.Identity" Version="1.*" />
+
+    <!-- Anthropic -->
+    <PackageReference Include="Anthropic.SDK" Version="*" />
+
+    <!-- Mistral -->
+    <PackageReference Include="Mistral.SDK" Version="*" />
+
+    <!-- Ollama -->
+    <PackageReference Include="OllamaSharp" Version="*" />
+  </ItemGroup>
+
+</Project>

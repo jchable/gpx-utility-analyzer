@@ -1,6 +1,6 @@
 namespace GpxAiAnalyzer.Tests.Providers;
 
-using GpxAiAnalyzer.Providers;
+using GpxAiAnalyzer.Core.Providers;
 using Microsoft.Extensions.AI;
 
 public class ProviderRegistryTests

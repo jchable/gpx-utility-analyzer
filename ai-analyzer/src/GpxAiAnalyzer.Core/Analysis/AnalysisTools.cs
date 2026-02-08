@@ -1,4 +1,4 @@
-namespace GpxAiAnalyzer.Analysis;
+namespace GpxAiAnalyzer.Core.Analysis;
 
 using System.ComponentModel;
 

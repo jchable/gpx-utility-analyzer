@@ -1,4 +1,4 @@
-namespace GpxAiAnalyzer.Models;
+namespace GpxAiAnalyzer.Core.Models;
 
 using System.Text.Json.Serialization;
 

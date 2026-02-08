@@ -1,6 +1,6 @@
 namespace GpxAiAnalyzer.Tests.Models;
 
-using GpxAiAnalyzer.Models;
+using GpxAiAnalyzer.Core.Models;
 using System.Text.Json;
 
 public class GpxStatsTests

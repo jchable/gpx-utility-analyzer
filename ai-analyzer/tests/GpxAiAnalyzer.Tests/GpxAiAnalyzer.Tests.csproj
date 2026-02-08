@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\GpxAiAnalyzer\GpxAiAnalyzer.csproj" />
+    <ProjectReference Include="..\..\src\GpxAiAnalyzer.Core\GpxAiAnalyzer.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

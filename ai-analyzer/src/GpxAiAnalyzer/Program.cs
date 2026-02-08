@@ -1,5 +1,5 @@
 using GpxAiAnalyzer.Commands;
-using GpxAiAnalyzer.Providers;
+using GpxAiAnalyzer.Core.Providers;
 using System.CommandLine;
 
 // Register all available providers

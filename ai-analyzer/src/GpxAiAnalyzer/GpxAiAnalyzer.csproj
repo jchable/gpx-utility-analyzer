@@ -12,24 +12,10 @@
   <ItemGroup>
     <!-- CLI parsing -->
     <PackageReference Include="System.CommandLine" Version="2.*" />
+  </ItemGroup>
 
-    <!-- Microsoft.Extensions.AI core -->
-    <PackageReference Include="Microsoft.Extensions.AI" Version="*" />
-    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="*" />
-
-    <!-- OpenAI / Azure OpenAI -->
-    <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="*-*" />
-    <PackageReference Include="Azure.AI.OpenAI" Version="2.*" />
-    <PackageReference Include="Azure.Identity" Version="1.*" />
-
-    <!-- Anthropic -->
-    <PackageReference Include="Anthropic.SDK" Version="*" />
-
-    <!-- Mistral -->
-    <PackageReference Include="Mistral.SDK" Version="*" />
-
-    <!-- Ollama -->
-    <PackageReference Include="OllamaSharp" Version="*" />
+  <ItemGroup>
+    <ProjectReference Include="..\GpxAiAnalyzer.Core\GpxAiAnalyzer.Core.csproj" />
   </ItemGroup>
 
 </Project>
