@@ -1,0 +1,92 @@
+{
+  "filename": "testdata/with-extensions.gpx",
+  "total_distance_m": 390.39,
+  "total_distance_3d_m": 390.39,
+  "total_distance_km": 0.39039,
+  "elevation_gain_m": 0,
+  "elevation_loss_m": 0,
+  "max_elevation_m": 49.47,
+  "min_elevation_m": 48.19,
+  "start_time": "2024-01-01T10:00:00Z",
+  "end_time": "2024-01-01T10:05:00Z",
+  "total_time": {
+    "display": "5m 0s",
+    "seconds": 300
+  },
+  "moving_time": {
+    "display": "5m 0s",
+    "seconds": 300
+  },
+  "stopped_time": {
+    "display": "0s",
+    "seconds": 0
+  },
+  "avg_speed_kmh": 4.68,
+  "avg_moving_speed_kmh": 4.68,
+  "max_speed_kmh": 5.51,
+  "avg_pace": "12:48 min/km",
+  "avg_moving_pace": "12:48 min/km",
+  "point_count": 6,
+  "segment_count": 1,
+  "points_per_km": 15.37,
+  "stop_count": 0,
+  "total_stop_time": {
+    "display": "0s",
+    "seconds": 0
+  },
+  "avg_stop_duration": {
+    "display": "0s",
+    "seconds": 0
+  },
+  "heart_rate": {
+    "avg_bpm": 149.17,
+    "max_bpm": 170,
+    "min_bpm": 120,
+    "zones": [
+      {
+        "name": "Z1 (Recovery)",
+        "min_percent": 50,
+        "max_percent": 60,
+        "duration": { "display": "0s", "seconds": 0 }
+      },
+      {
+        "name": "Z2 (Endurance)",
+        "min_percent": 60,
+        "max_percent": 70,
+        "duration": { "display": "0s", "seconds": 0 }
+      },
+      {
+        "name": "Z3 (Tempo)",
+        "min_percent": 70,
+        "max_percent": 80,
+        "duration": { "display": "2m 0s", "seconds": 120 }
+      },
+      {
+        "name": "Z4 (Threshold)",
+        "min_percent": 80,
+        "max_percent": 90,
+        "duration": { "display": "3m 0s", "seconds": 180 }
+      },
+      {
+        "name": "Z5 (VO2 Max)",
+        "min_percent": 90,
+        "max_percent": 100,
+        "duration": { "display": "0s", "seconds": 0 }
+      }
+    ]
+  },
+  "power": {
+    "avg_watts": 240.0,
+    "max_watts": 280,
+    "normalized_power_watts": 244.28
+  },
+  "cadence": {
+    "avg_rpm": 88.33,
+    "max_rpm": 95
+  },
+  "temperature": {
+    "avg_celsius": 19.55,
+    "min_celsius": 18.5,
+    "max_celsius": 20.5
+  }
+}

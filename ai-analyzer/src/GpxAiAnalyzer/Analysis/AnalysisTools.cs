@@ -45,4 +45,24 @@ public static class AnalysisTools
     {
         return distanceKm > 0 ? stopCount / distanceKm : 0;
     }
+
+    [Description("Estimate training stress score (TSS) from normalized power, threshold power, and duration.")]
+    public static double EstimateTrainingStress(
+        [Description("Normalized power in watts")] double normalizedPower,
+        [Description("Functional threshold power in watts")] double thresholdPower,
+        [Description("Duration in hours")] double durationHours)
+    {
+        if (thresholdPower <= 0) return 0;
+        double intensityFactor = normalizedPower / thresholdPower;
+        return intensityFactor * intensityFactor * durationHours * 100;
+    }
+
+    [Description("Classify heart rate training intensity based on percentage of time spent in high-intensity zones (Z4-Z5).")]
+    public static string ClassifyIntensity(
+        [Description("Percentage of total time spent in zones 4-5 (0-100)")] double highIntensityPercent)
+    {
+        if (highIntensityPercent > 50) return "high-intensity";
+        if (highIntensityPercent > 20) return "moderate-intensity";
+        return "low-intensity";
+    }
 }

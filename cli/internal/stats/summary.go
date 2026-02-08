@@ -38,6 +38,9 @@ type Summary struct {
 	TotalStopTime   time.Duration
 	LongestStop     *Stop
 	AvgStopDuration time.Duration
+
+	// Biometrics
+	Biometrics BiometricsResult
 }
 
 // ComputeConfig holds parameters for the summary computation.
@@ -48,6 +51,7 @@ type ComputeConfig struct {
 	DEMSource          *dem.Source              // DEM tile source (nil = disabled)
 	ElevationCfg       ElevationConfig                // elevation algorithm config
 	TrackSmoothing     elevation.TrackSmoothingLevel   // lat/lon smoothing before DEM
+	BiometricsCfg      BiometricsConfig               // biometrics computation config
 }
 
 // DefaultConfig returns a default computation configuration using the hiking preset.
@@ -124,6 +128,9 @@ func Compute(points []gpx.TrackPoint, segmentCount int, cfg ComputeConfig) Summa
 	if s.TotalDistance > 0 {
 		s.PointsPerKm = float64(s.PointCount) / (s.TotalDistance / 1000)
 	}
+
+	// Biometrics
+	s.Biometrics = ComputeBiometrics(points, cfg.BiometricsCfg)
 
 	return s
 }

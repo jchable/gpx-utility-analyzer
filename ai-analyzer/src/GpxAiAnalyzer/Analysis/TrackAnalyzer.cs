@@ -19,6 +19,8 @@ public sealed class TrackAnalyzer
         to assess difficulty, identify key segments, and provide recommendations.
         Use the available tools to compute derived metrics before forming your assessment.
         Always call the EstimateDifficulty and ClassifyActivity tools with the provided data.
+        When biometric data (heart rate, power, cadence, temperature) is available, use the
+        EstimateTrainingStress and ClassifyIntensity tools for deeper physiological analysis.
         Base your analysis on quantitative metrics, not assumptions.
         Respond with a JSON object matching the required schema.
         """;
@@ -38,6 +40,8 @@ public sealed class TrackAnalyzer
             AIFunctionFactory.Create(AnalysisTools.ClassifyActivity),
             AIFunctionFactory.Create(AnalysisTools.EstimateDifficulty),
             AIFunctionFactory.Create(AnalysisTools.GetStopFrequency),
+            AIFunctionFactory.Create(AnalysisTools.EstimateTrainingStress),
+            AIFunctionFactory.Create(AnalysisTools.ClassifyIntensity),
         };
 
         var chatOptions = new ChatOptions

@@ -99,4 +99,62 @@ public class AnalysisToolsTests
         var freq = AnalysisTools.GetStopFrequency(5, 10);
         Assert.Equal(0.5, freq, precision: 2);
     }
+
+    [Fact]
+    public void EstimateTrainingStress_ZeroThreshold_ReturnsZero()
+    {
+        var tss = AnalysisTools.EstimateTrainingStress(200, 0, 1);
+        Assert.Equal(0, tss);
+    }
+
+    [Fact]
+    public void EstimateTrainingStress_AtThreshold_Returns100PerHour()
+    {
+        // NP = FTP → IF = 1.0 → TSS = 1*1*1*100 = 100
+        var tss = AnalysisTools.EstimateTrainingStress(250, 250, 1);
+        Assert.Equal(100, tss, precision: 1);
+    }
+
+    [Fact]
+    public void EstimateTrainingStress_AboveThreshold()
+    {
+        // NP=300, FTP=250 → IF=1.2 → TSS = 1.44 * 2 * 100 = 288
+        var tss = AnalysisTools.EstimateTrainingStress(300, 250, 2);
+        Assert.Equal(288, tss, precision: 1);
+    }
+
+    [Fact]
+    public void ClassifyIntensity_HighPercent_ReturnsHighIntensity()
+    {
+        var result = AnalysisTools.ClassifyIntensity(60);
+        Assert.Equal("high-intensity", result);
+    }
+
+    [Fact]
+    public void ClassifyIntensity_ModeratePercent_ReturnsModerate()
+    {
+        var result = AnalysisTools.ClassifyIntensity(35);
+        Assert.Equal("moderate-intensity", result);
+    }
+
+    [Fact]
+    public void ClassifyIntensity_LowPercent_ReturnsLow()
+    {
+        var result = AnalysisTools.ClassifyIntensity(10);
+        Assert.Equal("low-intensity", result);
+    }
+
+    [Fact]
+    public void ClassifyIntensity_BoundaryAt50_ReturnsModerate()
+    {
+        var result = AnalysisTools.ClassifyIntensity(50);
+        Assert.Equal("moderate-intensity", result);
+    }
+
+    [Fact]
+    public void ClassifyIntensity_BoundaryAt20_ReturnsLow()
+    {
+        var result = AnalysisTools.ClassifyIntensity(20);
+        Assert.Equal("low-intensity", result);
+    }
 }

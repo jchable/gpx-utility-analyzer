@@ -47,6 +47,7 @@ Requires Go 1.25.7+.
 5. Distance calculation (Haversine) → `internal/stats/distance.go`
 6. Elevation gain/loss via algorithm → `internal/stats/elevation.go`
 7. Stop detection → `internal/stats/stops.go`
+8. Biometrics computation (HR, power, cadence, temperature) → `internal/stats/biometrics.go`
 
 **Key packages**: `internal/gpx/` (parsing/model/export), `internal/stats/` (computation), `internal/elevation/` (smoothing), `internal/dem/` (SRTM tiles), `internal/output/` (Formatter interface: text/JSON).
 
@@ -58,7 +59,7 @@ Requires Go 1.25.7+.
 
 ### JSON Contract
 
-The JSON output from `analyze --format json` (defined in `internal/output/json.go`) is the contract between Go and .NET projects.
+The JSON output from `analyze --format json` (defined in `internal/output/json.go`) is the contract between Go and .NET projects. Optional biometric fields (`heart_rate`, `power`, `cadence`, `temperature`) are included when GPX extension data is present, omitted otherwise.
 
 ## .NET Project — ai-analyzer/
 

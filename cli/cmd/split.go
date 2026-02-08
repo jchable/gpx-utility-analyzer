@@ -63,6 +63,8 @@ func init() {
 		"Segments algo: minimum segment length in meters")
 	splitCmd.Flags().Float64Var(&segMaxDevFlag, "seg-max-deviation", 2.0,
 		"Segments algo: max RMS residual in meters")
+	splitCmd.Flags().IntVar(&maxHRFlag, "max-hr", 0,
+		"Maximum heart rate (bpm) for HR zone calculation")
 
 	rootCmd.AddCommand(splitCmd)
 }

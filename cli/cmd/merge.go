@@ -57,6 +57,8 @@ func init() {
 		"Segments algo: minimum segment length in meters")
 	mergeCmd.Flags().Float64Var(&segMaxDevFlag, "seg-max-deviation", 2.0,
 		"Segments algo: max RMS residual in meters")
+	mergeCmd.Flags().IntVar(&maxHRFlag, "max-hr", 0,
+		"Maximum heart rate (bpm) for HR zone calculation")
 
 	rootCmd.AddCommand(mergeCmd)
 }

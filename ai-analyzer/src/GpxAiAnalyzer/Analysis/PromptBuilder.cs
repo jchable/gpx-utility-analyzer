@@ -46,9 +46,33 @@ public static class PromptBuilder
             }
         }
 
+        // Biometrics
+        if (stats.HeartRate is not null)
+        {
+            sb.AppendLine(ci, $"- Heart Rate: {stats.HeartRate.AvgBpm:F0} bpm avg, {stats.HeartRate.MaxBpm} bpm max, {stats.HeartRate.MinBpm} bpm min");
+            if (stats.HeartRate.Zones is { Count: > 0 })
+            {
+                var zoneStr = string.Join(", ", stats.HeartRate.Zones.Select(z =>
+                    string.Format(ci, "{0}: {1}", z.Name, z.Duration.Display)));
+                sb.AppendLine($"- HR Zones: {zoneStr}");
+            }
+        }
+        if (stats.Power is not null)
+        {
+            sb.AppendLine(ci, $"- Power: {stats.Power.AvgWatts:F0}W avg, {stats.Power.MaxWatts}W max, {stats.Power.NormalizedPowerWatts:F0}W NP");
+        }
+        if (stats.Cadence is not null)
+        {
+            sb.AppendLine(ci, $"- Cadence: {stats.Cadence.AvgRpm:F0} rpm avg, {stats.Cadence.MaxRpm} rpm max");
+        }
+        if (stats.Temperature is not null)
+        {
+            sb.AppendLine(ci, $"- Temperature: {stats.Temperature.AvgCelsius:F1}C avg, {stats.Temperature.MinCelsius:F1}C min, {stats.Temperature.MaxCelsius:F1}C max");
+        }
+
         sb.AppendLine();
         sb.AppendLine("## Required Analysis");
-        sb.AppendLine("Use the available tools (EstimateDifficulty, ClassifyActivity, GetSteepnessRatio, GetStopFrequency) to compute derived metrics, then provide a structured JSON report with:");
+        sb.AppendLine("Use the available tools (EstimateDifficulty, ClassifyActivity, GetSteepnessRatio, GetStopFrequency, and biometric tools if data is available) to compute derived metrics, then provide a structured JSON report with:");
         sb.AppendLine("1. **difficulty**: grade (T1-T6 SAC scale or Easy/Moderate/Strenuous/Expert), score (1-10), justification");
         sb.AppendLine("2. **key_segments**: notable climb/descent/flat/technical sections with elevation_change and distance_km");
         sb.AppendLine("3. **recommendations**: practical advice for someone attempting this track");

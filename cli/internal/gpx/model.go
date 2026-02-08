@@ -27,11 +27,12 @@ type Segment struct {
 
 // Point represents a GPX trackpoint with raw string time for XML unmarshalling.
 type Point struct {
-	Lat     float64 `xml:"lat,attr"`
-	Lon     float64 `xml:"lon,attr"`
-	Ele     float64 `xml:"ele"`
-	RawTime string  `xml:"time"`
-	Speed   float64 `xml:"speed"`
+	Lat        float64       `xml:"lat,attr"`
+	Lon        float64       `xml:"lon,attr"`
+	Ele        float64       `xml:"ele"`
+	RawTime    string        `xml:"time"`
+	Speed      float64       `xml:"speed"`
+	Extensions rawExtensions `xml:"extensions"`
 }
 
 // TrackPoint is an enriched point used for internal computation.
@@ -43,6 +44,11 @@ type TrackPoint struct {
 	Speed        float64 // from GPX (m/s)
 	CalcSpeed    float64 // computed from distance/time
 	DistFromPrev float64 // meters from previous point
+	// Biometrics (nil = not present in source GPX)
+	HeartRate   *int
+	Cadence     *int
+	Power       *int
+	Temperature *float64
 }
 
 // AllPoints returns all trackpoints from all tracks and segments as a flat slice of TrackPoint.
@@ -77,6 +83,13 @@ func (p *Point) ToTrackPoint() (TrackPoint, error) {
 		}
 		tp.Time = t
 	}
+
+	ext := ParseExtensions(p.Extensions.InnerXML)
+	tp.HeartRate = ext.HeartRate
+	tp.Cadence = ext.Cadence
+	tp.Power = ext.Power
+	tp.Temperature = ext.Temperature
+
 	return tp, nil
 }
 

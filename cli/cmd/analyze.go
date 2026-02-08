@@ -31,6 +31,7 @@ var (
 	segMinLenFlag     float64
 	segMaxDevFlag     float64
 	exportDirFlag     string
+	maxHRFlag         int
 )
 
 var analyzeCmd = &cobra.Command{
@@ -70,6 +71,8 @@ func init() {
 		"Segments algo: max RMS residual in meters")
 	analyzeCmd.Flags().StringVar(&exportDirFlag, "export", "",
 		"Export preprocessed GPX files to this directory")
+	analyzeCmd.Flags().IntVar(&maxHRFlag, "max-hr", 0,
+		"Maximum heart rate (bpm) for HR zone calculation")
 
 	rootCmd.AddCommand(analyzeCmd)
 }
@@ -193,5 +196,6 @@ func buildComputeConfig() stats.ComputeConfig {
 			MaxSlopeDev: segMaxDevFlag,
 		},
 		TrackSmoothing: trackSmooth,
+		BiometricsCfg:  stats.BiometricsConfig{MaxHR: maxHRFlag},
 	}
 }

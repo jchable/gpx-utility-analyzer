@@ -91,6 +91,82 @@ public sealed class GpxStats
 
     [JsonPropertyName("stops")]
     public List<StopInfo>? Stops { get; init; }
+
+    // Biometrics (optional — null when GPX has no extension data)
+    [JsonPropertyName("heart_rate")]
+    public HeartRateStats? HeartRate { get; init; }
+
+    [JsonPropertyName("power")]
+    public PowerStats? Power { get; init; }
+
+    [JsonPropertyName("cadence")]
+    public CadenceStats? Cadence { get; init; }
+
+    [JsonPropertyName("temperature")]
+    public TemperatureStats? Temperature { get; init; }
+}
+
+public sealed class HeartRateStats
+{
+    [JsonPropertyName("avg_bpm")]
+    public double AvgBpm { get; init; }
+
+    [JsonPropertyName("max_bpm")]
+    public int MaxBpm { get; init; }
+
+    [JsonPropertyName("min_bpm")]
+    public int MinBpm { get; init; }
+
+    [JsonPropertyName("zones")]
+    public List<HeartRateZoneInfo>? Zones { get; init; }
+}
+
+public sealed class HeartRateZoneInfo
+{
+    [JsonPropertyName("name")]
+    public string Name { get; init; } = "";
+
+    [JsonPropertyName("min_percent")]
+    public int MinPercent { get; init; }
+
+    [JsonPropertyName("max_percent")]
+    public int MaxPercent { get; init; }
+
+    [JsonPropertyName("duration")]
+    public DurationValue Duration { get; init; } = new();
+}
+
+public sealed class PowerStats
+{
+    [JsonPropertyName("avg_watts")]
+    public double AvgWatts { get; init; }
+
+    [JsonPropertyName("max_watts")]
+    public int MaxWatts { get; init; }
+
+    [JsonPropertyName("normalized_power_watts")]
+    public double NormalizedPowerWatts { get; init; }
+}
+
+public sealed class CadenceStats
+{
+    [JsonPropertyName("avg_rpm")]
+    public double AvgRpm { get; init; }
+
+    [JsonPropertyName("max_rpm")]
+    public int MaxRpm { get; init; }
+}
+
+public sealed class TemperatureStats
+{
+    [JsonPropertyName("avg_celsius")]
+    public double AvgCelsius { get; init; }
+
+    [JsonPropertyName("min_celsius")]
+    public double MinCelsius { get; init; }
+
+    [JsonPropertyName("max_celsius")]
+    public double MaxCelsius { get; init; }
 }
 
 public sealed class DurationValue

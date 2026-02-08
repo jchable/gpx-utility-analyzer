@@ -8,7 +8,7 @@ A toolkit for analyzing, processing and transforming GPX files.
 
 ### [cli/](cli/) — gpx-analyzer (Go)
 
-Go CLI tool for analyzing GPX files: distance, elevation gain/loss, speed, stop detection, time-based splitting, file merging. Includes altitude correction using a digital elevation model (SRTM).
+Go CLI tool for analyzing GPX files: distance, elevation gain/loss, speed, stop detection, biometrics (heart rate, power, cadence, temperature from GPX extensions), time-based splitting, file merging. Includes altitude correction using a digital elevation model (SRTM).
 
 ```bash
 cd cli

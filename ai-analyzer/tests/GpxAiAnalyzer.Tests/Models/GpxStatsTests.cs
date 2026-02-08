@@ -68,12 +68,79 @@ public class GpxStatsTests
         Assert.Equal(2, stats.SegmentCount);
     }
 
+    [Fact]
+    public void Deserialize_SampleJson_NoBiometrics_ReturnsNull()
+    {
+        var stats = LoadFixture();
+        Assert.Null(stats.HeartRate);
+        Assert.Null(stats.Power);
+        Assert.Null(stats.Cadence);
+        Assert.Null(stats.Temperature);
+    }
+
+    [Fact]
+    public void Deserialize_BiometricsJson_ReturnsHeartRate()
+    {
+        var stats = LoadBiometricsFixture();
+        Assert.NotNull(stats.HeartRate);
+        Assert.Equal(170, stats.HeartRate.MaxBpm);
+        Assert.Equal(120, stats.HeartRate.MinBpm);
+        Assert.True(stats.HeartRate.AvgBpm > 140);
+    }
+
+    [Fact]
+    public void Deserialize_BiometricsJson_ReturnsHRZones()
+    {
+        var stats = LoadBiometricsFixture();
+        Assert.NotNull(stats.HeartRate?.Zones);
+        Assert.Equal(5, stats.HeartRate!.Zones!.Count);
+        Assert.Equal("Z3 (Tempo)", stats.HeartRate.Zones[2].Name);
+        Assert.Equal(120, stats.HeartRate.Zones[2].Duration.Seconds);
+    }
+
+    [Fact]
+    public void Deserialize_BiometricsJson_ReturnsPower()
+    {
+        var stats = LoadBiometricsFixture();
+        Assert.NotNull(stats.Power);
+        Assert.Equal(280, stats.Power.MaxWatts);
+        Assert.Equal(240, stats.Power.AvgWatts, precision: 0);
+        Assert.True(stats.Power.NormalizedPowerWatts > 0);
+    }
+
+    [Fact]
+    public void Deserialize_BiometricsJson_ReturnsCadence()
+    {
+        var stats = LoadBiometricsFixture();
+        Assert.NotNull(stats.Cadence);
+        Assert.Equal(95, stats.Cadence.MaxRpm);
+        Assert.Equal(88.33, stats.Cadence.AvgRpm, precision: 1);
+    }
+
+    [Fact]
+    public void Deserialize_BiometricsJson_ReturnsTemperature()
+    {
+        var stats = LoadBiometricsFixture();
+        Assert.NotNull(stats.Temperature);
+        Assert.Equal(18.5, stats.Temperature.MinCelsius);
+        Assert.Equal(20.5, stats.Temperature.MaxCelsius);
+        Assert.Equal(19.55, stats.Temperature.AvgCelsius, precision: 1);
+    }
+
+    private static readonly JsonSerializerOptions JsonOpts = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
     private static GpxStats LoadFixture()
     {
         var json = File.ReadAllText(FixturePath);
-        return JsonSerializer.Deserialize<GpxStats>(json, new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true
-        })!;
+        return JsonSerializer.Deserialize<GpxStats>(json, JsonOpts)!;
+    }
+
+    private static GpxStats LoadBiometricsFixture()
+    {
+        var json = File.ReadAllText(Path.Combine("testdata", "sample-stats-biometrics.json"));
+        return JsonSerializer.Deserialize<GpxStats>(json, JsonOpts)!;
     }
 }

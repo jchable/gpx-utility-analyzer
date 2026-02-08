@@ -1,6 +1,6 @@
 # gpx-analyzer
 
-Go command-line tool for analyzing GPX files: distance, elevation gain/loss, speed, stop detection, time-based splitting and file merging. Includes elevation smoothing and automatic correction using a digital elevation model (SRTM with auto-download of tiles).
+Go command-line tool for analyzing GPX files: distance, elevation gain/loss, speed, stop detection, biometrics (heart rate, power, cadence, temperature from GPX extensions), time-based splitting and file merging. Includes elevation smoothing and automatic correction using a digital elevation model (SRTM with auto-download of tiles).
 
 ## Installation
 
@@ -46,6 +46,12 @@ gpx-analyzer analyze my-hike.gpx --format json
 
 ```bash
 gpx-analyzer analyze trace.gpx --smoothing heavy
+```
+
+**Analyze a ride with biometrics and HR zones:**
+
+```bash
+gpx-analyzer analyze ride.gpx --max-hr 185 --preset cycling
 ```
 
 **Constant-slope segment algorithm (best D+ with DEM):**

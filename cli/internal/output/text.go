@@ -19,6 +19,7 @@ func (f *TextFormatter) Format(w io.Writer, filename string, s stats.Summary, cf
 	f.printDistanceTable(w, s)
 	f.printElevationTable(w, s)
 	f.printStopTable(w, s, cfg)
+	f.printBiometricsTable(w, s)
 
 	return nil
 }
@@ -89,6 +90,56 @@ func (f *TextFormatter) printStopTable(w io.Writer, s stats.Summary, cfg stats.S
 		})
 	}
 	table.Bulk(data)
+	table.Render()
+}
+
+func (f *TextFormatter) printBiometricsTable(w io.Writer, s stats.Summary) {
+	bio := s.Biometrics
+	hasAny := bio.HeartRate != nil || bio.Power != nil ||
+		bio.Cadence != nil || bio.Temperature != nil
+	if !hasAny {
+		return
+	}
+
+	fmt.Fprintln(w, "\nBiometrics")
+	table := newTable(w)
+	var rows [][]string
+
+	if hr := bio.HeartRate; hr != nil {
+		rows = append(rows,
+			[]string{"Avg Heart Rate", fmt.Sprintf("%.0f bpm", hr.Avg)},
+			[]string{"Max Heart Rate", fmt.Sprintf("%d bpm", hr.Max)},
+			[]string{"Min Heart Rate", fmt.Sprintf("%d bpm", hr.Min)},
+		)
+		for _, z := range hr.Zones {
+			rows = append(rows, []string{
+				fmt.Sprintf("  %s", z.Name),
+				FormatDuration(z.Duration),
+			})
+		}
+	}
+	if pw := bio.Power; pw != nil {
+		rows = append(rows,
+			[]string{"Avg Power", fmt.Sprintf("%.0f W", pw.Avg)},
+			[]string{"Max Power", fmt.Sprintf("%d W", pw.Max)},
+			[]string{"Normalized Power", fmt.Sprintf("%.0f W", pw.NormalizedPower)},
+		)
+	}
+	if cad := bio.Cadence; cad != nil {
+		rows = append(rows,
+			[]string{"Avg Cadence", fmt.Sprintf("%.0f rpm", cad.Avg)},
+			[]string{"Max Cadence", fmt.Sprintf("%d rpm", cad.Max)},
+		)
+	}
+	if temp := bio.Temperature; temp != nil {
+		rows = append(rows,
+			[]string{"Avg Temperature", fmt.Sprintf("%.1f °C", temp.Avg)},
+			[]string{"Min Temperature", fmt.Sprintf("%.1f °C", temp.Min)},
+			[]string{"Max Temperature", fmt.Sprintf("%.1f °C", temp.Max)},
+		)
+	}
+
+	table.Bulk(rows)
 	table.Render()
 }
 

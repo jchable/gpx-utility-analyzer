@@ -47,6 +47,7 @@ gpx-analyzer analyze [files...] [flags]
 | `--stop-speed` | Override max speed for a stop (m/s) | _(per preset)_ |
 | `--stop-duration` | Override min duration for a stop (e.g., `2m`) | _(per preset)_ |
 | `--export` | Export reprocessed GPX files (DEM + smoothing) to this directory | _(disabled)_ |
+| `--max-hr` | Maximum heart rate (bpm) for HR zone calculation | `0` _(disabled)_ |
 
 ### Examples
 
@@ -173,6 +174,7 @@ gpx-analyzer split <file> [flags]
 | `--preset` | Stop detection preset | `hiking` |
 | `--stop-speed` | Override max speed for stop (m/s) | _(per preset)_ |
 | `--stop-duration` | Override min duration for stop | _(per preset)_ |
+| `--max-hr` | Maximum heart rate (bpm) for HR zone calculation | `0` _(disabled)_ |
 
 ### Examples
 
@@ -254,6 +256,7 @@ gpx-analyzer merge [files...] [flags]
 | `--seg-min-length` | Segments: minimum segment length (if `--analyze`) | `200.0` |
 | `--seg-max-deviation` | Segments: max RMS residual (if `--analyze`) | `2.0` |
 | `--preset` | Stop detection preset (if `--analyze`) | `hiking` |
+| `--max-hr` | Maximum heart rate (bpm) for HR zone calculation (if `--analyze`) | `0` _(disabled)_ |
 
 ### Examples
 
@@ -299,6 +302,7 @@ gpx-analyzer merge ./stages/ -o full.gpx --analyze --format json --dem-dir ./srt
 | **Speed** | Average speed, average moving speed, max speed |
 | **Pace** | Average pace (min/km), average moving pace |
 | **Stops** | Number of stops, total duration, longest stop, average duration |
+| **Biometrics** | Heart rate (avg/max/min, HR zones with `--max-hr`), power (avg/max, normalized power), cadence (avg/max), temperature (avg/min/max) |
 | **Metadata** | Number of points, number of segments, point density per km |
 
 ---
@@ -460,6 +464,66 @@ Track smoothing (lat/lon) → DEM correction → Elevation smoothing (--smoothin
 | `cycling` | 1.0 m/s (3.6 km/h) | 30 sec | Cycling, mountain biking |
 
 A stop is detected when the computed speed (distance between points / elapsed time) remains below the threshold for at least the minimum duration. Thresholds can be customized with `--stop-speed` and `--stop-duration`.
+
+---
+
+## Biometrics
+
+When a GPX file contains extension data (e.g., Garmin TrackPointExtension v1/v2), the CLI automatically extracts and computes biometric statistics.
+
+### Supported extensions
+
+| Source | Data |
+|--------|------|
+| Garmin TrackPointExtension v1/v2 (`<gpxtpx:hr>`, `<gpxtpx:cad>`, `<gpxtpx:atemp>`) | Heart rate, cadence, temperature |
+| Standard `<power>` element | Power (watts) |
+
+### Computed biometric metrics
+
+| Metric | Statistics |
+|--------|-----------|
+| **Heart Rate** | Average, max, min (bpm). HR zones (Z1-Z5) when `--max-hr` is set |
+| **Power** | Average, max (watts), normalized power (NP) |
+| **Cadence** | Average, max (rpm) |
+| **Temperature** | Average, min, max (°C) |
+
+### HR zones
+
+When `--max-hr` is provided, heart rate zones are computed based on percentage of max HR:
+
+| Zone | Range | Description |
+|------|-------|-------------|
+| Z1 | 50-60% | Recovery |
+| Z2 | 60-70% | Endurance |
+| Z3 | 70-80% | Tempo |
+| Z4 | 80-90% | Threshold |
+| Z5 | 90%+ | VO2max |
+
+### Normalized Power (NP)
+
+Computed using a 30-second rolling average of power data, raised to the 4th power, averaged, then taking the 4th root. This metric reflects the physiological cost of variable-intensity efforts.
+
+### Examples
+
+**Analyze a cycling ride with HR zones:**
+
+```bash
+gpx-analyzer analyze ride.gpx --max-hr 185 --preset cycling
+```
+
+**Extract biometrics in JSON:**
+
+```bash
+gpx-analyzer analyze ride.gpx --max-hr 190 --format json | jq '.heart_rate'
+```
+
+**Split a ride and track biometrics per segment:**
+
+```bash
+gpx-analyzer split ride.gpx --interval 1h --max-hr 185 --preset cycling
+```
+
+If the GPX file does not contain extension data, biometric sections are simply omitted from the output (both text and JSON).
 
 ---
 

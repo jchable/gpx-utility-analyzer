@@ -52,6 +52,43 @@ type jsonSummary struct {
 	AvgStopDuration jsonDur    `json:"avg_stop_duration"`
 	LongestStop     *jsonStop  `json:"longest_stop,omitempty"`
 	Stops           []jsonStop `json:"stops,omitempty"`
+
+	// Biometrics (optional, omitted if no extension data)
+	HeartRate   *jsonHeartRate   `json:"heart_rate,omitempty"`
+	Power       *jsonPower       `json:"power,omitempty"`
+	Cadence     *jsonCadence     `json:"cadence,omitempty"`
+	Temperature *jsonTemperature `json:"temperature,omitempty"`
+}
+
+type jsonHeartRate struct {
+	AvgBpm float64      `json:"avg_bpm"`
+	MaxBpm int          `json:"max_bpm"`
+	MinBpm int          `json:"min_bpm"`
+	Zones  []jsonHRZone `json:"zones,omitempty"`
+}
+
+type jsonHRZone struct {
+	Name       string  `json:"name"`
+	MinPercent int     `json:"min_percent"`
+	MaxPercent int     `json:"max_percent"`
+	Duration   jsonDur `json:"duration"`
+}
+
+type jsonPower struct {
+	AvgWatts        float64 `json:"avg_watts"`
+	MaxWatts        int     `json:"max_watts"`
+	NormalizedPower float64 `json:"normalized_power_watts"`
+}
+
+type jsonCadence struct {
+	AvgRpm float64 `json:"avg_rpm"`
+	MaxRpm int     `json:"max_rpm"`
+}
+
+type jsonTemperature struct {
+	AvgCelsius float64 `json:"avg_celsius"`
+	MinCelsius float64 `json:"min_celsius"`
+	MaxCelsius float64 `json:"max_celsius"`
 }
 
 type jsonDur struct {
@@ -101,6 +138,27 @@ func (f *JSONFormatter) Format(w io.Writer, filename string, s stats.Summary, _ 
 
 	for _, stop := range s.Stops {
 		js.Stops = append(js.Stops, *toJSONStop(&stop))
+	}
+
+	// Biometrics
+	if hr := s.Biometrics.HeartRate; hr != nil {
+		jhr := &jsonHeartRate{AvgBpm: hr.Avg, MaxBpm: hr.Max, MinBpm: hr.Min}
+		for _, z := range hr.Zones {
+			jhr.Zones = append(jhr.Zones, jsonHRZone{
+				Name: z.Name, MinPercent: z.MinPercent, MaxPercent: z.MaxPercent,
+				Duration: toDur(z.Duration),
+			})
+		}
+		js.HeartRate = jhr
+	}
+	if pw := s.Biometrics.Power; pw != nil {
+		js.Power = &jsonPower{AvgWatts: pw.Avg, MaxWatts: pw.Max, NormalizedPower: pw.NormalizedPower}
+	}
+	if cad := s.Biometrics.Cadence; cad != nil {
+		js.Cadence = &jsonCadence{AvgRpm: cad.Avg, MaxRpm: cad.Max}
+	}
+	if temp := s.Biometrics.Temperature; temp != nil {
+		js.Temperature = &jsonTemperature{AvgCelsius: temp.Avg, MinCelsius: temp.Min, MaxCelsius: temp.Max}
 	}
 
 	enc := json.NewEncoder(w)
