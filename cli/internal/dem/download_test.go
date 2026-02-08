@@ -152,8 +152,8 @@ func TestSource_AutoDownloadSuccess(t *testing.T) {
 		t.Errorf("expected elevation 800, got %f", ele)
 	}
 
-	// Verify tile is cached on disk
-	cachePath := filepath.Join(cacheDir, "N48E002.hgt")
+	// Verify tile is cached on disk (hierarchical path)
+	cachePath := TileCachePath(cacheDir, "N48E002")
 	if _, err := os.Stat(cachePath); err != nil {
 		t.Errorf("expected cached tile at %s: %v", cachePath, err)
 	}

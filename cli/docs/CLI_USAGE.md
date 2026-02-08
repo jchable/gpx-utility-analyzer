@@ -15,6 +15,7 @@ Complete documentation of all commands, flags and usage examples.
 - [GPS track smoothing](#gps-track-smoothing---track-smoothing)
 - [Stop detection presets](#stop-detection-presets)
 - [Common use cases](#common-use-cases)
+- [Performance tuning](#performance-tuning)
 
 ---
 
@@ -165,6 +166,8 @@ gpx-analyzer split <file> [flags]
 | `--dem-dir` | SRTM tiles directory | _(disabled)_ |
 | `--dem-auto-download` | Automatically download missing SRTM tiles | `true` |
 | `--dem-cache` | Cache directory for downloaded tiles | _(OS cache dir)_ |
+| `--dem-max-memory` | Maximum memory (MB) for loaded DEM tiles (0 = no limit) | `0` |
+| `--dem-skip-validation` | Skip post-download DEM tile validation (faster) | `false` |
 | `--elevation-threshold` | Elevation noise threshold (meters) | `2.0` |
 | `--elevation-algo` | Elevation gain algorithm: `threshold`, `douglas-peucker`, `segments` | `threshold` |
 | `--track-smoothing` | GPS track lat/lon smoothing | `none` |
@@ -249,6 +252,8 @@ gpx-analyzer merge [files...] [flags]
 | `--dem-dir` | SRTM tiles directory (if `--analyze`) | _(disabled)_ |
 | `--dem-auto-download` | Automatically download missing SRTM tiles | `true` |
 | `--dem-cache` | Cache directory for downloaded tiles | _(OS cache dir)_ |
+| `--dem-max-memory` | Maximum memory (MB) for loaded DEM tiles (0 = no limit) | `0` |
+| `--dem-skip-validation` | Skip post-download DEM tile validation (faster) | `false` |
 | `--elevation-threshold` | Elevation noise threshold (if `--analyze`) | `2.0` |
 | `--elevation-algo` | Elevation gain algorithm (if `--analyze`) | `threshold` |
 | `--track-smoothing` | GPS track lat/lon smoothing (if `--analyze`) | `none` |
@@ -611,3 +616,87 @@ The exported file contains coordinates and elevations after the full reprocessin
 ```bash
 gpx-analyzer analyze mountain-pass-ride.gpx --preset cycling --smoothing light
 ```
+
+---
+
+## Performance tuning
+
+For long tracks (hundreds of km, thousands of points), processing time is dominated by DEM tile downloads and elevation computations. Here are several options to speed up analysis.
+
+### Skip DEM correction entirely
+
+The fastest option: rely on GPS elevation only.
+
+```bash
+gpx-analyzer analyze trace.gpx --dem-auto-download=false
+```
+
+### Skip tile validation
+
+By default, each downloaded tile is validated (scanned for non-void data). On trusted networks or with pre-downloaded tiles, skip this step:
+
+```bash
+gpx-analyzer analyze trace.gpx --dem-skip-validation
+```
+
+### Disable smoothing
+
+Both elevation smoothing and track smoothing add processing overhead. Disable them for raw analysis:
+
+```bash
+gpx-analyzer analyze trace.gpx --smoothing none --track-smoothing none
+```
+
+### Use the simplest elevation algorithm
+
+The `threshold` algorithm (default) is the fastest. `douglas-peucker` and `segments` are more accurate but slower:
+
+```bash
+gpx-analyzer analyze trace.gpx --elevation-algo threshold
+```
+
+### Limit DEM memory usage
+
+For systems with limited RAM, set a memory cap. If the required tiles exceed the limit, the analysis stops with an explicit error rather than consuming all available memory:
+
+```bash
+# Allow up to 100 MB for DEM tiles (~35 SRTM3 tiles or ~4 SRTM1 tiles)
+gpx-analyzer analyze trace.gpx --dem-max-memory 100
+```
+
+Each SRTM3 tile uses ~2.8 MB in memory, and each SRTM1 tile uses ~25 MB.
+
+### Use pre-downloaded tiles
+
+Avoid download latency by pre-downloading tiles for your area:
+
+```bash
+# First run: tiles are downloaded and cached automatically
+gpx-analyzer analyze region-track.gpx
+
+# Subsequent runs: cached tiles are reused instantly
+gpx-analyzer analyze another-track.gpx
+```
+
+Tiles are cached in a hierarchical structure (e.g. `N48/N48E002.hgt`) under the OS cache directory. Use `--dem-cache` to point to a custom location.
+
+### Combine options for maximum speed
+
+```bash
+gpx-analyzer analyze trace.gpx \
+  --smoothing none \
+  --track-smoothing none \
+  --dem-skip-validation \
+  --elevation-algo threshold
+```
+
+### Summary of performance-related flags
+
+| Flag | Effect on speed | Trade-off |
+|------|----------------|----------|
+| `--dem-auto-download=false` | ⭐⭐⭐ Fastest | No DEM correction, GPS elevation only |
+| `--dem-skip-validation` | ⭐ Slight | No corrupt tile detection |
+| `--smoothing none` | ⭐ Slight | More noise in elevation data |
+| `--track-smoothing none` | ⭐ Slight | More horizontal GPS noise |
+| `--elevation-algo threshold` | ⭐ (vs segments) | Less accurate D+/D- |
+| `--dem-max-memory N` | N/A (safety) | Prevents OOM on large tracks |

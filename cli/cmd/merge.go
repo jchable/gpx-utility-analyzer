@@ -47,6 +47,10 @@ func init() {
 		"Cache directory for auto-downloaded SRTM tiles (default: OS cache dir)")
 	mergeCmd.Flags().BoolVar(&demAutoDownload, "dem-auto-download", true,
 		"Auto-download missing SRTM tiles from the internet")
+	mergeCmd.Flags().IntVar(&demMaxMemoryFlag, "dem-max-memory", 0,
+		"Maximum memory (MB) for loaded DEM tiles (0 = no limit)")
+	mergeCmd.Flags().BoolVar(&demSkipValidation, "dem-skip-validation", false,
+		"Skip post-download DEM tile validation (faster)")
 	mergeCmd.Flags().StringVar(&elevAlgoFlag, "elevation-algo", "threshold",
 		"Elevation algorithm: threshold, douglas-peucker, or segments")
 	mergeCmd.Flags().StringVar(&trackSmoothFlag, "track-smoothing", "none",
@@ -99,7 +103,10 @@ func runMerge(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		cfg := buildComputeConfig()
-		summary := stats.Compute(points, merged.SegmentCount(), cfg)
+		summary, err := stats.Compute(points, merged.SegmentCount(), cfg)
+		if err != nil {
+			return fmt.Errorf("computing stats for merged file: %w", err)
+		}
 
 		formatter, err := output.NewFormatter(formatFlag)
 		if err != nil {

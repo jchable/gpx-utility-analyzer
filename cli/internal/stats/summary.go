@@ -1,6 +1,7 @@
 package stats
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/jchable/gpx-utility-analyzer/cli/internal/dem"
@@ -45,13 +46,13 @@ type Summary struct {
 
 // ComputeConfig holds parameters for the summary computation.
 type ComputeConfig struct {
-	ElevationThreshold float64                  // meters, for noise filtering
-	StopConfig         StopConfig               // stop detection parameters
-	SmoothingLevel     elevation.SmoothingLevel // elevation smoothing preset
-	DEMSource          *dem.Source              // DEM tile source (nil = disabled)
-	ElevationCfg       ElevationConfig                // elevation algorithm config
-	TrackSmoothing     elevation.TrackSmoothingLevel   // lat/lon smoothing before DEM
-	BiometricsCfg      BiometricsConfig               // biometrics computation config
+	ElevationThreshold float64                       // meters, for noise filtering
+	StopConfig         StopConfig                    // stop detection parameters
+	SmoothingLevel     elevation.SmoothingLevel      // elevation smoothing preset
+	DEMSource          *dem.Source                   // DEM tile source (nil = disabled)
+	ElevationCfg       ElevationConfig               // elevation algorithm config
+	TrackSmoothing     elevation.TrackSmoothingLevel // lat/lon smoothing before DEM
+	BiometricsCfg      BiometricsConfig              // biometrics computation config
 }
 
 // DefaultConfig returns a default computation configuration using the hiking preset.
@@ -64,19 +65,23 @@ func DefaultConfig() ComputeConfig {
 }
 
 // Compute calculates all statistics from the given trackpoints.
-func Compute(points []gpx.TrackPoint, segmentCount int, cfg ComputeConfig) Summary {
+// Returns an error if DEM tile preloading fails (e.g. memory limit exceeded).
+func Compute(points []gpx.TrackPoint, segmentCount int, cfg ComputeConfig) (Summary, error) {
 	s := Summary{
 		PointCount:   len(points),
 		SegmentCount: segmentCount,
 	}
 
 	if len(points) == 0 {
-		return s
+		return s, nil
 	}
 
-	// Pre-process: track smoothing (lat/lon) → DEM correction → elevation smoothing
+	// Pre-process: track smoothing (lat/lon) → preload DEM tiles → DEM correction → elevation smoothing
 	elevation.SmoothTrack(points, cfg.TrackSmoothing)
 	if cfg.DEMSource != nil {
+		if err := dem.PreloadTiles(points, cfg.DEMSource); err != nil {
+			return s, fmt.Errorf("DEM preload: %w", err)
+		}
 		dem.CorrectElevations(points, cfg.DEMSource)
 	}
 	elevation.SmoothElevations(points, cfg.SmoothingLevel)
@@ -132,5 +137,5 @@ func Compute(points []gpx.TrackPoint, segmentCount int, cfg ComputeConfig) Summa
 	// Biometrics
 	s.Biometrics = ComputeBiometrics(points, cfg.BiometricsCfg)
 
-	return s
+	return s, nil
 }

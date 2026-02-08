@@ -25,6 +25,8 @@ var (
 	demDirFlag        string
 	demCacheFlag      string
 	demAutoDownload   bool
+	demMaxMemoryFlag  int
+	demSkipValidation bool
 	elevAlgoFlag      string
 	trackSmoothFlag   string
 	dpEpsilonFlag     float64
@@ -59,6 +61,10 @@ func init() {
 		"Cache directory for auto-downloaded SRTM tiles (default: OS cache dir)")
 	analyzeCmd.Flags().BoolVar(&demAutoDownload, "dem-auto-download", true,
 		"Auto-download missing SRTM tiles from the internet")
+	analyzeCmd.Flags().IntVar(&demMaxMemoryFlag, "dem-max-memory", 0,
+		"Maximum memory (MB) for loaded DEM tiles (0 = no limit)")
+	analyzeCmd.Flags().BoolVar(&demSkipValidation, "dem-skip-validation", false,
+		"Skip post-download DEM tile validation (faster)")
 	analyzeCmd.Flags().StringVar(&elevAlgoFlag, "elevation-algo", "threshold",
 		"Elevation algorithm: threshold, douglas-peucker, or segments")
 	analyzeCmd.Flags().StringVar(&trackSmoothFlag, "track-smoothing", "none",
@@ -111,7 +117,10 @@ func analyzeFile(path string, formatter output.Formatter, cfg stats.ComputeConfi
 	}
 
 	// Compute modifies points in place (track smoothing, DEM, elevation smoothing)
-	summary := stats.Compute(points, g.SegmentCount(), cfg)
+	summary, err := stats.Compute(points, g.SegmentCount(), cfg)
+	if err != nil {
+		return fmt.Errorf("computing stats for %s: %w", path, err)
+	}
 
 	if err := formatter.Format(os.Stdout, path, summary, cfg.StopConfig); err != nil {
 		return err
@@ -167,6 +176,9 @@ func buildComputeConfig() stats.ComputeConfig {
 		demSrc = dem.NewSourceWithCache(demDirFlag, cacheDir, false)
 	case demAutoDownload:
 		demSrc = dem.NewAutoSource(cacheDir)
+	}
+	if demSrc != nil {
+		demSrc.WithMaxMemory(demMaxMemoryFlag).WithSkipValidation(demSkipValidation)
 	}
 
 	// Elevation algorithm

@@ -53,6 +53,10 @@ func init() {
 		"Cache directory for auto-downloaded SRTM tiles (default: OS cache dir)")
 	splitCmd.Flags().BoolVar(&demAutoDownload, "dem-auto-download", true,
 		"Auto-download missing SRTM tiles from the internet")
+	splitCmd.Flags().IntVar(&demMaxMemoryFlag, "dem-max-memory", 0,
+		"Maximum memory (MB) for loaded DEM tiles (0 = no limit)")
+	splitCmd.Flags().BoolVar(&demSkipValidation, "dem-skip-validation", false,
+		"Skip post-download DEM tile validation (faster)")
 	splitCmd.Flags().StringVar(&elevAlgoFlag, "elevation-algo", "threshold",
 		"Elevation algorithm: threshold, douglas-peucker, or segments")
 	splitCmd.Flags().StringVar(&trackSmoothFlag, "track-smoothing", "none",
@@ -111,7 +115,11 @@ func runSplit(cmd *cobra.Command, args []string) error {
 		// Compute and display stats
 		segPoints := make([]gpx.TrackPoint, len(seg.Points))
 		copy(segPoints, seg.Points)
-		summary := stats.Compute(segPoints, 1, cfg)
+		summary, err := stats.Compute(segPoints, 1, cfg)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error computing stats for segment %d: %v\n", seg.Index+1, err)
+			continue
+		}
 
 		fmt.Fprintf(os.Stdout, "--- Segment %d: %s → %s ---\n",
 			seg.Index+1,

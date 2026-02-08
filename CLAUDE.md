@@ -41,13 +41,14 @@ Requires Go 1.25.7+.
 **Core processing pipeline** (in `stats.Compute()`):
 
 1. Track smoothing (lat/lon) → `internal/elevation/tracksmooth.go`
-2. DEM correction (SRTM) → `internal/dem/`
-3. Speed enrichment → `internal/stats/speed.go`
-4. Elevation smoothing → `internal/elevation/smooth.go`
-5. Distance calculation (Haversine) → `internal/stats/distance.go`
-6. Elevation gain/loss via algorithm → `internal/stats/elevation.go`
-7. Stop detection → `internal/stats/stops.go`
-8. Biometrics computation (HR, power, cadence, temperature) → `internal/stats/biometrics.go`
+2. DEM preload (parallel download + memory check) → `internal/dem/preload.go`
+3. DEM correction (SRTM, cross-tile interpolation) → `internal/dem/correct.go`, `internal/dem/source.go`
+4. Speed enrichment → `internal/stats/speed.go`
+5. Elevation smoothing → `internal/elevation/smooth.go`
+6. Distance calculation (Haversine) → `internal/stats/distance.go`
+7. Elevation gain/loss via algorithm → `internal/stats/elevation.go`
+8. Stop detection → `internal/stats/stops.go`
+9. Biometrics computation (HR, power, cadence, temperature) → `internal/stats/biometrics.go`
 
 **Key packages**: `internal/gpx/` (parsing/model/export), `internal/stats/` (computation), `internal/elevation/` (smoothing), `internal/dem/` (SRTM tiles), `internal/output/` (Formatter interface: text/JSON).
 
