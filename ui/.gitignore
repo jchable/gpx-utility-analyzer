@@ -1,0 +1,9 @@
+# API
+api/bin/
+api/obj/
+api/data/
+
+# Client
+client/node_modules/
+client/dist/
+client/.env.local
