@@ -2,6 +2,8 @@
 
 A toolkit for analyzing, processing and transforming GPX files.
 
+**Published online documentation**: [https://jchable.github.io/gpx-utility-analyzer/](https://jchable.github.io/gpx-utility-analyzer/)
+
 ## Projects
 
 ### [cli/](cli/) — gpx-analyzer (Go)
