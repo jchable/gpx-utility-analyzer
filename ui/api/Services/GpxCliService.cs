@@ -21,9 +21,12 @@ public class GpxCliService
         _logger = logger;
     }
 
-    public async Task<GpxStats> AnalyzeAsync(string gpxFilePath, CancellationToken ct = default)
+    public async Task<GpxStats> AnalyzeAsync(string gpxFilePath, string? exportDir = null, CancellationToken ct = default)
     {
         var args = $"analyze \"{gpxFilePath}\" --format json --preset {_defaultPreset} --smoothing {_defaultSmoothing} --track-smoothing {_defaultTrackSmoothing}";
+
+        if (!string.IsNullOrEmpty(exportDir))
+            args += $" --export \"{exportDir}\"";
 
         _logger.LogInformation("Running: {Binary} {Args}", _binaryPath, args);
 

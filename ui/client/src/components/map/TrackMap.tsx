@@ -151,8 +151,13 @@ export default function TrackMap({
     if (!coordinates || coordinates.length === 0) return;
 
     coordsRef.current = coordinates;
-    if (mapRef.current?.isStyleLoaded()) {
-      addTrackLayer(mapRef.current, coordinates);
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (map.isStyleLoaded()) {
+      addTrackLayer(map, coordinates);
+    } else {
+      map.once('style.load', () => addTrackLayer(map, coordinates));
     }
   }, [coordinates, addTrackLayer]);
 

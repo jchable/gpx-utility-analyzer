@@ -51,17 +51,63 @@ public class ActivityProcessingService
             activity.UpdatedAt = DateTime.UtcNow;
             await db.SaveChangesAsync(ct);
 
-            var gpxFullPath = _storage.GetFullPath(activity.GpxFilePath);
+            // Determine which GPX to analyze: original archive (reanalyze) or uploaded file (first run)
+            string gpxToAnalyze;
+            string? tempExtractedPath = null;
+            if (_storage.HasOriginalArchive(activity.GpxFilePath))
+            {
+                // Reanalyze: extract original from zip
+                tempExtractedPath = _storage.ExtractOriginalToTemp(activity.GpxFilePath);
+                gpxToAnalyze = tempExtractedPath;
+                _logger.LogInformation("[{Id}] Reanalyze: extracted original from archive", activityId);
+            }
+            else
+            {
+                gpxToAnalyze = _storage.GetFullPath(activity.GpxFilePath);
+            }
+
             _logger.LogInformation("[{Id}] Step 1/2: Running Go CLI analysis on {Path}", activityId, activity.GpxFilePath);
 
+            // Create temp export directory for the processed GPX
+            var exportDir = Path.Combine(Path.GetTempPath(), $"gpx-export-{Guid.NewGuid()}");
+            Directory.CreateDirectory(exportDir);
+
             var stepSw = Stopwatch.StartNew();
-            var stats = await _cliService.AnalyzeAsync(gpxFullPath, ct);
+            var stats = await _cliService.AnalyzeAsync(gpxToAnalyze, exportDir, ct);
             stepSw.Stop();
 
             _logger.LogInformation("[{Id}] Go CLI completed in {Elapsed:F1}s — {Distance:F1} km, D+{Gain:F0}m, D-{Loss:F0}m, moving {MovingTime}",
                 activityId, stepSw.Elapsed.TotalSeconds,
                 stats.TotalDistanceKm, stats.ElevationGainM, stats.ElevationLossM,
                 TimeSpan.FromSeconds(stats.MovingTime.Seconds).ToString(@"hh\:mm\:ss"));
+
+            // Archive original GPX as zip (only on first processing, skipped if already archived)
+            if (tempExtractedPath is null)
+            {
+                _storage.ArchiveOriginalAsZip(activity.GpxFilePath);
+                _logger.LogInformation("[{Id}] Archived original GPX as zip", activityId);
+            }
+
+            // Move processed GPX to replace the original path
+            var exportedFiles = Directory.GetFiles(exportDir, "*_processed.gpx");
+            if (exportedFiles.Length > 0)
+            {
+                _storage.ReplaceWithProcessed(activity.GpxFilePath, exportedFiles[0]);
+                _logger.LogInformation("[{Id}] Replaced GPX with processed version", activityId);
+            }
+
+            // Cleanup temp directories
+            try
+            {
+                if (Directory.Exists(exportDir))
+                    Directory.Delete(exportDir, recursive: true);
+                if (tempExtractedPath is not null)
+                    Directory.Delete(Path.GetDirectoryName(tempExtractedPath)!, recursive: true);
+            }
+            catch (Exception cleanupEx)
+            {
+                _logger.LogWarning(cleanupEx, "[{Id}] Temp cleanup failed (non-critical)", activityId);
+            }
 
             // Store stats and populate summary fields
             activity.StatsJson = JsonSerializer.Serialize(stats);

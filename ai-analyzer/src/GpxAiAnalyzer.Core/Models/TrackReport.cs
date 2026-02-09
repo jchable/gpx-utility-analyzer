@@ -1,5 +1,7 @@
 namespace GpxAiAnalyzer.Core.Models;
 
+using System.Globalization;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 /// <summary>
@@ -44,9 +46,11 @@ public sealed class KeySegment
     public string Description { get; init; } = "";
 
     [JsonPropertyName("elevation_change")]
+    [JsonConverter(typeof(LenientDoubleConverter))]
     public double? ElevationChange { get; init; }
 
     [JsonPropertyName("distance_km")]
+    [JsonConverter(typeof(LenientDoubleConverter))]
     public double? DistanceKm { get; init; }
 }
 
@@ -59,5 +63,64 @@ public sealed class EffortEstimate
     public string EstimatedDuration { get; init; } = "";
 
     [JsonPropertyName("calorie_estimate")]
+    [JsonConverter(typeof(LenientIntConverter))]
     public int? CalorieEstimate { get; init; }
+}
+
+/// <summary>
+/// Lenient converter for nullable double: handles numbers, numeric strings, and non-numeric strings (returns null).
+/// </summary>
+public sealed class LenientDoubleConverter : JsonConverter<double?>
+{
+    public override double? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.Number)
+            return reader.GetDouble();
+        if (reader.TokenType == JsonTokenType.String)
+        {
+            var s = reader.GetString()?.Trim().Replace(",", "");
+            if (double.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out var v))
+                return v;
+            return null;
+        }
+        if (reader.TokenType == JsonTokenType.Null)
+            return null;
+        reader.Skip();
+        return null;
+    }
+
+    public override void Write(Utf8JsonWriter writer, double? value, JsonSerializerOptions options)
+    {
+        if (value.HasValue) writer.WriteNumberValue(value.Value);
+        else writer.WriteNullValue();
+    }
+}
+
+/// <summary>
+/// Lenient converter for nullable int: handles numbers, numeric strings, and non-numeric strings (returns null).
+/// </summary>
+public sealed class LenientIntConverter : JsonConverter<int?>
+{
+    public override int? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.Number)
+            return reader.GetInt32();
+        if (reader.TokenType == JsonTokenType.String)
+        {
+            var s = reader.GetString()?.Trim().Replace(",", "");
+            if (int.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out var v))
+                return v;
+            return null;
+        }
+        if (reader.TokenType == JsonTokenType.Null)
+            return null;
+        reader.Skip();
+        return null;
+    }
+
+    public override void Write(Utf8JsonWriter writer, int? value, JsonSerializerOptions options)
+    {
+        if (value.HasValue) writer.WriteNumberValue(value.Value);
+        else writer.WriteNullValue();
+    }
 }

@@ -125,7 +125,7 @@ public class ActivitiesController : ControllerBase
         var activity = await _db.Activities.FindAsync(id);
         if (activity is null) return NotFound();
 
-        _storage.Delete(activity.GpxFilePath);
+        _storage.DeleteWithOriginal(activity.GpxFilePath);
         _db.Activities.Remove(activity);
         await _db.SaveChangesAsync();
 
