@@ -2,12 +2,19 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import MapViewSwitcher, { type MapView } from './MapViewSwitcher';
+import { parseGpxFull, toCoordinates } from '../../utils/gpx';
+import type { Coordinate } from '../../utils/gpx';
 
 interface TrackMapProps {
-  gpxUrl: string;
+  /** Pre-parsed coordinates (preferred). When provided, gpxUrl fetch is skipped. */
+  coordinates?: Coordinate[];
+  /** Legacy: URL to fetch GPX from. Used only if coordinates is not provided. */
+  gpxUrl?: string;
+  /** External loading state (when coordinates are provided by parent). */
+  externalLoading?: boolean;
+  /** External error state. */
+  externalError?: string | null;
 }
-
-type Coordinate = [number, number, number]; // [lon, lat, ele]
 
 function getMapTilerKey(): string {
   if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_MAPTILER_KEY) {
@@ -18,24 +25,6 @@ function getMapTilerKey(): string {
     return root.dataset.maptilerKey;
   }
   return '';
-}
-
-function parseGpx(xml: string): Coordinate[] {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(xml, 'application/xml');
-  const coords: Coordinate[] = [];
-
-  const trkpts = doc.getElementsByTagName('trkpt');
-  for (let i = 0; i < trkpts.length; i++) {
-    const pt = trkpts[i];
-    const lat = parseFloat(pt.getAttribute('lat') ?? '0');
-    const lon = parseFloat(pt.getAttribute('lon') ?? '0');
-    const eleNode = pt.getElementsByTagName('ele')[0];
-    const ele = eleNode ? parseFloat(eleNode.textContent ?? '0') : 0;
-    coords.push([lon, lat, ele]);
-  }
-
-  return coords;
 }
 
 function computeBounds(coords: Coordinate[]): maplibregl.LngLatBoundsLike {
@@ -81,14 +70,24 @@ function getStyleUrl(view: MapView, key: string): string | maplibregl.StyleSpeci
 const TRACK_SOURCE_ID = 'gpx-track';
 const TRACK_LAYER_ID = 'gpx-track-line';
 
-export default function TrackMap({ gpxUrl }: TrackMapProps) {
+export default function TrackMap({
+  coordinates,
+  gpxUrl,
+  externalLoading,
+  externalError,
+}: TrackMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const coordsRef = useRef<Coordinate[]>([]);
   const key = getMapTilerKey();
   const [view, setView] = useState<MapView>(key ? '3d-terrain' : '2d-topo');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [internalLoading, setInternalLoading] = useState(true);
+  const [internalError, setInternalError] = useState<string | null>(null);
+
+  // Use external state when coordinates are provided externally, otherwise internal
+  const useExternal = coordinates !== undefined;
+  const loading = useExternal ? (externalLoading ?? false) : internalLoading;
+  const error = useExternal ? (externalError ?? null) : internalError;
 
   const addTrackLayer = useCallback((map: maplibregl.Map, coords: Coordinate[]) => {
     if (map.getSource(TRACK_SOURCE_ID)) {
@@ -128,14 +127,14 @@ export default function TrackMap({ gpxUrl }: TrackMapProps) {
     }
   }, []);
 
-  const setupTerrain = useCallback((map: maplibregl.Map, currentView: MapView, key: string) => {
+  const setupTerrain = useCallback((map: maplibregl.Map, currentView: MapView, maptilerKey: string) => {
     const is3d = currentView === '3d-terrain' || currentView === '3d-satellite';
 
-    if (is3d && key) {
+    if (is3d && maptilerKey) {
       if (!map.getSource('terrain-source')) {
         map.addSource('terrain-source', {
           type: 'raster-dem',
-          url: `https://api.maptiler.com/tiles/terrain-rgb/tiles.json?key=${key}`,
+          url: `https://api.maptiler.com/tiles/terrain-rgb/tiles.json?key=${maptilerKey}`,
           tileSize: 256,
         });
       }
@@ -147,31 +146,42 @@ export default function TrackMap({ gpxUrl }: TrackMapProps) {
     }
   }, []);
 
-  // Fetch GPX data
+  // Handle externally-provided coordinates
   useEffect(() => {
+    if (!coordinates || coordinates.length === 0) return;
+
+    coordsRef.current = coordinates;
+    if (mapRef.current?.isStyleLoaded()) {
+      addTrackLayer(mapRef.current, coordinates);
+    }
+  }, [coordinates, addTrackLayer]);
+
+  // Fetch GPX data internally (only when no coordinates prop)
+  useEffect(() => {
+    if (useExternal || !gpxUrl) return;
     let cancelled = false;
 
     async function fetchGpx() {
-      setLoading(true);
-      setError(null);
+      setInternalLoading(true);
+      setInternalError(null);
       try {
-        const res = await fetch(gpxUrl);
+        const res = await fetch(gpxUrl!);
         if (!res.ok) throw new Error(`Failed to fetch GPX: ${res.status}`);
         const xml = await res.text();
-        const coords = parseGpx(xml);
+        const points = parseGpxFull(xml);
+        const coords = toCoordinates(points);
         if (coords.length === 0) throw new Error('No track points found in GPX file');
         if (!cancelled) {
           coordsRef.current = coords;
-          // If map is already loaded, add the track
           if (mapRef.current?.isStyleLoaded()) {
             addTrackLayer(mapRef.current, coords);
           }
-          setLoading(false);
+          setInternalLoading(false);
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Failed to load GPX');
-          setLoading(false);
+          setInternalError(err instanceof Error ? err.message : 'Failed to load GPX');
+          setInternalLoading(false);
         }
       }
     }
@@ -180,7 +190,7 @@ export default function TrackMap({ gpxUrl }: TrackMapProps) {
     return () => {
       cancelled = true;
     };
-  }, [gpxUrl, addTrackLayer]);
+  }, [gpxUrl, useExternal, addTrackLayer]);
 
   // Initialize and update the map
   useEffect(() => {

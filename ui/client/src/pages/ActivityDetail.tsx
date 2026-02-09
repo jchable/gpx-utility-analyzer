@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useActivity } from '../hooks/useActivities';
 import { api } from '../api/client';
 import { ACTIVITY_COLORS, ACTIVITY_LABELS } from '../types/activity';
 import type { TrackReport } from '../types/activity';
 import TrackMap from '../components/map/TrackMap';
+import ElevationProfileChart from '../components/activity/ElevationProfileChart';
+import { parseGpxFull, toCoordinates, computeProfileData } from '../utils/gpx';
+import type { GpxTrackPoint, Coordinate } from '../utils/gpx';
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', {
@@ -197,6 +200,47 @@ export default function ActivityDetail() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isReanalyzing, setIsReanalyzing] = useState(false);
 
+  // Lift GPX fetching to page level so both TrackMap and ElevationProfileChart share it
+  const gpxUrl = activity ? api.getGpxUrl(activity.id) : null;
+  const [gpxPoints, setGpxPoints] = useState<GpxTrackPoint[]>([]);
+  const [gpxCoords, setGpxCoords] = useState<Coordinate[]>([]);
+  const [gpxLoading, setGpxLoading] = useState(false);
+  const [gpxError, setGpxError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!gpxUrl) return;
+    let cancelled = false;
+    setGpxLoading(true);
+    setGpxError(null);
+
+    fetch(gpxUrl)
+      .then((res) => {
+        if (!res.ok) throw new Error(`Failed to fetch GPX: ${res.status}`);
+        return res.text();
+      })
+      .then((xml) => {
+        if (cancelled) return;
+        const pts = parseGpxFull(xml);
+        setGpxPoints(pts);
+        setGpxCoords(toCoordinates(pts));
+        setGpxLoading(false);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setGpxError(err instanceof Error ? err.message : 'Failed to load GPX');
+        setGpxLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [gpxUrl]);
+
+  const profileData = useMemo(
+    () => (gpxPoints.length > 0 ? computeProfileData(gpxPoints) : []),
+    [gpxPoints],
+  );
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -319,8 +363,13 @@ export default function ActivityDetail() {
 
       {/* Track Map */}
       <div className="h-[500px] rounded-2xl overflow-hidden">
-        <TrackMap gpxUrl={api.getGpxUrl(activity.id)} />
+        <TrackMap coordinates={gpxCoords} externalLoading={gpxLoading} externalError={gpxError} />
       </div>
+
+      {/* Elevation Profile */}
+      {activity.status === 'Completed' && (
+        <ElevationProfileChart data={profileData} loading={gpxLoading} />
+      )}
 
       {/* Stats Grid - Radial Gauges */}
       {stats && (
