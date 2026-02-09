@@ -103,7 +103,7 @@ func runMerge(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		cfg := buildComputeConfig()
-		summary, err := stats.Compute(points, merged.SegmentCount(), cfg)
+		summary, _, err := stats.Compute(points, merged.SegmentCount(), cfg)
 		if err != nil {
 			return fmt.Errorf("computing stats for merged file: %w", err)
 		}

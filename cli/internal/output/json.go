@@ -42,9 +42,10 @@ type jsonSummary struct {
 	AvgMovingPace     string  `json:"avg_moving_pace"`
 
 	// Points
-	PointCount   int     `json:"point_count"`
-	SegmentCount int     `json:"segment_count"`
-	PointsPerKm  float64 `json:"points_per_km"`
+	PointCount     int     `json:"point_count"`
+	FilteredPoints int     `json:"filtered_points,omitempty"`
+	SegmentCount   int     `json:"segment_count"`
+	PointsPerKm    float64 `json:"points_per_km"`
 
 	// Stops
 	StopCount       int        `json:"stop_count"`
@@ -125,6 +126,7 @@ func (f *JSONFormatter) Format(w io.Writer, filename string, s stats.Summary, _ 
 		AvgPace:          FormatPace(s.Speed.AvgPace),
 		AvgMovingPace:    FormatPace(s.Speed.AvgMovingPace),
 		PointCount:       s.PointCount,
+		FilteredPoints:   s.FilteredPoints,
 		SegmentCount:     s.SegmentCount,
 		PointsPerKm:     s.PointsPerKm,
 		StopCount:        s.StopCount,

@@ -34,6 +34,7 @@ var (
 	segMaxDevFlag     float64
 	exportDirFlag     string
 	maxHRFlag         int
+	maxSpeedFlag      float64
 )
 
 var analyzeCmd = &cobra.Command{
@@ -79,6 +80,8 @@ func init() {
 		"Export preprocessed GPX files to this directory")
 	analyzeCmd.Flags().IntVar(&maxHRFlag, "max-hr", 0,
 		"Maximum heart rate (bpm) for HR zone calculation")
+	analyzeCmd.Flags().Float64Var(&maxSpeedFlag, "max-speed", 0,
+		"Max speed threshold for GPS outlier removal (m/s, 0=preset default)")
 
 	rootCmd.AddCommand(analyzeCmd)
 }
@@ -117,7 +120,7 @@ func analyzeFile(path string, formatter output.Formatter, cfg stats.ComputeConfi
 	}
 
 	// Compute modifies points in place (track smoothing, DEM, elevation smoothing)
-	summary, err := stats.Compute(points, g.SegmentCount(), cfg)
+	summary, processed, err := stats.Compute(points, g.SegmentCount(), cfg)
 	if err != nil {
 		return fmt.Errorf("computing stats for %s: %w", path, err)
 	}
@@ -131,11 +134,11 @@ func analyzeFile(path string, formatter output.Formatter, cfg stats.ComputeConfi
 		base := filepath.Base(path)
 		name := strings.TrimSuffix(base, filepath.Ext(base)) + "_processed.gpx"
 		outPath := filepath.Join(exportDirFlag, name)
-		exported := gpx.NewGPXFromPoints(points, strings.TrimSuffix(base, filepath.Ext(base)))
+		exported := gpx.NewGPXFromPoints(processed, strings.TrimSuffix(base, filepath.Ext(base)))
 		if err := gpx.WriteFile(exported, outPath); err != nil {
 			return fmt.Errorf("exporting %s: %w", outPath, err)
 		}
-		fmt.Fprintf(os.Stdout, "Exported: %s (%d points)\n", outPath, len(points))
+		fmt.Fprintf(os.Stdout, "Exported: %s (%d points)\n", outPath, len(processed))
 	}
 
 	return nil
@@ -195,6 +198,14 @@ func buildComputeConfig() stats.ComputeConfig {
 		trackSmooth = elevation.TrackSmoothNone
 	}
 
+	// Max reasonable speed: CLI override > preset default > global fallback
+	maxReasonable := maxSpeedFlag
+	if maxReasonable <= 0 {
+		if v, ok := stats.PresetMaxSpeed[presetFlag]; ok {
+			maxReasonable = v
+		}
+	}
+
 	return stats.ComputeConfig{
 		ElevationThreshold: elevThreshold,
 		StopConfig:         preset,
@@ -207,7 +218,8 @@ func buildComputeConfig() stats.ComputeConfig {
 			MinSegLen:   segMinLenFlag,
 			MaxSlopeDev: segMaxDevFlag,
 		},
-		TrackSmoothing: trackSmooth,
-		BiometricsCfg:  stats.BiometricsConfig{MaxHR: maxHRFlag},
+		TrackSmoothing:     trackSmooth,
+		BiometricsCfg:      stats.BiometricsConfig{MaxHR: maxHRFlag},
+		MaxReasonableSpeed: maxReasonable,
 	}
 }

@@ -27,16 +27,24 @@ func (f *TextFormatter) Format(w io.Writer, filename string, s stats.Summary, cf
 func (f *TextFormatter) printGeneralTable(w io.Writer, s stats.Summary) {
 	fmt.Fprintln(w, "\nGeneral")
 	table := newTable(w)
-	table.Bulk([][]string{
+	rows := [][]string{
 		{"Start Time", s.StartTime.Format("2006-01-02 15:04:05 UTC")},
 		{"End Time", s.EndTime.Format("2006-01-02 15:04:05 UTC")},
 		{"Total Time", FormatDuration(s.TotalTime)},
 		{"Moving Time", FormatDuration(s.MovingTime)},
 		{"Stopped Time", FormatDuration(s.StoppedTime)},
 		{"Points", fmt.Sprintf("%d", s.PointCount)},
-		{"Segments", fmt.Sprintf("%d", s.SegmentCount)},
-		{"Points/km", fmt.Sprintf("%.1f", s.PointsPerKm)},
-	})
+	}
+	if s.FilteredPoints > 0 {
+		rows = append(rows, []string{
+			"Filtered Points", fmt.Sprintf("%d", s.FilteredPoints),
+		})
+	}
+	rows = append(rows,
+		[]string{"Segments", fmt.Sprintf("%d", s.SegmentCount)},
+		[]string{"Points/km", fmt.Sprintf("%.1f", s.PointsPerKm)},
+	)
+	table.Bulk(rows)
 	table.Render()
 }
 

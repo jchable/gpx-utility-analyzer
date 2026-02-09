@@ -4,10 +4,22 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jchable/gpx-utility-analyzer/cli/internal/dem"
 	"github.com/jchable/gpx-utility-analyzer/cli/internal/elevation"
 	"github.com/jchable/gpx-utility-analyzer/cli/internal/gpx"
 )
+
+// ElevationProvider returns the DEM elevation at a given lat/lon.
+// Returns (elevation, true) on success, (0, false) if data is unavailable.
+type ElevationProvider interface {
+	Elevation(lat, lon float64) (float64, bool)
+}
+
+// ElevationPreloader optionally preloads DEM tiles for the given track points.
+// Preloading ensures all needed tiles are on disk, checks memory limits,
+// and loads them into memory before the correction loop.
+type ElevationPreloader interface {
+	Preload(points []gpx.TrackPoint) error
+}
 
 // Summary holds all computed statistics for a GPX file or segment.
 type Summary struct {
@@ -29,9 +41,10 @@ type Summary struct {
 	Speed SpeedResult
 
 	// Points metadata
-	PointCount   int
-	SegmentCount int
-	PointsPerKm  float64
+	PointCount     int
+	FilteredPoints int // number of GPS outlier points removed
+	SegmentCount   int
+	PointsPerKm    float64
 
 	// Stops
 	Stops           []Stop
@@ -49,10 +62,11 @@ type ComputeConfig struct {
 	ElevationThreshold float64                       // meters, for noise filtering
 	StopConfig         StopConfig                    // stop detection parameters
 	SmoothingLevel     elevation.SmoothingLevel      // elevation smoothing preset
-	DEMSource          *dem.Source                   // DEM tile source (nil = disabled)
+	DEMSource          ElevationProvider             // DEM tile source (nil = disabled)
 	ElevationCfg       ElevationConfig               // elevation algorithm config
 	TrackSmoothing     elevation.TrackSmoothingLevel // lat/lon smoothing before DEM
 	BiometricsCfg      BiometricsConfig              // biometrics computation config
+	MaxReasonableSpeed float64                       // m/s, GPS artifact filter (0 = preset default)
 }
 
 // DefaultConfig returns a default computation configuration using the hiking preset.
@@ -65,24 +79,34 @@ func DefaultConfig() ComputeConfig {
 }
 
 // Compute calculates all statistics from the given trackpoints.
-// Returns an error if DEM tile preloading fails (e.g. memory limit exceeded).
-func Compute(points []gpx.TrackPoint, segmentCount int, cfg ComputeConfig) (Summary, error) {
+// It returns the summary, the processed (filtered + corrected) point slice, and an error.
+// The returned points can be used for exporting a cleaned GPX file.
+func Compute(points []gpx.TrackPoint, segmentCount int, cfg ComputeConfig) (Summary, []gpx.TrackPoint, error) {
 	s := Summary{
 		PointCount:   len(points),
 		SegmentCount: segmentCount,
 	}
 
 	if len(points) == 0 {
-		return s, nil
+		return s, points, nil
 	}
+
+	// Step 0: Remove GPS outliers (physical removal based on MaxReasonableSpeed)
+	points, s.FilteredPoints = FilterOutliers(points, cfg.MaxReasonableSpeed)
 
 	// Pre-process: track smoothing (lat/lon) → preload DEM tiles → DEM correction → elevation smoothing
 	elevation.SmoothTrack(points, cfg.TrackSmoothing)
 	if cfg.DEMSource != nil {
-		if err := dem.PreloadTiles(points, cfg.DEMSource); err != nil {
-			return s, fmt.Errorf("DEM preload: %w", err)
+		if p, ok := cfg.DEMSource.(ElevationPreloader); ok {
+			if err := p.Preload(points); err != nil {
+				return s, points, fmt.Errorf("DEM preload: %w", err)
+			}
 		}
-		dem.CorrectElevations(points, cfg.DEMSource)
+		for i := range points {
+			if ele, ok := cfg.DEMSource.Elevation(points[i].Lat, points[i].Lon); ok {
+				points[i].Ele = ele
+			}
+		}
 	}
 	elevation.SmoothElevations(points, cfg.SmoothingLevel)
 
@@ -129,13 +153,13 @@ func Compute(points []gpx.TrackPoint, segmentCount int, cfg ComputeConfig) (Summ
 	s.Speed = ComputeSpeed(s.TotalDistance, s.TotalTime, s.MovingTime)
 	s.Speed.MaxSpeed = MaxSpeedFromPoints(points)
 
-	// Points per km
+	// Points per km (uses effective count after filtering)
 	if s.TotalDistance > 0 {
-		s.PointsPerKm = float64(s.PointCount) / (s.TotalDistance / 1000)
+		s.PointsPerKm = float64(len(points)) / (s.TotalDistance / 1000)
 	}
 
 	// Biometrics
 	s.Biometrics = ComputeBiometrics(points, cfg.BiometricsCfg)
 
-	return s, nil
+	return s, points, nil
 }

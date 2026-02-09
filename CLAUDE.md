@@ -41,8 +41,8 @@ Requires Go 1.25.7+.
 **Core processing pipeline** (in `stats.Compute()`):
 
 1. Track smoothing (lat/lon) → `internal/elevation/tracksmooth.go`
-2. DEM preload (parallel download + memory check) → `internal/dem/preload.go`
-3. DEM correction (SRTM, cross-tile interpolation) → `internal/dem/correct.go`, `internal/dem/source.go`
+2. DEM preload (parallel download + memory check) → `internal/dem/preload.go` (`Source.Preload()`)
+3. DEM correction (SRTM, via `ElevationProvider` interface) → `internal/dem/source.go`
 4. Speed enrichment → `internal/stats/speed.go`
 5. Elevation smoothing → `internal/elevation/smooth.go`
 6. Distance calculation (Haversine) → `internal/stats/distance.go`
@@ -50,7 +50,7 @@ Requires Go 1.25.7+.
 8. Stop detection → `internal/stats/stops.go`
 9. Biometrics computation (HR, power, cadence, temperature) → `internal/stats/biometrics.go`
 
-**Key packages**: `internal/gpx/` (parsing/model/export), `internal/stats/` (computation), `internal/elevation/` (smoothing), `internal/dem/` (SRTM tiles), `internal/output/` (Formatter interface: text/JSON).
+**Key packages**: `internal/gpx/` (parsing/model/export), `internal/stats/` (computation, `ElevationProvider`/`ElevationPreloader` interfaces), `internal/elevation/` (smoothing), `internal/dem/` (SRTM tiles, `Source` implements interfaces), `internal/output/` (Formatter interface: text/JSON).
 
 ### Go Key Patterns
 

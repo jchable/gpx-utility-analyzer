@@ -1,7 +1,7 @@
 package dem
 
 import (
-	"fmt"
+	"log/slog"
 	"math"
 	"os"
 	"path/filepath"
@@ -19,6 +19,7 @@ type Source struct {
 	skipValidation bool // skip post-download tile validation
 	tiles          map[string]*Tile
 	warns          map[string]bool
+	log            *slog.Logger
 }
 
 // NewSource creates a new DEM source backed by the given directory of .hgt files.
@@ -28,6 +29,7 @@ func NewSource(dir string) *Source {
 		dir:   dir,
 		tiles: make(map[string]*Tile),
 		warns: make(map[string]bool),
+		log:   slog.Default(),
 	}
 }
 
@@ -41,6 +43,7 @@ func NewSourceWithCache(dir, cacheDir string, autoDownload bool) *Source {
 		autoDownload: autoDownload,
 		tiles:        make(map[string]*Tile),
 		warns:        make(map[string]bool),
+		log:          slog.Default(),
 	}
 }
 
@@ -52,6 +55,7 @@ func NewAutoSource(cacheDir string) *Source {
 		autoDownload: true,
 		tiles:        make(map[string]*Tile),
 		warns:        make(map[string]bool),
+		log:          slog.Default(),
 	}
 }
 
@@ -67,6 +71,15 @@ func (s *Source) WithMaxMemory(mb int) *Source {
 // By default, tiles are validated after download to detect corrupt data.
 func (s *Source) WithSkipValidation(skip bool) *Source {
 	s.skipValidation = skip
+	return s
+}
+
+// WithLogger sets a custom structured logger for the DEM source.
+// If nil, slog.Default() is used.
+func (s *Source) WithLogger(l *slog.Logger) *Source {
+	if l != nil {
+		s.log = l
+	}
 	return s
 }
 
@@ -88,7 +101,11 @@ func DefaultCacheDir() string {
 
 // TileCachePath returns the hierarchical cache path for a tile key.
 // e.g. TileCachePath("/cache", "N48E002") → "/cache/N48/N48E002.hgt"
+// Panics if key is shorter than 3 characters (programming error).
 func TileCachePath(cacheDir, key string) string {
+	if len(key) < 3 {
+		panic("dem: invalid tile key: " + key)
+	}
 	prefix := key[:3] // e.g. "N48"
 	return filepath.Join(cacheDir, prefix, key+".hgt")
 }
@@ -204,60 +221,63 @@ func (s *Source) crossTileElevation(tile *Tile, lat, lon, row, col float64, r0, 
 	return top*(1-dr) + bot*dr, true
 }
 
+// loadAndValidate loads a tile from the given path and validates it.
+// Returns the tile if valid, or nil if the file doesn't exist, can't be loaded,
+// or fails validation.
+func (s *Source) loadAndValidate(path, key string) *Tile {
+	tile, err := LoadTile(path)
+	if err != nil {
+		return nil
+	}
+	if s.skipValidation || ValidateTile(tile) {
+		return tile
+	}
+	s.log.Warn("tile failed validation (all void), ignoring", slog.String("tile", key), slog.String("path", path))
+	return nil
+}
+
 // loadTile tries to load a tile from disk, and optionally downloads it.
 func (s *Source) loadTile(key string) *Tile {
 	// Try user-provided directory first
 	if s.dir != "" {
-		path := filepath.Join(s.dir, key+".hgt")
-		if tile, err := LoadTile(path); err == nil {
-			if s.skipValidation || ValidateTile(tile) {
-				return tile
-			}
-			fmt.Fprintf(os.Stderr, "Warning: tile %s failed validation (all void), ignoring\n", key)
+		if tile := s.loadAndValidate(filepath.Join(s.dir, key+".hgt"), key); tile != nil {
+			return tile
 		}
 	}
 
 	// Try cache directory (hierarchical path first, then flat for backward compat)
 	if s.cacheDir != "" {
 		hiPath := TileCachePath(s.cacheDir, key)
-		if tile, err := LoadTile(hiPath); err == nil {
-			if s.skipValidation || ValidateTile(tile) {
-				return tile
-			}
-			fmt.Fprintf(os.Stderr, "Warning: cached tile %s failed validation (all void), ignoring\n", key)
+		if tile := s.loadAndValidate(hiPath, key); tile != nil {
+			return tile
 		}
 		// Backward compat: try flat path
 		flatPath := filepath.Join(s.cacheDir, key+".hgt")
 		if flatPath != hiPath {
-			if tile, err := LoadTile(flatPath); err == nil {
-				if s.skipValidation || ValidateTile(tile) {
-					return tile
-				}
+			if tile := s.loadAndValidate(flatPath, key); tile != nil {
+				return tile
 			}
 		}
 
 		// Auto-download if enabled (always to hierarchical path)
 		if s.autoDownload {
-			fmt.Fprintf(os.Stderr, "Downloading DEM tile %s...\n", key)
+			s.log.Info("downloading DEM tile", slog.String("tile", key))
 			if err := downloadTile(key, hiPath); err != nil {
 				if !s.warns[key] {
-					fmt.Fprintf(os.Stderr, "Warning: could not download tile %s: %v, using GPS elevation\n", key, err)
+					s.log.Warn("could not download tile, using GPS elevation", slog.String("tile", key), slog.Any("error", err))
 					s.warns[key] = true
 				}
 				return nil
 			}
-			fmt.Fprintf(os.Stderr, "Downloaded DEM tile %s\n", key)
-			if tile, err := LoadTile(hiPath); err == nil {
-				if s.skipValidation || ValidateTile(tile) {
-					return tile
-				}
-				fmt.Fprintf(os.Stderr, "Warning: downloaded tile %s failed validation (all void), ignoring\n", key)
+			s.log.Info("downloaded DEM tile", slog.String("tile", key))
+			if tile := s.loadAndValidate(hiPath, key); tile != nil {
+				return tile
 			}
 		}
 	}
 
 	if !s.warns[key] {
-		fmt.Fprintf(os.Stderr, "Warning: DEM tile %s not available, using GPS elevation\n", key)
+		s.log.Warn("DEM tile not available, using GPS elevation", slog.String("tile", key))
 		s.warns[key] = true
 	}
 	return nil

@@ -2,6 +2,8 @@ package dem
 
 import (
 	"fmt"
+	"log/slog"
+	"math"
 	"os"
 	"path/filepath"
 	"sync"
@@ -11,13 +13,13 @@ import (
 
 const defaultParallelDownloads = 4
 
-// PreloadTiles identifies all DEM tiles needed for the given track points,
+// Preload identifies all DEM tiles needed for the given track points,
 // ensures they are available on disk (downloading in parallel if needed),
 // checks the memory limit, then loads them all into memory.
 //
-// This must be called before CorrectElevations for optimal performance.
+// This must be called before using Elevation for optimal performance.
 // Returns an error if the required tiles exceed the configured memory limit.
-func PreloadTiles(points []gpx.TrackPoint, src *Source) error {
+func (s *Source) Preload(points []gpx.TrackPoint) error {
 	// 1. Collect unique tile keys needed.
 	needed := collectTileKeys(points)
 	if len(needed) == 0 {
@@ -25,60 +27,81 @@ func PreloadTiles(points []gpx.TrackPoint, src *Source) error {
 	}
 
 	// 2. Ensure all tiles are on disk (download missing ones in parallel).
-	if err := ensureTilesOnDisk(needed, src); err != nil {
+	if err := ensureTilesOnDisk(needed, s); err != nil {
 		return err
 	}
 
 	// 3. Determine tile file sizes and check memory limit.
-	tileFiles, totalBytes, err := resolveTileFiles(needed, src)
-	if err != nil {
-		return err
-	}
+	tileFiles, totalBytes := resolveTileFiles(needed, s)
 
-	if src.maxMemoryMB > 0 {
-		limitBytes := int64(src.maxMemoryMB) * 1024 * 1024
+	if s.maxMemoryMB > 0 {
+		limitBytes := int64(s.maxMemoryMB) * 1024 * 1024
 		if totalBytes > limitBytes {
 			totalMB := totalBytes / (1024 * 1024)
 			return fmt.Errorf(
 				"DEM tiles require ~%d MB in memory (%d tiles), but --dem-max-memory is set to %d MB; "+
 					"increase the limit or disable DEM correction with --dem-auto-download=false",
-				totalMB, len(tileFiles), src.maxMemoryMB,
+				totalMB, len(tileFiles), s.maxMemoryMB,
 			)
 		}
 	}
 
 	// 4. Load all tiles into memory.
 	for key, path := range tileFiles {
-		if _, ok := src.tiles[key]; ok {
+		if _, ok := s.tiles[key]; ok {
 			continue // already loaded
 		}
-		tile, err := LoadTile(path)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: could not load tile %s: %v, using GPS elevation\n", key, err)
-			src.tiles[key] = nil
-			continue
+		if tile := s.loadAndValidate(path, key); tile != nil {
+			s.tiles[key] = tile
+		} else {
+			s.tiles[key] = nil
 		}
-		if !src.skipValidation && !ValidateTile(tile) {
-			fmt.Fprintf(os.Stderr, "Warning: tile %s failed validation (all void), ignoring\n", key)
-			src.tiles[key] = nil
-			continue
-		}
-		src.tiles[key] = tile
 	}
 
 	return nil
 }
 
-// collectTileKeys returns a deduplicated list of tile keys needed for all points.
+// boundaryThreshold is the fractional degree threshold for detecting tile
+// boundary proximity. Based on SRTM3 (1201 grid): 1/1200 ≈ 0.000833°.
+// For SRTM1 (3601 grid), the actual boundary zone is ~3× smaller, so this
+// conservatively preloads a few extra tiles for SRTM1 tracks — acceptable.
+const boundaryThreshold = 1.0 / 1200.0
+
+// collectTileKeys returns a deduplicated list of tile keys needed for all points,
+// including neighbor tiles for points near tile boundaries (cross-tile interpolation).
 func collectTileKeys(points []gpx.TrackPoint) []string {
 	seen := make(map[string]bool)
-	var keys []string
-	for _, p := range points {
-		key := TileKey(p.Lat, p.Lon)
+	add := func(key string) {
 		if !seen[key] {
 			seen[key] = true
-			keys = append(keys, key)
 		}
+	}
+
+	for _, p := range points {
+		key := TileKey(p.Lat, p.Lon)
+		add(key)
+
+		// Check proximity to tile boundaries for cross-tile interpolation.
+		latFloor := math.Floor(p.Lat)
+		lonFloor := math.Floor(p.Lon)
+
+		nearSouth := p.Lat-latFloor < boundaryThreshold && p.Lat > latFloor
+		nearEast := (lonFloor+1)-p.Lon < boundaryThreshold && p.Lon < lonFloor+1
+
+		if nearSouth {
+			add(TileKey(latFloor-0.5, p.Lon)) // south neighbor
+		}
+		if nearEast {
+			add(TileKey(p.Lat, lonFloor+1.5)) // east neighbor
+		}
+		if nearSouth && nearEast {
+			add(TileKey(latFloor-0.5, lonFloor+1.5)) // SE neighbor
+		}
+	}
+
+	keys := make([]string, 0, len(seen))
+	for key := range seen {
+		keys = append(keys, key)
 	}
 	return keys
 }
@@ -102,12 +125,16 @@ func ensureTilesOnDisk(keys []string, src *Source) error {
 		return nil
 	}
 
-	fmt.Fprintf(os.Stderr, "Downloading %d DEM tile(s) in parallel...\n", len(toDownload))
+	src.log.Info("downloading DEM tiles in parallel", slog.Int("count", len(toDownload)))
 
 	// Parallel download with bounded concurrency.
+	type downloadResult struct {
+		key string
+		err error
+	}
 	sem := make(chan struct{}, defaultParallelDownloads)
 	var mu sync.Mutex
-	var errs []error
+	var results []downloadResult
 	var wg sync.WaitGroup
 
 	for _, key := range toDownload {
@@ -118,21 +145,26 @@ func ensureTilesOnDisk(keys []string, src *Source) error {
 			defer func() { <-sem }()
 
 			destPath := TileCachePath(src.cacheDir, k)
-			fmt.Fprintf(os.Stderr, "  Downloading tile %s...\n", k)
 			if err := downloadTile(k, destPath); err != nil {
 				mu.Lock()
-				errs = append(errs, fmt.Errorf("tile %s: %w", k, err))
+				results = append(results, downloadResult{k, fmt.Errorf("tile %s: %w", k, err)})
 				mu.Unlock()
 				return
 			}
-			fmt.Fprintf(os.Stderr, "  Downloaded tile %s\n", k)
+			mu.Lock()
+			results = append(results, downloadResult{k, nil})
+			mu.Unlock()
 		}(key)
 	}
 	wg.Wait()
 
-	// Download errors are non-fatal (fallback to GPS elevation).
-	for _, err := range errs {
-		fmt.Fprintf(os.Stderr, "Warning: %v, using GPS elevation\n", err)
+	// Log results sequentially (no interleaving).
+	for _, r := range results {
+		if r.err != nil {
+			src.log.Warn("download failed, using GPS elevation", slog.String("tile", r.key), slog.Any("error", r.err))
+		} else {
+			src.log.Info("downloaded DEM tile", slog.String("tile", r.key))
+		}
 	}
 
 	return nil
@@ -164,7 +196,7 @@ func tileExistsOnDisk(key string, src *Source) bool {
 
 // resolveTileFiles returns a map of key→filepath for all tiles found on disk,
 // plus the total memory needed to load them all.
-func resolveTileFiles(keys []string, src *Source) (map[string]string, int64, error) {
+func resolveTileFiles(keys []string, src *Source) (map[string]string, int64) {
 	tileFiles := make(map[string]string, len(keys))
 	var totalBytes int64
 
@@ -173,7 +205,7 @@ func resolveTileFiles(keys []string, src *Source) (map[string]string, int64, err
 		if path == "" {
 			// Tile not on disk (download failed or not available).
 			if !src.warns[key] {
-				fmt.Fprintf(os.Stderr, "Warning: DEM tile %s not available, using GPS elevation\n", key)
+				src.log.Warn("DEM tile not available, using GPS elevation", slog.String("tile", key))
 				src.warns[key] = true
 			}
 			continue
@@ -187,7 +219,7 @@ func resolveTileFiles(keys []string, src *Source) (map[string]string, int64, err
 		totalBytes += info.Size() // file size == in-memory size for HGT (raw int16 array)
 	}
 
-	return tileFiles, totalBytes, nil
+	return tileFiles, totalBytes
 }
 
 // findTilePath locates a tile file on disk, checking all possible locations.

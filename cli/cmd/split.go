@@ -102,25 +102,26 @@ func runSplit(cmd *cobra.Command, args []string) error {
 		path, len(segments), splitInterval)
 
 	for _, seg := range segments {
-		// Write GPX file
 		segName := fmt.Sprintf("%s-%03d", splitPrefix, seg.Index+1)
 		outPath := filepath.Join(splitOutputDir, segName+".gpx")
 
-		segGPX := gpx.NewGPXFromPoints(seg.Points, segName)
-		if err := gpx.WriteFile(segGPX, outPath); err != nil {
-			fmt.Fprintf(os.Stderr, "Error writing %s: %v\n", outPath, err)
-			continue
-		}
-
-		// Compute and display stats
+		// Compute stats first (this filters outliers and corrects elevation)
 		segPoints := make([]gpx.TrackPoint, len(seg.Points))
 		copy(segPoints, seg.Points)
-		summary, err := stats.Compute(segPoints, 1, cfg)
+		summary, processed, err := stats.Compute(segPoints, 1, cfg)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error computing stats for segment %d: %v\n", seg.Index+1, err)
 			continue
 		}
 
+		// Write GPX file from filtered+corrected points
+		segGPX := gpx.NewGPXFromPoints(processed, segName)
+		if err := gpx.WriteFile(segGPX, outPath); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing %s: %v\n", outPath, err)
+			continue
+		}
+
+		// Display stats
 		fmt.Fprintf(os.Stdout, "--- Segment %d: %s → %s ---\n",
 			seg.Index+1,
 			seg.StartTime.Format("2006-01-02 15:04"),

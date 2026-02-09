@@ -59,17 +59,25 @@ func EnrichPoints(points []gpx.TrackPoint) {
 	}
 }
 
-// maxReasonableSpeed is 50 m/s (~180 km/h), above which a GPS reading is
-// considered an artifact (position jump). This is generous enough for cycling
-// downhill but filters obvious GPS glitches.
-const maxReasonableSpeed = 50.0 // m/s
+// DefaultMaxReasonableSpeed is the fallback (25 m/s ≈ 90 km/h) when no
+// preset-specific limit is configured. Points exceeding this speed are
+// physically removed from the trace by FilterOutliers before any computation.
+const DefaultMaxReasonableSpeed = 25.0 // m/s
 
-// MaxSpeedFromPoints returns the maximum calculated speed from enriched points,
-// filtering out GPS artifacts above maxReasonableSpeed.
+// PresetMaxSpeed defines per-preset GPS outlier removal thresholds (m/s).
+// Points exceeding these speeds are physically removed from the trace.
+var PresetMaxSpeed = map[string]float64{
+	PresetHiking:  4.0,  // ~14.4 km/h — brisk walk / scramble
+	PresetTrail:   7.0,  // ~25.2 km/h — fast downhill trail running
+	PresetCycling: 25.0, // ~90 km/h — fast descents on road
+}
+
+// MaxSpeedFromPoints returns the maximum calculated speed from enriched points.
+// Outlier points must already be removed by FilterOutliers before calling this.
 func MaxSpeedFromPoints(points []gpx.TrackPoint) float64 {
 	var max float64
 	for _, p := range points {
-		if p.CalcSpeed > max && p.CalcSpeed <= maxReasonableSpeed {
+		if p.CalcSpeed > max {
 			max = p.CalcSpeed
 		}
 	}
