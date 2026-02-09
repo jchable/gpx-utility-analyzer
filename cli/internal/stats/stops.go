@@ -19,6 +19,7 @@ type Stop struct {
 type StopConfig struct {
 	MaxSpeed    float64       // m/s - below this, considered not moving
 	MinDuration time.Duration // minimum duration to count as a stop
+	MaxDistance  float64       // meters - max displacement (start→end) for a stop; 0 = no check
 }
 
 // Preset names for stop detection.
@@ -29,10 +30,12 @@ const (
 )
 
 // Presets contains predefined stop detection configurations.
+// MaxSpeed is set near the GPS noise floor to avoid classifying slow uphills as stops.
+// MaxDistance rejects candidate stops where the person actually covered real distance.
 var Presets = map[string]StopConfig{
-	PresetHiking:  {MaxSpeed: 0.3, MinDuration: 2 * time.Minute},
-	PresetTrail:   {MaxSpeed: 0.5, MinDuration: 1 * time.Minute},
-	PresetCycling: {MaxSpeed: 1.0, MinDuration: 30 * time.Second},
+	PresetHiking:  {MaxSpeed: 0.2, MinDuration: 3 * time.Minute, MaxDistance: 30},
+	PresetTrail:   {MaxSpeed: 0.3, MinDuration: 2 * time.Minute, MaxDistance: 50},
+	PresetCycling: {MaxSpeed: 1.0, MinDuration: 30 * time.Second, MaxDistance: 100},
 }
 
 // DefaultPreset returns the default stop detection preset name.
@@ -58,7 +61,7 @@ func DetectStops(points []gpx.TrackPoint, cfg StopConfig) []Stop {
 			inStop = true
 			stopStart = i - 1
 		} else if !isSlow && inStop {
-			stop := buildStop(points[stopStart:i], cfg.MinDuration)
+			stop := buildStop(points[stopStart:i], cfg)
 			if stop != nil {
 				stops = append(stops, *stop)
 			}
@@ -68,7 +71,7 @@ func DetectStops(points []gpx.TrackPoint, cfg StopConfig) []Stop {
 
 	// Handle stop at end of data
 	if inStop {
-		stop := buildStop(points[stopStart:], cfg.MinDuration)
+		stop := buildStop(points[stopStart:], cfg)
 		if stop != nil {
 			stops = append(stops, *stop)
 		}
@@ -77,14 +80,25 @@ func DetectStops(points []gpx.TrackPoint, cfg StopConfig) []Stop {
 	return stops
 }
 
-func buildStop(points []gpx.TrackPoint, minDuration time.Duration) *Stop {
+func buildStop(points []gpx.TrackPoint, cfg StopConfig) *Stop {
 	if len(points) < 2 {
 		return nil
 	}
 
 	duration := points[len(points)-1].Time.Sub(points[0].Time)
-	if duration < minDuration {
+	if duration < cfg.MinDuration {
 		return nil
+	}
+
+	// Reject if the person actually moved too far (slow uphill, not a real stop)
+	if cfg.MaxDistance > 0 {
+		dist := Haversine(
+			points[0].Lat, points[0].Lon,
+			points[len(points)-1].Lat, points[len(points)-1].Lon,
+		)
+		if dist > cfg.MaxDistance {
+			return nil
+		}
 	}
 
 	// Compute centroid

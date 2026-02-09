@@ -183,20 +183,64 @@ func TestDetectStops_CentroidCalculation(t *testing.T) {
 }
 
 func TestDetectStops_TrailPreset(t *testing.T) {
-	cfg := Presets[PresetTrail] // MaxSpeed=0.5, MinDuration=1min
+	cfg := Presets[PresetTrail] // MaxSpeed=0.3, MinDuration=2min, MaxDistance=50
 
-	// Very slow movement (0.3 m/s) should be a stop for trail preset
+	// Nearly stationary for 3 minutes — should be a stop
 	points := []gpx.TrackPoint{
 		{Lat: 48.8566, Lon: 2.3522, Time: makeTime(0)},
-		{Lat: 48.8580, Lon: 2.3540, Time: makeTime(1)},  // fast
-		{Lat: 48.8580, Lon: 2.35401, Time: makeTime(2)},  // very slow
-		{Lat: 48.8580, Lon: 2.35402, Time: makeTime(3)},  // very slow
-		{Lat: 48.8600, Lon: 2.3560, Time: makeTime(4)},   // fast
+		{Lat: 48.8580, Lon: 2.3540, Time: makeTime(1)},   // fast
+		{Lat: 48.8580, Lon: 2.35401, Time: makeTime(2)},   // nearly stopped
+		{Lat: 48.8580, Lon: 2.35401, Time: makeTime(3)},   // nearly stopped
+		{Lat: 48.8580, Lon: 2.35402, Time: makeTime(4)},   // nearly stopped
+		{Lat: 48.8600, Lon: 2.3560, Time: makeTime(5)},    // fast
 	}
 	EnrichPoints(points)
 	stops := DetectStops(points, cfg)
 	if len(stops) != 1 {
 		t.Fatalf("expected 1 stop with trail preset, got %d", len(stops))
+	}
+}
+
+func TestDetectStops_MaxDistance_RejectsSlowUphill(t *testing.T) {
+	// Slow uphill: speed below threshold but covers real distance (200m over 3min)
+	cfg := StopConfig{MaxSpeed: 0.5, MinDuration: 2 * time.Minute, MaxDistance: 50}
+
+	points := []gpx.TrackPoint{
+		{Lat: 48.8566, Lon: 2.3522, Time: makeTime(0)},
+		{Lat: 48.8580, Lon: 2.3540, Time: makeTime(1)},   // fast
+		{Lat: 48.8581, Lon: 2.3541, Time: makeTime(2)},   // slow (~11m/60s = 0.18 m/s)
+		{Lat: 48.8582, Lon: 2.3542, Time: makeTime(3)},   // slow
+		{Lat: 48.8583, Lon: 2.3543, Time: makeTime(4)},   // slow — but 200m from start
+		{Lat: 48.8600, Lon: 2.3560, Time: makeTime(5)},   // fast
+	}
+	EnrichPoints(points)
+	stops := DetectStops(points, cfg)
+
+	// Should NOT be a stop: displacement from first to last slow point exceeds MaxDistance
+	for i, stop := range stops {
+		dist := Haversine(points[2].Lat, points[2].Lon, points[4].Lat, points[4].Lon)
+		if dist > cfg.MaxDistance {
+			t.Errorf("stop %d (duration=%v) with displacement %.0fm should have been rejected (MaxDistance=%.0f)", i, stop.Duration, dist, cfg.MaxDistance)
+		}
+	}
+}
+
+func TestDetectStops_MaxDistance_AcceptsRealStop(t *testing.T) {
+	// Real stop: GPS drift but person stays in same spot
+	cfg := StopConfig{MaxSpeed: 0.5, MinDuration: 2 * time.Minute, MaxDistance: 50}
+
+	points := []gpx.TrackPoint{
+		{Lat: 48.8566, Lon: 2.3522, Time: makeTime(0)},
+		{Lat: 48.8580, Lon: 2.3540, Time: makeTime(1)},    // fast
+		{Lat: 48.8580, Lon: 2.3540, Time: makeTime(2)},    // stopped
+		{Lat: 48.85801, Lon: 2.35401, Time: makeTime(3)},   // stopped (tiny drift)
+		{Lat: 48.8580, Lon: 2.3540, Time: makeTime(4)},    // stopped
+		{Lat: 48.8600, Lon: 2.3560, Time: makeTime(5)},    // fast
+	}
+	EnrichPoints(points)
+	stops := DetectStops(points, cfg)
+	if len(stops) != 1 {
+		t.Fatalf("expected 1 stop (real stop with GPS drift), got %d", len(stops))
 	}
 }
 
