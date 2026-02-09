@@ -3,6 +3,7 @@ namespace GpxAiAnalyzer.Core.Analysis;
 using GpxAiAnalyzer.Core.Models;
 using Microsoft.Extensions.AI;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 /// <summary>
 /// Orchestrates AI-powered track analysis using Microsoft.Extensions.AI.
@@ -11,7 +12,8 @@ public sealed class TrackAnalyzer
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        PropertyNameCaseInsensitive = true
+        PropertyNameCaseInsensitive = true,
+        NumberHandling = JsonNumberHandling.AllowReadingFromString,
     };
 
     private const string SystemPrompt = """
@@ -32,6 +34,21 @@ public sealed class TrackAnalyzer
         _chatClient = chatClient;
     }
 
+    private static string ExtractJson(string text)
+    {
+        var trimmed = text.Trim();
+        if (trimmed.StartsWith('{'))
+            return trimmed;
+
+        // Extract from ```json ... ``` or ``` ... ```
+        var startIdx = trimmed.IndexOf('{');
+        var endIdx = trimmed.LastIndexOf('}');
+        if (startIdx >= 0 && endIdx > startIdx)
+            return trimmed[startIdx..(endIdx + 1)];
+
+        return trimmed;
+    }
+
     public async Task<TrackReport> AnalyzeAsync(GpxStats stats, CancellationToken ct = default)
     {
         var tools = new AITool[]
@@ -47,7 +64,6 @@ public sealed class TrackAnalyzer
         var chatOptions = new ChatOptions
         {
             Tools = [.. tools],
-            ResponseFormat = ChatResponseFormat.Json,
         };
 
         var client = new ChatClientBuilder(_chatClient)
@@ -67,7 +83,10 @@ public sealed class TrackAnalyzer
         var text = response.Text
             ?? throw new InvalidOperationException("AI returned an empty response.");
 
-        var report = JsonSerializer.Deserialize<TrackReport>(text, JsonOptions)
+        // Strip markdown code fences if the model wraps JSON in ```json ... ```
+        var json = ExtractJson(text);
+
+        var report = JsonSerializer.Deserialize<TrackReport>(json, JsonOptions)
             ?? throw new InvalidOperationException("Failed to deserialize AI response into TrackReport.");
 
         return report;

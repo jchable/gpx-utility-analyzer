@@ -12,25 +12,23 @@ public static class AnalyzeCommand
 {
     public static Command Create(ProviderRegistry registry)
     {
-        var providerOption = new Option<string>(
-            "--provider", "AI provider: azure-openai, openai, anthropic, ollama")
-        { Required = true };
+        var providerOption = new Option<string>("--provider")
+        { Description = "AI provider: azure-openai, openai, anthropic, ollama, gemini", Required = true };
 
-        var inputOption = new Option<FileInfo?>(
-            "--input", "JSON file with GPX stats (alternative to stdin pipe)");
+        var inputOption = new Option<FileInfo?>("--input")
+        { Description = "JSON file with GPX stats (alternative to stdin pipe)" };
 
-        var apiKeyOption = new Option<string?>(
-            "--api-key", "API key (overrides environment variable)");
+        var apiKeyOption = new Option<string?>("--api-key")
+        { Description = "API key (overrides environment variable)" };
 
-        var endpointOption = new Option<string?>(
-            "--endpoint", "Provider endpoint URL (overrides environment variable)");
+        var endpointOption = new Option<string?>("--endpoint")
+        { Description = "Provider endpoint URL (overrides environment variable)" };
 
-        var modelOption = new Option<string?>(
-            "--model", "Model name (provider-specific default if omitted)");
+        var modelOption = new Option<string?>("--model")
+        { Description = "Model name (provider-specific default if omitted)" };
 
-        var formatOption = new Option<string>(
-            "--format", "Output format: text or json")
-        { DefaultValueFactory = _ => "text" };
+        var formatOption = new Option<string>("--format")
+        { Description = "Output format: text or json", DefaultValueFactory = _ => "text" };
 
         var command = new Command("analyze", "Analyze GPX track statistics using AI")
         {
