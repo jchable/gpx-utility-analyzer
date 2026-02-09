@@ -85,7 +85,8 @@ export default function TrackMap({ gpxUrl }: TrackMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const coordsRef = useRef<Coordinate[]>([]);
-  const [view, setView] = useState<MapView>('3d-terrain');
+  const key = getMapTilerKey();
+  const [view, setView] = useState<MapView>(key ? '3d-terrain' : '2d-topo');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -185,7 +186,6 @@ export default function TrackMap({ gpxUrl }: TrackMapProps) {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const key = getMapTilerKey();
     const style = getStyleUrl(view, key);
 
     // If map already exists, change the style

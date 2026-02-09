@@ -4,7 +4,7 @@ public class Activity
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = "";
-    public string ActivityType { get; set; } = "hike";
+    public string ActivityType { get; set; } = "trail";
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; }
     public double DistanceKm { get; set; }

@@ -98,7 +98,7 @@ public class ActivitiesController : ControllerBase
         {
             Id = Guid.NewGuid(),
             Name = Path.GetFileNameWithoutExtension(file.FileName),
-            ActivityType = activityType ?? "hike",
+            ActivityType = activityType ?? "trail",
             GpxFilePath = relativePath,
             Source = "upload",
             Status = ProcessingStatus.Pending,

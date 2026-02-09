@@ -21,7 +21,7 @@ export default function UploadPage() {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<FileEntry[]>([]);
-  const [activityType, setActivityType] = useState('hike');
+  const [activityType, setActivityType] = useState('trail');
   const [isDragOver, setIsDragOver] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 

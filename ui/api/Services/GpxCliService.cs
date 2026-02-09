@@ -9,19 +9,21 @@ public class GpxCliService
     private readonly string _binaryPath;
     private readonly string _defaultPreset;
     private readonly string _defaultSmoothing;
+    private readonly string _defaultTrackSmoothing;
     private readonly ILogger<GpxCliService> _logger;
 
     public GpxCliService(IConfiguration configuration, ILogger<GpxCliService> logger)
     {
         _binaryPath = configuration["GpxCli:BinaryPath"] ?? "gpx-analyzer";
-        _defaultPreset = configuration["GpxCli:DefaultPreset"] ?? "hiking";
+        _defaultPreset = configuration["GpxCli:DefaultPreset"] ?? "trail";
         _defaultSmoothing = configuration["GpxCli:DefaultSmoothing"] ?? "medium";
+        _defaultTrackSmoothing = configuration["GpxCli:DefaultTrackSmoothing"] ?? "medium";
         _logger = logger;
     }
 
     public async Task<GpxStats> AnalyzeAsync(string gpxFilePath, CancellationToken ct = default)
     {
-        var args = $"analyze \"{gpxFilePath}\" --format json --preset {_defaultPreset} --smoothing {_defaultSmoothing}";
+        var args = $"analyze \"{gpxFilePath}\" --format json --preset {_defaultPreset} --smoothing {_defaultSmoothing} --track-smoothing {_defaultTrackSmoothing}";
 
         _logger.LogInformation("Running: {Binary} {Args}", _binaryPath, args);
 
