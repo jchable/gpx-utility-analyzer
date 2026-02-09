@@ -138,7 +138,7 @@ func analyzeFile(path string, formatter output.Formatter, cfg stats.ComputeConfi
 		if err := gpx.WriteFile(exported, outPath); err != nil {
 			return fmt.Errorf("exporting %s: %w", outPath, err)
 		}
-		fmt.Fprintf(os.Stdout, "Exported: %s (%d points)\n", outPath, len(processed))
+		fmt.Fprintf(os.Stderr, "Exported: %s (%d points)\n", outPath, len(processed))
 	}
 
 	return nil
