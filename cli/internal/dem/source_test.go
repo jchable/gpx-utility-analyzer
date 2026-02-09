@@ -39,7 +39,7 @@ func TestSource_CachesLoaded(t *testing.T) {
 	}
 }
 
-func TestCorrectElevations(t *testing.T) {
+func TestSource_CorrectElevation(t *testing.T) {
 	dir := t.TempDir()
 	createTestHGT(t, dir, "N48E002.hgt", srtm3Size, func(row, col int) int16 {
 		return 500
@@ -51,7 +51,12 @@ func TestCorrectElevations(t *testing.T) {
 		{Lat: 10.0, Lon: 10.0, Ele: 100}, // no tile available, stays at 100
 	}
 
-	CorrectElevations(points, src)
+	// Correct elevations via the Elevation interface
+	for i := range points {
+		if ele, ok := src.Elevation(points[i].Lat, points[i].Lon); ok {
+			points[i].Ele = ele
+		}
+	}
 
 	if points[0].Ele != 500 {
 		t.Errorf("expected corrected elevation 500, got %f", points[0].Ele)
@@ -196,17 +201,107 @@ func TestSource_CrossTileElevation(t *testing.T) {
 	src := NewSource(dir)
 
 	// Point at the east boundary of N48E002 (lon very close to 3.0)
-	// lon=2.9999 is still in N48E002 but interpolation needs N48E003
-	// At lon exactly 3.0, floor(3.0) = 3 → TileKey gives N48E003
-	// At lon 2.9999, floor = 2 → TileKey gives N48E002, col ≈ GridSize-1
 	ele, ok := src.Elevation(48.5, 2.99999)
 	if !ok {
 		t.Fatal("expected ok=true for cross-tile boundary point")
 	}
-	// Should be interpolated between 500 and 600
-	if ele < 499 || ele > 601 {
-		t.Errorf("expected elevation between 500 and 600, got %f", ele)
+	// At lon≈2.99999, col fraction is ~0.999988. Interpolation between 500 and 600
+	// should give a value very close to 500 (mostly from the primary tile).
+	if ele < 500 || ele > 510 {
+		t.Errorf("expected elevation close to 500 (east boundary), got %f", ele)
 	}
+}
+
+func TestSource_CrossTileElevation_South(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create N48E002 (lat origin=48) with elevation=500
+	createTestHGT(t, dir, "N48E002.hgt", srtm3Size, func(row, col int) int16 {
+		return 500
+	})
+	// Create N47E002 (south neighbor, lat origin=47) with elevation=700
+	createTestHGT(t, dir, "N47E002.hgt", srtm3Size, func(row, col int) int16 {
+		return 700
+	})
+
+	src := NewSource(dir)
+
+	// Point near the south boundary of N48E002: lat very close to 48.0
+	// lat=48.00001 is in N48E002 (floor=48), row ≈ GridSize-1
+	ele, ok := src.Elevation(48.00001, 2.5)
+	if !ok {
+		t.Fatal("expected ok=true for cross-tile south boundary point")
+	}
+	// Should be interpolated between 500 (primary) and 700 (south neighbor).
+	// The point is very close to the boundary, so mostly from primary tile.
+	if ele < 500 || ele > 710 {
+		t.Errorf("expected elevation between 500 and 710, got %f", ele)
+	}
+}
+
+func TestSource_CrossTileElevation_SE(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create 4 tiles around the corner (49,3):
+	// N48E002 (primary), N48E003 (east), N47E002 (south), N47E003 (SE)
+	createTestHGT(t, dir, "N48E002.hgt", srtm3Size, func(row, col int) int16 {
+		return 500
+	})
+	createTestHGT(t, dir, "N48E003.hgt", srtm3Size, func(row, col int) int16 {
+		return 600
+	})
+	createTestHGT(t, dir, "N47E002.hgt", srtm3Size, func(row, col int) int16 {
+		return 700
+	})
+	createTestHGT(t, dir, "N47E003.hgt", srtm3Size, func(row, col int) int16 {
+		return 800
+	})
+
+	src := NewSource(dir)
+
+	// Point near the SE corner of N48E002: lat≈48.00001, lon≈2.99999
+	ele, ok := src.Elevation(48.00001, 2.99999)
+	if !ok {
+		t.Fatal("expected ok=true for cross-tile SE corner point")
+	}
+	// All 4 tiles contribute. Primary has 500, and the interpolation
+	// should be between 500 and 800.
+	if ele < 499 || ele > 801 {
+		t.Errorf("expected elevation between 499 and 801, got %f", ele)
+	}
+}
+
+func TestSource_CrossTileElevation_MissingNeighbor(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create only N48E002 — east neighbor N48E003 is missing.
+	// HGT tiles share their boundary samples (overlap by 1 pixel),
+	// so a point near the boundary never actually needs the adjacent tile.
+	// This test verifies the elevation succeeds even without the neighbor.
+	createTestHGT(t, dir, "N48E002.hgt", srtm3Size, func(row, col int) int16 {
+		return 500
+	})
+
+	src := NewSource(dir)
+
+	// Point near the east boundary: lon=2.99999 uses cols 1199 and 1200,
+	// both within the 1201-sample grid — no cross-tile needed.
+	ele, ok := src.Elevation(48.5, 2.99999)
+	if !ok {
+		t.Fatal("expected ok=true: boundary sample is in the primary tile (HGT overlap)")
+	}
+	if ele != 500 {
+		t.Errorf("expected 500, got %f", ele)
+	}
+}
+
+func TestTileCachePath_Panic(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("expected panic for short key")
+		}
+	}()
+	TileCachePath("/cache", "AB") // len < 3, should panic
 }
 
 func TestSource_ElevationInterior(t *testing.T) {

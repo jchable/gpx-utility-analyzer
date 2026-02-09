@@ -34,8 +34,8 @@ func TestPreloadTiles_LocalTiles(t *testing.T) {
 		{Lat: 48.5, Lon: 2.5, Ele: 999},
 	}
 
-	if err := PreloadTiles(points, src); err != nil {
-		t.Fatalf("PreloadTiles failed: %v", err)
+	if err := src.Preload(points); err != nil {
+		t.Fatalf("Preload failed: %v", err)
 	}
 
 	// Tile should now be pre-loaded.
@@ -43,8 +43,12 @@ func TestPreloadTiles_LocalTiles(t *testing.T) {
 		t.Errorf("expected 1 preloaded tile, got %d", len(src.tiles))
 	}
 
-	// CorrectElevations should use the preloaded tile.
-	CorrectElevations(points, src)
+	// Elevation should use the preloaded tile.
+	for i := range points {
+		if ele, ok := src.Elevation(points[i].Lat, points[i].Lon); ok {
+			points[i].Ele = ele
+		}
+	}
 	if points[0].Ele != 500 {
 		t.Errorf("expected 500, got %f", points[0].Ele)
 	}
@@ -67,7 +71,7 @@ func TestPreloadTiles_MemoryLimitExceeded(t *testing.T) {
 		{Lat: 49.5, Lon: 3.5},
 	}
 
-	err := PreloadTiles(points, src)
+	err := src.Preload(points)
 	if err == nil {
 		t.Fatal("expected error when memory limit exceeded")
 	}
@@ -89,8 +93,8 @@ func TestPreloadTiles_MemoryLimitOK(t *testing.T) {
 		{Lat: 48.5, Lon: 2.5},
 	}
 
-	if err := PreloadTiles(points, src); err != nil {
-		t.Fatalf("PreloadTiles should succeed: %v", err)
+	if err := src.Preload(points); err != nil {
+		t.Fatalf("Preload should succeed: %v", err)
 	}
 }
 
@@ -106,8 +110,8 @@ func TestPreloadTiles_NoLimit(t *testing.T) {
 		{Lat: 48.5, Lon: 2.5},
 	}
 
-	if err := PreloadTiles(points, src); err != nil {
-		t.Fatalf("PreloadTiles should succeed with no limit: %v", err)
+	if err := src.Preload(points); err != nil {
+		t.Fatalf("Preload should succeed with no limit: %v", err)
 	}
 }
 
@@ -141,8 +145,8 @@ func TestPreloadTiles_ParallelDownload(t *testing.T) {
 		{Lat: 49.5, Lon: 3.5}, // N49E003
 	}
 
-	if err := PreloadTiles(points, src); err != nil {
-		t.Fatalf("PreloadTiles failed: %v", err)
+	if err := src.Preload(points); err != nil {
+		t.Fatalf("Preload failed: %v", err)
 	}
 
 	// Both tiles should be downloaded and loaded.
@@ -168,11 +172,11 @@ func TestPreloadTiles_ParallelDownload(t *testing.T) {
 
 func TestPreloadTiles_EmptyPoints(t *testing.T) {
 	src := NewSource(t.TempDir())
-	if err := PreloadTiles(nil, src); err != nil {
-		t.Fatalf("PreloadTiles should succeed with nil points: %v", err)
+	if err := src.Preload(nil); err != nil {
+		t.Fatalf("Preload should succeed with nil points: %v", err)
 	}
-	if err := PreloadTiles([]gpx.TrackPoint{}, src); err != nil {
-		t.Fatalf("PreloadTiles should succeed with empty points: %v", err)
+	if err := src.Preload([]gpx.TrackPoint{}); err != nil {
+		t.Fatalf("Preload should succeed with empty points: %v", err)
 	}
 }
 
@@ -194,15 +198,91 @@ func TestPreloadTiles_DownloadFailureNonFatal(t *testing.T) {
 		{Lat: 48.5, Lon: 2.5},
 	}
 
-	// PreloadTiles should not return error (download failures are non-fatal).
-	if err := PreloadTiles(points, src); err != nil {
-		t.Fatalf("PreloadTiles should not fail on download error: %v", err)
+	// Preload should not return error (download failures are non-fatal).
+	if err := src.Preload(points); err != nil {
+		t.Fatalf("Preload should not fail on download error: %v", err)
 	}
 
 	// The tile should not be in memory.
 	key := TileKey(48.5, 2.5)
 	if src.tiles[key] != nil {
 		t.Error("expected nil tile after download failure")
+	}
+}
+
+func TestCollectTileKeys_Interior(t *testing.T) {
+	// Interior points: only the primary key.
+	points := []gpx.TrackPoint{
+		{Lat: 48.5, Lon: 2.5},
+	}
+	keys := collectTileKeys(points)
+	if len(keys) != 1 {
+		t.Errorf("expected 1 key for interior point, got %d: %v", len(keys), keys)
+	}
+}
+
+func TestCollectTileKeys_NearEastBoundary(t *testing.T) {
+	// Point near east boundary of N48E002: lon close to 3.0
+	points := []gpx.TrackPoint{
+		{Lat: 48.5, Lon: 2.9999},
+	}
+	keys := collectTileKeys(points)
+	// Should include N48E002 (primary) and N48E003 (east neighbor)
+	keySet := make(map[string]bool)
+	for _, k := range keys {
+		keySet[k] = true
+	}
+	if !keySet["N48E002"] {
+		t.Error("expected N48E002 (primary)")
+	}
+	if !keySet["N48E003"] {
+		t.Error("expected N48E003 (east neighbor)")
+	}
+	if len(keys) != 2 {
+		t.Errorf("expected 2 keys, got %d: %v", len(keys), keys)
+	}
+}
+
+func TestCollectTileKeys_NearSouthBoundary(t *testing.T) {
+	// Point near south boundary of N48E002: lat close to 48.0
+	points := []gpx.TrackPoint{
+		{Lat: 48.0001, Lon: 2.5},
+	}
+	keys := collectTileKeys(points)
+	keySet := make(map[string]bool)
+	for _, k := range keys {
+		keySet[k] = true
+	}
+	if !keySet["N48E002"] {
+		t.Error("expected N48E002 (primary)")
+	}
+	if !keySet["N47E002"] {
+		t.Error("expected N47E002 (south neighbor)")
+	}
+	if len(keys) != 2 {
+		t.Errorf("expected 2 keys, got %d: %v", len(keys), keys)
+	}
+}
+
+func TestCollectTileKeys_NearSECorner(t *testing.T) {
+	// Point near SE corner of N48E002: lat≈48.0001, lon≈2.9999
+	points := []gpx.TrackPoint{
+		{Lat: 48.0001, Lon: 2.9999},
+	}
+	keys := collectTileKeys(points)
+	keySet := make(map[string]bool)
+	for _, k := range keys {
+		keySet[k] = true
+	}
+	// Should include all 4: primary, south, east, SE
+	expected := []string{"N48E002", "N47E002", "N48E003", "N47E003"}
+	for _, exp := range expected {
+		if !keySet[exp] {
+			t.Errorf("expected key %s in set %v", exp, keys)
+		}
+	}
+	if len(keys) != 4 {
+		t.Errorf("expected 4 keys, got %d: %v", len(keys), keys)
 	}
 }
 
