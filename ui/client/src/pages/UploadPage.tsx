@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
@@ -14,6 +14,7 @@ interface FileEntry {
 }
 
 const ACTIVITY_TYPES = Object.entries(ACTIVITY_LABELS);
+const POLL_INTERVAL = 2000;
 
 export default function UploadPage() {
   const navigate = useNavigate();
@@ -23,6 +24,39 @@ export default function UploadPage() {
   const [activityType, setActivityType] = useState('hike');
   const [isDragOver, setIsDragOver] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+
+  // Poll for processing status updates
+  useEffect(() => {
+    const processingFiles = files.filter((f) => f.status === 'processing' && f.activityId);
+    if (processingFiles.length === 0) return;
+
+    const interval = setInterval(async () => {
+      for (const entry of processingFiles) {
+        try {
+          const activity = await api.getActivity(entry.activityId!);
+          if (activity.status === 'Completed' || activity.status === 'Failed') {
+            setFiles((prev) =>
+              prev.map((f) =>
+                f.activityId === entry.activityId
+                  ? {
+                      ...f,
+                      status: activity.status === 'Completed' ? 'done' : 'error',
+                      error: activity.status === 'Failed' ? activity.errorMessage ?? 'Processing failed' : undefined,
+                    }
+                  : f
+              )
+            );
+            queryClient.invalidateQueries({ queryKey: ['activities'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+          }
+        } catch {
+          // Ignore polling errors, will retry next interval
+        }
+      }
+    }, POLL_INTERVAL);
+
+    return () => clearInterval(interval);
+  }, [files, queryClient]);
 
   const addFiles = useCallback((newFiles: FileList | File[]) => {
     const gpxFiles = Array.from(newFiles).filter((f) =>

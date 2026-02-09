@@ -43,11 +43,16 @@ public class GpxCliService
 
         await process.WaitForExitAsync(ct);
 
+        if (!string.IsNullOrWhiteSpace(stderr))
+            _logger.LogDebug("gpx-analyzer stderr: {StdErr}", stderr.Trim());
+
         if (process.ExitCode != 0)
         {
             _logger.LogError("gpx-analyzer exited with code {Code}: {StdErr}", process.ExitCode, stderr);
             throw new InvalidOperationException($"gpx-analyzer failed (exit code {process.ExitCode}): {stderr}");
         }
+
+        _logger.LogDebug("gpx-analyzer stdout length: {Length} chars", stdout.Length);
 
         var stats = JsonSerializer.Deserialize<GpxStats>(stdout, new JsonSerializerOptions
         {

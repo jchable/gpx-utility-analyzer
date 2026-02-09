@@ -1,5 +1,6 @@
 namespace GpxAnalyzer.Api.Services;
 
+using System.Diagnostics;
 using System.Text.Json;
 using GpxAnalyzer.Api.Data;
 using GpxAnalyzer.Api.Entities;
@@ -28,11 +29,20 @@ public class ActivityProcessingService
 
     public async Task ProcessActivityAsync(Guid activityId, CancellationToken ct = default)
     {
+        var totalSw = Stopwatch.StartNew();
+
         using var scope = _scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         var activity = await db.Activities.FindAsync([activityId], ct);
-        if (activity is null) return;
+        if (activity is null)
+        {
+            _logger.LogWarning("Activity {Id} not found, skipping processing", activityId);
+            return;
+        }
+
+        _logger.LogInformation("Starting processing for activity {Id} ({Name}, type={Type}, source={Source})",
+            activityId, activity.Name, activity.ActivityType, activity.Source);
 
         try
         {
@@ -42,7 +52,16 @@ public class ActivityProcessingService
             await db.SaveChangesAsync(ct);
 
             var gpxFullPath = _storage.GetFullPath(activity.GpxFilePath);
+            _logger.LogInformation("[{Id}] Step 1/2: Running Go CLI analysis on {Path}", activityId, activity.GpxFilePath);
+
+            var stepSw = Stopwatch.StartNew();
             var stats = await _cliService.AnalyzeAsync(gpxFullPath, ct);
+            stepSw.Stop();
+
+            _logger.LogInformation("[{Id}] Go CLI completed in {Elapsed:F1}s — {Distance:F1} km, D+{Gain:F0}m, D-{Loss:F0}m, moving {MovingTime}",
+                activityId, stepSw.Elapsed.TotalSeconds,
+                stats.TotalDistanceKm, stats.ElevationGainM, stats.ElevationLossM,
+                TimeSpan.FromSeconds(stats.MovingTime.Seconds).ToString(@"hh\:mm\:ss"));
 
             // Store stats and populate summary fields
             activity.StatsJson = JsonSerializer.Serialize(stats);
@@ -61,26 +80,32 @@ public class ActivityProcessingService
             activity.UpdatedAt = DateTime.UtcNow;
             await db.SaveChangesAsync(ct);
 
+            _logger.LogInformation("[{Id}] Step 2/2: Running AI analysis", activityId);
+
             try
             {
+                stepSw.Restart();
                 var report = await _aiService.AnalyzeAsync(stats, ct);
+                stepSw.Stop();
                 activity.AiReportJson = JsonSerializer.Serialize(report);
+                _logger.LogInformation("[{Id}] AI analysis completed in {Elapsed:F1}s", activityId, stepSw.Elapsed.TotalSeconds);
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "AI analysis failed for activity {Id}, continuing without AI report", activityId);
-                // AI failure is non-fatal — we still have the stats
+                _logger.LogWarning(ex, "[{Id}] AI analysis failed, continuing without AI report: {Message}", activityId, ex.Message);
             }
 
             activity.Status = ProcessingStatus.Completed;
             activity.UpdatedAt = DateTime.UtcNow;
             await db.SaveChangesAsync(ct);
 
-            _logger.LogInformation("Activity {Id} processed successfully", activityId);
+            totalSw.Stop();
+            _logger.LogInformation("[{Id}] Processing completed in {Elapsed:F1}s (status=Completed)", activityId, totalSw.Elapsed.TotalSeconds);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to process activity {Id}", activityId);
+            totalSw.Stop();
+            _logger.LogError(ex, "[{Id}] Processing failed after {Elapsed:F1}s: {Message}", activityId, totalSw.Elapsed.TotalSeconds, ex.Message);
             activity.Status = ProcessingStatus.Failed;
             activity.ErrorMessage = ex.Message;
             activity.UpdatedAt = DateTime.UtcNow;

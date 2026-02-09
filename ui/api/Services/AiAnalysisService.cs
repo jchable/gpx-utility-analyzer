@@ -32,7 +32,8 @@ public class AiAnalysisService
             Model = _configuration["AiProvider:Model"],
         };
 
-        _logger.LogInformation("Running AI analysis with provider: {Provider}", providerName);
+        _logger.LogInformation("Running AI analysis with provider={Provider}, model={Model}",
+            providerName, options.Model ?? "(default)");
 
         var chatClient = _registry.CreateClient(providerName, options);
         var analyzer = new TrackAnalyzer(chatClient);

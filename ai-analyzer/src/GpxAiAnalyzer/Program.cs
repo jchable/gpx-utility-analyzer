@@ -9,6 +9,7 @@ registry.Register(new OpenAIProvider());
 registry.Register(new AnthropicProvider());
 registry.Register(new MistralProvider());
 registry.Register(new OllamaProvider());
+registry.Register(new GeminiProvider());
 
 // Build CLI
 var rootCommand = new RootCommand("AI-powered analysis of GPX track statistics")

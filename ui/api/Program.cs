@@ -28,6 +28,7 @@ registry.Register(new OpenAIProvider());
 registry.Register(new AnthropicProvider());
 registry.Register(new MistralProvider());
 registry.Register(new OllamaProvider());
+registry.Register(new GeminiProvider());
 builder.Services.AddSingleton(registry);
 
 // Services
@@ -47,6 +48,13 @@ builder.Services.AddSingleton<IActivityImporter, StravaService>();
 // API
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+
+// Allow large GPX uploads (up to 100 MB)
+builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 100 * 1024 * 1024);
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(o =>
+{
+    o.MultipartBodyLengthLimit = 100 * 1024 * 1024;
+});
 
 // CORS for React dev server
 builder.Services.AddCors(options =>
