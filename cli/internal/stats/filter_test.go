@@ -54,11 +54,11 @@ func TestFilterOutliers_NormalTrack(t *testing.T) {
 func TestFilterOutliers_ConsecutiveOutliers(t *testing.T) {
 	t0 := time.Date(2023, 8, 1, 10, 0, 0, 0, time.UTC)
 	points := []gpx.TrackPoint{
-		makePoint(48.0, 2.0, t0),                              // anchor
-		makePoint(50.0, 5.0, t0.Add(5*time.Second)),           // outlier 1
-		makePoint(51.0, 6.0, t0.Add(10*time.Second)),          // outlier 2
-		makePoint(52.0, 7.0, t0.Add(15*time.Second)),          // outlier 3
-		makePoint(48.00001, 2.00001, t0.Add(20*time.Second)),  // back near anchor — kept
+		makePoint(48.0, 2.0, t0),                             // anchor
+		makePoint(50.0, 5.0, t0.Add(5*time.Second)),          // outlier 1
+		makePoint(51.0, 6.0, t0.Add(10*time.Second)),         // outlier 2
+		makePoint(52.0, 7.0, t0.Add(15*time.Second)),         // outlier 3
+		makePoint(48.00001, 2.00001, t0.Add(20*time.Second)), // back near anchor — kept
 	}
 
 	filtered, removed := FilterOutliers(points, 7.0)
