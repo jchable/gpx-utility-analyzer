@@ -16,14 +16,14 @@ public sealed class GeminiProvider : IChatClientProvider
 
     public IChatClient CreateClient(ProviderOptions options)
     {
-        var apiKey = options.ApiKey
-            ?? Environment.GetEnvironmentVariable("GEMINI_API_KEY")
+        var apiKey = !string.IsNullOrWhiteSpace(options.ApiKey) ? options.ApiKey
+            : Environment.GetEnvironmentVariable("GEMINI_API_KEY")
             ?? Environment.GetEnvironmentVariable("GOOGLE_API_KEY")
             ?? throw new InvalidOperationException(
                 "Gemini API key required. Set GEMINI_API_KEY, GOOGLE_API_KEY, or use --api-key.");
 
-        var model = options.Model ?? "gemini-2.0-flash";
-        var endpoint = options.Endpoint ?? DefaultEndpoint;
+        var model = !string.IsNullOrWhiteSpace(options.Model) ? options.Model : "gemini-2.0-flash";
+        var endpoint = !string.IsNullOrWhiteSpace(options.Endpoint) ? options.Endpoint : DefaultEndpoint;
 
         var clientOptions = new OpenAIClientOptions { Endpoint = new Uri(endpoint) };
         var client = new OpenAIClient(new ApiKeyCredential(apiKey), clientOptions);
