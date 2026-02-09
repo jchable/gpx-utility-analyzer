@@ -52,13 +52,26 @@ public class IntegrationsController : ControllerBase
     }
 
     [HttpGet("{provider}/callback")]
-    public async Task<IActionResult> Callback(string provider, [FromQuery] string code)
+    public async Task<IActionResult> Callback(
+        string provider,
+        [FromQuery] string? code = null,
+        [FromQuery] string? oauth_token = null,
+        [FromQuery] string? oauth_verifier = null)
     {
         var importer = _importers.FirstOrDefault(i => i.ProviderName == provider);
         if (importer is null) return NotFound();
 
+        // Build the exchange code: OAuth 2 uses "code", OAuth 1.0a uses "oauth_token|oauth_verifier"
+        var exchangeCode = !string.IsNullOrEmpty(code)
+            ? code
+            : !string.IsNullOrEmpty(oauth_token) && !string.IsNullOrEmpty(oauth_verifier)
+                ? $"{oauth_token}|{oauth_verifier}"
+                : null;
+
+        if (exchangeCode is null) return BadRequest("Missing OAuth callback parameters.");
+
         var callbackUrl = $"{Request.Scheme}://{Request.Host}/api/integrations/{provider}/callback";
-        var tokenInfo = await importer.ExchangeCodeAsync(code, callbackUrl);
+        var tokenInfo = await importer.ExchangeCodeAsync(exchangeCode, callbackUrl);
 
         var existing = await _db.Integrations.FirstOrDefaultAsync(i => i.Provider == provider);
         if (existing is not null)

@@ -7,7 +7,7 @@ import { ACTIVITY_COLORS, ACTIVITY_LABELS } from '../types/activity';
 import type { TrackReport } from '../types/activity';
 import TrackMap from '../components/map/TrackMap';
 import ElevationProfileChart from '../components/activity/ElevationProfileChart';
-import { parseGpxFull, toCoordinates, computeProfileData } from '../utils/gpx';
+import { parseGpxFull, toCoordinates, computeProfileData, profileHasTimestamps } from '../utils/gpx';
 import type { GpxTrackPoint, Coordinate } from '../utils/gpx';
 
 function formatDate(iso: string): string {
@@ -249,6 +249,11 @@ export default function ActivityDetail() {
     [gpxPoints],
   );
 
+  const hasTimestamps = useMemo(
+    () => profileHasTimestamps(profileData),
+    [profileData],
+  );
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -378,7 +383,13 @@ export default function ActivityDetail() {
 
       {/* Elevation Profile */}
       {activity.status === 'Completed' && (
-        <ElevationProfileChart data={profileData} loading={gpxLoading} />
+        <ElevationProfileChart
+          data={profileData}
+          loading={gpxLoading}
+          stops={activity.stats?.stops}
+          hasTimestamps={hasTimestamps}
+          activityStartTime={activity.stats?.start_time}
+        />
       )}
 
       {/* Stats Grid - Radial Gauges */}

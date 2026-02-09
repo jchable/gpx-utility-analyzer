@@ -11,11 +11,12 @@ export type Coordinate = [number, number, number];
 
 /** A single data point ready for the elevation profile chart */
 export interface ProfilePoint {
-  distance: number;   // cumulative distance in km
-  elevation: number;  // elevation in meters
-  speed: number;      // speed in km/h (smoothed)
-  gap: number;        // grade-adjusted speed in km/h (smoothed)
-  grade: number;      // grade percentage (smoothed)
+  distance: number;        // cumulative distance in km
+  elevation: number;       // elevation in meters
+  speed: number;           // speed in km/h (smoothed)
+  gap: number;             // grade-adjusted speed in km/h (smoothed)
+  grade: number;           // grade percentage (smoothed)
+  elapsedTime: number | null; // seconds since activity start, null if no timestamps
 }
 
 // ---------------------------------------------------------------------------
@@ -174,15 +175,27 @@ export function computeProfileData(
   }
   const smoothGap = rollingAverage(rawGap, effectiveWindow);
 
-  // Step 4: assemble full profile
+  // Step 4: elapsed time from first timestamped point
+  const startTimeMs = points[0]?.time?.getTime() ?? null;
+  const elapsedTimes: (number | null)[] = points.map((p) =>
+    startTimeMs !== null && p.time !== null ? (p.time.getTime() - startTimeMs) / 1000 : null,
+  );
+
+  // Step 5: assemble full profile
   const fullProfile: ProfilePoint[] = points.map((_, i) => ({
     distance: Math.round((cumDist[i] / 1000) * 1000) / 1000, // 3 decimals km
     elevation: Math.round(smoothEle[i]),
     speed: Math.round(smoothSpeed[i] * 10) / 10,
     gap: Math.round(smoothGap[i] * 10) / 10,
     grade: Math.round(smoothGrade[i] * 1000) / 10, // fraction → percentage, 1 decimal
+    elapsedTime: elapsedTimes[i],
   }));
 
-  // Step 5: downsample
+  // Step 6: downsample
   return downsample(fullProfile, targetPoints);
+}
+
+/** Returns true if the profile data contains valid timestamp information */
+export function profileHasTimestamps(data: ProfilePoint[]): boolean {
+  return data.length > 0 && data[0].elapsedTime !== null;
 }

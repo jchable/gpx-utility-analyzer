@@ -1,5 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
+import type { AppSettings } from '../types/activity';
 
 export function useDashboard() {
   return useQuery({
@@ -31,5 +32,22 @@ export function useIntegrations() {
   return useQuery({
     queryKey: ['integrations'],
     queryFn: api.getIntegrations,
+  });
+}
+
+export function useSettings() {
+  return useQuery({
+    queryKey: ['settings'],
+    queryFn: api.getSettings,
+  });
+}
+
+export function useUpdateSettings() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (settings: AppSettings) => api.updateSettings(settings),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['settings'] });
+    },
   });
 }

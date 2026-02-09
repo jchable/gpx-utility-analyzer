@@ -145,6 +145,45 @@ export interface IntegrationInfo {
   connectedAt?: string;
 }
 
+export interface AppSettings {
+  analysis: AnalysisSettings;
+  aiProvider: AiProviderSettings;
+  integrations: IntegrationCredentials;
+}
+
+export interface AnalysisSettings {
+  preset: string;
+  smoothing: string;
+  trackSmoothing: string;
+  elevationAlgorithm: string;
+}
+
+export interface AiProviderSettings {
+  name: string;
+  apiKey: string;
+  hasApiKey: boolean;
+  model: string;
+  endpoint: string;
+  availableProviders: string[];
+}
+
+export interface IntegrationCredentials {
+  strava: StravaCredentials;
+  garmin: GarminCredentials;
+}
+
+export interface StravaCredentials {
+  clientId: string;
+  hasClientSecret: boolean;
+  clientSecret: string;
+}
+
+export interface GarminCredentials {
+  consumerKey: string;
+  hasConsumerSecret: boolean;
+  consumerSecret: string;
+}
+
 export const ACTIVITY_COLORS: Record<string, string> = {
   run: '#00d4ff',
   trail: '#00ff88',

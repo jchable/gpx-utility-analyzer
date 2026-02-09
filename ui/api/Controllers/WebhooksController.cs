@@ -48,6 +48,14 @@ public class WebhooksController : ControllerBase
         return Unauthorized();
     }
 
+    // Garmin webhook validation (GET)
+    [HttpGet("garmin")]
+    public IActionResult GarminValidation()
+    {
+        // Garmin validates webhook URL via GET during registration
+        return Ok();
+    }
+
     // Generic webhook handler
     [HttpPost("{provider}")]
     public async Task<IActionResult> HandleWebhook(string provider)

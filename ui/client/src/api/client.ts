@@ -1,4 +1,4 @@
-import type { ActivityListItem, ActivityDetail, DashboardSummary, IntegrationInfo } from '../types/activity';
+import type { ActivityListItem, ActivityDetail, DashboardSummary, IntegrationInfo, AppSettings } from '../types/activity';
 
 const BASE = '/api';
 
@@ -59,4 +59,21 @@ export const api = {
   disconnectIntegration: async (provider: string) => {
     await fetch(`${BASE}/integrations/${provider}`, { method: 'DELETE' });
   },
+
+  // Settings
+  getSettings: () => fetchJson<AppSettings>('/settings'),
+
+  updateSettings: async (settings: AppSettings): Promise<void> => {
+    const res = await fetch(`${BASE}/settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(settings),
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`API error ${res.status}: ${text}`);
+    }
+  },
+
+  getProviders: () => fetchJson<string[]>('/settings/providers'),
 };

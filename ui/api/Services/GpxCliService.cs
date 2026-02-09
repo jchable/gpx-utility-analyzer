@@ -7,23 +7,23 @@ using GpxAiAnalyzer.Core.Models;
 public class GpxCliService
 {
     private readonly string _binaryPath;
-    private readonly string _defaultPreset;
-    private readonly string _defaultSmoothing;
-    private readonly string _defaultTrackSmoothing;
+    private readonly ISettingsService _settings;
     private readonly ILogger<GpxCliService> _logger;
 
-    public GpxCliService(IConfiguration configuration, ILogger<GpxCliService> logger)
+    public GpxCliService(IConfiguration configuration, ISettingsService settings, ILogger<GpxCliService> logger)
     {
         _binaryPath = configuration["GpxCli:BinaryPath"] ?? "gpx-analyzer";
-        _defaultPreset = configuration["GpxCli:DefaultPreset"] ?? "trail";
-        _defaultSmoothing = configuration["GpxCli:DefaultSmoothing"] ?? "medium";
-        _defaultTrackSmoothing = configuration["GpxCli:DefaultTrackSmoothing"] ?? "medium";
+        _settings = settings;
         _logger = logger;
     }
 
     public async Task<GpxStats> AnalyzeAsync(string gpxFilePath, string? exportDir = null, CancellationToken ct = default)
     {
-        var args = $"analyze \"{gpxFilePath}\" --format json --preset {_defaultPreset} --smoothing {_defaultSmoothing} --track-smoothing {_defaultTrackSmoothing}";
+        var preset = await _settings.GetAsync("GpxCli:DefaultPreset", "trail") ?? "trail";
+        var smoothing = await _settings.GetAsync("GpxCli:DefaultSmoothing", "medium") ?? "medium";
+        var trackSmoothing = await _settings.GetAsync("GpxCli:DefaultTrackSmoothing", "medium") ?? "medium";
+
+        var args = $"analyze \"{gpxFilePath}\" --format json --preset {preset} --smoothing {smoothing} --track-smoothing {trackSmoothing}";
 
         if (!string.IsNullOrEmpty(exportDir))
             args += $" --export \"{exportDir}\"";

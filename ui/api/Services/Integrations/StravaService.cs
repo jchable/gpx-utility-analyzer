@@ -11,35 +11,36 @@ public class StravaService : IActivityImporter
     private const string TokenUrl = "https://www.strava.com/oauth/token";
     private const string ApiBase = "https://www.strava.com/api/v3";
 
-    private readonly IConfiguration _configuration;
+    private readonly ISettingsService _settings;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<StravaService> _logger;
 
     public string ProviderName => "strava";
 
     public StravaService(
-        IConfiguration configuration,
+        ISettingsService settings,
         IHttpClientFactory httpClientFactory,
         ILogger<StravaService> logger)
     {
-        _configuration = configuration;
+        _settings = settings;
         _httpClientFactory = httpClientFactory;
         _logger = logger;
     }
 
-    public Task<string> GetAuthorizationUrlAsync(string callbackUrl)
+    public async Task<string> GetAuthorizationUrlAsync(string callbackUrl)
     {
-        var clientId = _configuration["Integrations:Strava:ClientId"]
+        var clientId = await _settings.GetAsync("Integrations:Strava:ClientId")
             ?? throw new InvalidOperationException("Strava ClientId not configured.");
 
-        var url = $"{AuthUrl}?client_id={clientId}&response_type=code&redirect_uri={Uri.EscapeDataString(callbackUrl)}&scope=read,activity:read_all&approval_prompt=auto";
-        return Task.FromResult(url);
+        return $"{AuthUrl}?client_id={clientId}&response_type=code&redirect_uri={Uri.EscapeDataString(callbackUrl)}&scope=read,activity:read_all&approval_prompt=auto";
     }
 
     public async Task<TokenInfo> ExchangeCodeAsync(string code, string callbackUrl)
     {
-        var clientId = _configuration["Integrations:Strava:ClientId"]!;
-        var clientSecret = _configuration["Integrations:Strava:ClientSecret"]!;
+        var clientId = await _settings.GetAsync("Integrations:Strava:ClientId")
+            ?? throw new InvalidOperationException("Strava ClientId not configured.");
+        var clientSecret = await _settings.GetAsync("Integrations:Strava:ClientSecret")
+            ?? throw new InvalidOperationException("Strava ClientSecret not configured.");
 
         using var client = _httpClientFactory.CreateClient();
         var content = new FormUrlEncodedContent(new Dictionary<string, string>
@@ -66,8 +67,10 @@ public class StravaService : IActivityImporter
 
     public async Task<TokenInfo> RefreshTokenAsync(string refreshToken)
     {
-        var clientId = _configuration["Integrations:Strava:ClientId"]!;
-        var clientSecret = _configuration["Integrations:Strava:ClientSecret"]!;
+        var clientId = await _settings.GetAsync("Integrations:Strava:ClientId")
+            ?? throw new InvalidOperationException("Strava ClientId not configured.");
+        var clientSecret = await _settings.GetAsync("Integrations:Strava:ClientSecret")
+            ?? throw new InvalidOperationException("Strava ClientSecret not configured.");
 
         using var client = _httpClientFactory.CreateClient();
         var content = new FormUrlEncodedContent(new Dictionary<string, string>
@@ -91,17 +94,17 @@ public class StravaService : IActivityImporter
         };
     }
 
-    public Task<bool> ValidateWebhookAsync(HttpContext context)
+    public async Task<bool> ValidateWebhookAsync(HttpContext context)
     {
         // Strava webhook validation: GET with hub.challenge
         if (context.Request.Method == "GET")
         {
-            var verifyToken = _configuration["Integrations:Strava:WebhookVerifyToken"] ?? "gpx-analyzer";
+            var verifyToken = await _settings.GetAsync("Integrations:Strava:WebhookVerifyToken", "gpx-analyzer") ?? "gpx-analyzer";
             var mode = context.Request.Query["hub.mode"].ToString();
             var token = context.Request.Query["hub.verify_token"].ToString();
-            return Task.FromResult(mode == "subscribe" && token == verifyToken);
+            return mode == "subscribe" && token == verifyToken;
         }
-        return Task.FromResult(true);
+        return true;
     }
 
     public async Task<string?> GetWebhookActivityIdAsync(HttpContext context)

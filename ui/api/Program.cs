@@ -31,6 +31,10 @@ registry.Register(new OllamaProvider());
 registry.Register(new GeminiProvider());
 builder.Services.AddSingleton(registry);
 
+// Settings
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<ISettingsService, SettingsService>();
+
 // Services
 builder.Services.AddSingleton<GpxStorageService>();
 builder.Services.AddSingleton<GpxCliService>();
@@ -44,6 +48,7 @@ builder.Services.AddHostedService<ActivityProcessingWorker>();
 // Integration services
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IActivityImporter, StravaService>();
+builder.Services.AddSingleton<IActivityImporter, GarminService>();
 
 // API
 builder.Services.AddControllers();
@@ -61,7 +66,7 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
+        policy.WithOrigins("http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176")
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -69,11 +74,11 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Auto-create database
+// Auto-migrate database
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.EnsureCreated();
+    db.Database.Migrate();
 }
 
 app.UseCors();

@@ -7,29 +7,29 @@ using GpxAiAnalyzer.Core.Providers;
 public class AiAnalysisService
 {
     private readonly ProviderRegistry _registry;
-    private readonly IConfiguration _configuration;
+    private readonly ISettingsService _settings;
     private readonly ILogger<AiAnalysisService> _logger;
 
     public AiAnalysisService(
         ProviderRegistry registry,
-        IConfiguration configuration,
+        ISettingsService settings,
         ILogger<AiAnalysisService> logger)
     {
         _registry = registry;
-        _configuration = configuration;
+        _settings = settings;
         _logger = logger;
     }
 
     public async Task<TrackReport> AnalyzeAsync(GpxStats stats, CancellationToken ct = default)
     {
-        var providerName = _configuration["AiProvider:Name"]
+        var providerName = await _settings.GetAsync("AiProvider:Name")
             ?? throw new InvalidOperationException("AI provider not configured. Set AiProvider:Name in settings.");
 
         var options = new ProviderOptions
         {
-            ApiKey = _configuration["AiProvider:ApiKey"],
-            Endpoint = _configuration["AiProvider:Endpoint"],
-            Model = _configuration["AiProvider:Model"],
+            ApiKey = await _settings.GetAsync("AiProvider:ApiKey"),
+            Endpoint = await _settings.GetAsync("AiProvider:Endpoint"),
+            Model = await _settings.GetAsync("AiProvider:Model"),
         };
 
         _logger.LogInformation("Running AI analysis with provider={Provider}, model={Model}",
