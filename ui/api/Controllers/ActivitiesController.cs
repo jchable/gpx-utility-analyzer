@@ -79,6 +79,7 @@ public class ActivitiesController : ControllerBase
             Stats = activity.StatsJson is not null ? JsonSerializer.Deserialize<object>(activity.StatsJson) : null,
             AiReport = activity.AiReportJson is not null ? JsonSerializer.Deserialize<object>(activity.AiReportJson) : null,
             CreatedAt = activity.CreatedAt,
+            UpdatedAt = activity.UpdatedAt,
         };
     }
 
@@ -116,6 +117,7 @@ public class ActivitiesController : ControllerBase
             Status = activity.Status.ToString(),
             Source = activity.Source,
             CreatedAt = activity.CreatedAt,
+            UpdatedAt = activity.UpdatedAt,
         });
     }
 

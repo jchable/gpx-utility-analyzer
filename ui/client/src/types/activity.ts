@@ -26,6 +26,7 @@ export interface ActivityDetail {
   stats?: GpxStats;
   aiReport?: TrackReport;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface GpxStats {

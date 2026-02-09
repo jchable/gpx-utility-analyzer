@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useActivity } from '../hooks/useActivities';
 import { api } from '../api/client';
 import { ACTIVITY_COLORS, ACTIVITY_LABELS } from '../types/activity';
@@ -196,19 +197,26 @@ function AiReportSection({ report }: { report: TrackReport }) {
 export default function ActivityDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data: activity, isLoading, error } = useActivity(id!);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isReanalyzing, setIsReanalyzing] = useState(false);
 
   // Lift GPX fetching to page level so both TrackMap and ElevationProfileChart share it
-  const gpxUrl = activity ? api.getGpxUrl(activity.id) : null;
+  // Include updatedAt in the URL for cache-busting after reanalysis
+  const gpxUrl = activity
+    ? `${api.getGpxUrl(activity.id)}?v=${encodeURIComponent(activity.updatedAt ?? '')}`
+    : null;
   const [gpxPoints, setGpxPoints] = useState<GpxTrackPoint[]>([]);
   const [gpxCoords, setGpxCoords] = useState<Coordinate[]>([]);
   const [gpxLoading, setGpxLoading] = useState(false);
   const [gpxError, setGpxError] = useState<string | null>(null);
 
+  // Re-fetch GPX only when status is Completed (avoids fetching during processing)
+  const shouldFetchGpx = activity?.status === 'Completed';
+
   useEffect(() => {
-    if (!gpxUrl) return;
+    if (!gpxUrl || !shouldFetchGpx) return;
     let cancelled = false;
     setGpxLoading(true);
     setGpxError(null);
@@ -234,7 +242,7 @@ export default function ActivityDetail() {
     return () => {
       cancelled = true;
     };
-  }, [gpxUrl]);
+  }, [gpxUrl, shouldFetchGpx]);
 
   const profileData = useMemo(
     () => (gpxPoints.length > 0 ? computeProfileData(gpxPoints) : []),
@@ -279,6 +287,8 @@ export default function ActivityDetail() {
     setIsReanalyzing(true);
     try {
       await api.reanalyzeActivity(activity.id);
+      // Invalidate cache so polling restarts and picks up new status
+      await queryClient.invalidateQueries({ queryKey: ['activity', id] });
     } finally {
       setIsReanalyzing(false);
     }

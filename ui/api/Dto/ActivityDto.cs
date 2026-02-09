@@ -37,6 +37,7 @@ public class ActivityDetailDto
     public object? AiReport { get; set; }
 
     public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
 }
 
 public class DashboardSummaryDto
