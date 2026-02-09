@@ -31,12 +31,17 @@ func ValidTrackSmoothingLevel(s string) bool {
 // SmoothTrack applies a moving average to the Lat and Lon fields of the given
 // points, reducing horizontal GPS noise. This should be applied BEFORE DEM
 // correction so that DEM lookups use smoothed coordinates.
+// Smoothing is applied independently within time-continuous segments to avoid
+// bleed across large time gaps (overnight camps, filtered outlier gaps).
 // With TrackSmoothNone, it is a no-op.
 func SmoothTrack(points []gpx.TrackPoint, level TrackSmoothingLevel) {
 	window, ok := trackSmoothingWindows[level]
 	if !ok || window <= 1 {
 		return
 	}
+
+	times := extractTimes(points)
+	breaks := gapIndices(times, GapThreshold)
 
 	lats := make([]float64, len(points))
 	lons := make([]float64, len(points))
@@ -45,8 +50,8 @@ func SmoothTrack(points []gpx.TrackPoint, level TrackSmoothingLevel) {
 		lons[i] = p.Lon
 	}
 
-	lats = movingAverage(lats, window)
-	lons = movingAverage(lons, window)
+	lats = movingAverageSegmented(lats, window, breaks)
+	lons = movingAverageSegmented(lons, window, breaks)
 
 	for i := range points {
 		points[i].Lat = lats[i]

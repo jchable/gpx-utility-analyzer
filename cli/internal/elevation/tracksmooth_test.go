@@ -3,6 +3,7 @@ package elevation
 import (
 	"math"
 	"testing"
+	"time"
 
 	"github.com/jchable/gpx-utility-analyzer/cli/internal/gpx"
 )
@@ -117,6 +118,35 @@ func TestSmoothTrack_AllLevels(t *testing.T) {
 			if math.IsNaN(p.Lat) || math.IsNaN(p.Lon) {
 				t.Errorf("level %s: point %d has NaN", level, i)
 			}
+		}
+	}
+}
+
+func TestSmoothTrack_GapAware_NoBleed(t *testing.T) {
+	t0 := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
+	// Segment 1: points at lat=48.0, Segment 2: points at lat=49.0 (far away)
+	// Separated by a 15-minute gap (> 10-min GapThreshold)
+	points := []gpx.TrackPoint{
+		{Lat: 48.0, Lon: 2.0, Time: t0},
+		{Lat: 48.0001, Lon: 2.0001, Time: t0.Add(5 * time.Second)},
+		{Lat: 48.0002, Lon: 2.0002, Time: t0.Add(10 * time.Second)},
+		{Lat: 49.0, Lon: 3.0, Time: t0.Add(15 * time.Minute)},
+		{Lat: 49.0001, Lon: 3.0001, Time: t0.Add(15*time.Minute + 5*time.Second)},
+		{Lat: 49.0002, Lon: 3.0002, Time: t0.Add(15*time.Minute + 10*time.Second)},
+	}
+
+	SmoothTrack(points, TrackSmoothMedium)
+
+	// Segment 1 should stay near lat=48.0 (not pulled toward 49.0)
+	for i := 0; i < 3; i++ {
+		if math.Abs(points[i].Lat-48.0) > 0.01 {
+			t.Errorf("segment 1 point %d: lat=%f, expected ~48.0 (bleed from segment 2)", i, points[i].Lat)
+		}
+	}
+	// Segment 2 should stay near lat=49.0 (not pulled toward 48.0)
+	for i := 3; i < 6; i++ {
+		if math.Abs(points[i].Lat-49.0) > 0.01 {
+			t.Errorf("segment 2 point %d: lat=%f, expected ~49.0 (bleed from segment 1)", i, points[i].Lat)
 		}
 	}
 }

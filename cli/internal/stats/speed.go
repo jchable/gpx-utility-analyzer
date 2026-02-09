@@ -3,6 +3,7 @@ package stats
 import (
 	"time"
 
+	"github.com/jchable/gpx-utility-analyzer/cli/internal/elevation"
 	"github.com/jchable/gpx-utility-analyzer/cli/internal/gpx"
 )
 
@@ -44,19 +45,45 @@ func ComputeSpeed(totalDist float64, totalTime, movingTime time.Duration) SpeedR
 
 // EnrichPoints computes distance from previous point and calculated speed
 // for each point in the slice. It modifies points in place.
+// Points separated by a time gap larger than GapThreshold get zero
+// distance and speed to avoid counting straight-line jumps across
+// overnight camps or filtered outlier gaps.
 func EnrichPoints(points []gpx.TrackPoint) {
 	for i := 1; i < len(points); i++ {
+		dt := points[i].Time.Sub(points[i-1].Time)
+		if dt > elevation.GapThreshold {
+			points[i].CalcSpeed = 0
+			points[i].DistFromPrev = 0
+			continue
+		}
 		dist := Haversine(
 			points[i-1].Lat, points[i-1].Lon,
 			points[i].Lat, points[i].Lon,
 		)
 		points[i].DistFromPrev = dist
-
-		dt := points[i].Time.Sub(points[i-1].Time).Seconds()
-		if dt > 0 {
-			points[i].CalcSpeed = dist / dt
+		if dt.Seconds() > 0 {
+			points[i].CalcSpeed = dist / dt.Seconds()
 		}
 	}
+}
+
+// ClampSpeeds zeroes out CalcSpeed and DistFromPrev for points exceeding
+// maxSpeed (m/s). Unlike FilterOutliers which physically removes points,
+// this only nullifies the speed/distance contribution of unreasonable
+// transitions, preserving the trace geometry for map display and export.
+func ClampSpeeds(points []gpx.TrackPoint, maxSpeed float64) int {
+	if maxSpeed <= 0 {
+		return 0
+	}
+	clamped := 0
+	for i := 1; i < len(points); i++ {
+		if points[i].CalcSpeed > maxSpeed {
+			points[i].CalcSpeed = 0
+			points[i].DistFromPrev = 0
+			clamped++
+		}
+	}
+	return clamped
 }
 
 // DefaultMaxReasonableSpeed is the fallback (25 m/s ≈ 90 km/h) when no

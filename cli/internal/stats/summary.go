@@ -110,8 +110,10 @@ func Compute(points []gpx.TrackPoint, segmentCount int, cfg ComputeConfig) (Summ
 	}
 	elevation.SmoothElevations(points, cfg.SmoothingLevel)
 
-	// Enrich points with distance and speed
+	// Enrich points with distance and speed (gap-aware: skips large time gaps)
 	EnrichPoints(points)
+	// Safety net: clamp any remaining speed artifacts after smoothing
+	ClampSpeeds(points, cfg.MaxReasonableSpeed)
 
 	// Distance
 	for i := 1; i < len(points); i++ {

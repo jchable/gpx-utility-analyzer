@@ -246,3 +246,94 @@ func TestPresetMaxSpeed_ReasonableValues(t *testing.T) {
 		t.Errorf("cycling max speed seems too high: %f m/s", PresetMaxSpeed[PresetCycling])
 	}
 }
+
+// --- EnrichPoints gap-awareness ---
+
+func TestEnrichPoints_SkipsLargeTimeGap(t *testing.T) {
+	// Two points 15 minutes apart — should be treated as a gap (> 10-min threshold)
+	points := []gpx.TrackPoint{
+		{Lat: 48.0, Lon: 2.0, Time: makeTime(0)},
+		{Lat: 49.0, Lon: 3.0, Time: makeTime(15)}, // 15 minutes, >10min gap
+	}
+	EnrichPoints(points)
+
+	if points[1].CalcSpeed != 0 {
+		t.Errorf("expected CalcSpeed=0 across gap, got %f", points[1].CalcSpeed)
+	}
+	if points[1].DistFromPrev != 0 {
+		t.Errorf("expected DistFromPrev=0 across gap, got %f", points[1].DistFromPrev)
+	}
+}
+
+func TestEnrichPoints_NormalIntervalStillWorks(t *testing.T) {
+	// Two points 1 minute apart — should compute normally
+	points := []gpx.TrackPoint{
+		{Lat: 48.8566, Lon: 2.3522, Time: makeTime(0)},
+		{Lat: 48.8580, Lon: 2.3540, Time: makeTime(1)},
+	}
+	EnrichPoints(points)
+
+	if points[1].CalcSpeed <= 0 {
+		t.Errorf("expected CalcSpeed>0 for normal interval, got %f", points[1].CalcSpeed)
+	}
+	if points[1].DistFromPrev <= 0 {
+		t.Errorf("expected DistFromPrev>0 for normal interval, got %f", points[1].DistFromPrev)
+	}
+}
+
+// --- ClampSpeeds ---
+
+func TestClampSpeeds_ClampsExcessiveSpeed(t *testing.T) {
+	points := []gpx.TrackPoint{
+		{CalcSpeed: 0, DistFromPrev: 0},
+		{CalcSpeed: 3.0, DistFromPrev: 180},  // normal
+		{CalcSpeed: 50.0, DistFromPrev: 3000}, // excessive
+		{CalcSpeed: 2.0, DistFromPrev: 120},   // normal
+	}
+	clamped := ClampSpeeds(points, 7.0)
+
+	if clamped != 1 {
+		t.Errorf("expected 1 clamped, got %d", clamped)
+	}
+	if points[2].CalcSpeed != 0 {
+		t.Errorf("expected CalcSpeed=0 for clamped point, got %f", points[2].CalcSpeed)
+	}
+	if points[2].DistFromPrev != 0 {
+		t.Errorf("expected DistFromPrev=0 for clamped point, got %f", points[2].DistFromPrev)
+	}
+	// Other points should be unchanged
+	if points[1].CalcSpeed != 3.0 {
+		t.Errorf("normal point should be unchanged, got %f", points[1].CalcSpeed)
+	}
+	if points[3].CalcSpeed != 2.0 {
+		t.Errorf("normal point should be unchanged, got %f", points[3].CalcSpeed)
+	}
+}
+
+func TestClampSpeeds_NoClampNeeded(t *testing.T) {
+	points := []gpx.TrackPoint{
+		{CalcSpeed: 0},
+		{CalcSpeed: 3.0, DistFromPrev: 180},
+		{CalcSpeed: 5.0, DistFromPrev: 300},
+	}
+	clamped := ClampSpeeds(points, 7.0)
+
+	if clamped != 0 {
+		t.Errorf("expected 0 clamped, got %d", clamped)
+	}
+}
+
+func TestClampSpeeds_DisabledWhenZero(t *testing.T) {
+	points := []gpx.TrackPoint{
+		{CalcSpeed: 0},
+		{CalcSpeed: 999.0, DistFromPrev: 60000},
+	}
+	clamped := ClampSpeeds(points, 0)
+
+	if clamped != 0 {
+		t.Errorf("expected 0 clamped when disabled, got %d", clamped)
+	}
+	if points[1].CalcSpeed != 999.0 {
+		t.Errorf("point should be unchanged when disabled, got %f", points[1].CalcSpeed)
+	}
+}
