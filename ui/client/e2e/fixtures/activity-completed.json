@@ -1,0 +1,78 @@
+{
+  "id": "act-1",
+  "name": "Morning Trail",
+  "activityType": "trail",
+  "startTime": "2025-01-15T08:00:00Z",
+  "endTime": "2025-01-15T09:30:00Z",
+  "distanceKm": 15.2,
+  "elevationGainM": 650,
+  "elevationLossM": 580,
+  "movingTimeSeconds": 5400,
+  "source": "upload",
+  "status": "Completed",
+  "stats": {
+    "filename": "morning-trail.gpx",
+    "total_distance_m": 15200,
+    "total_distance_3d_m": 15350,
+    "total_distance_km": 15.2,
+    "elevation_gain_m": 650,
+    "elevation_loss_m": 580,
+    "max_elevation_m": 1245,
+    "min_elevation_m": 680,
+    "start_time": "2025-01-15T08:00:00Z",
+    "end_time": "2025-01-15T09:30:00Z",
+    "total_time": { "display": "1h30m", "seconds": 5400 },
+    "moving_time": { "display": "1h25m", "seconds": 5100 },
+    "stopped_time": { "display": "5m", "seconds": 300 },
+    "avg_speed_kmh": 10.1,
+    "avg_moving_speed_kmh": 10.7,
+    "max_speed_kmh": 18.5,
+    "avg_pace": "5:56",
+    "avg_moving_pace": "5:36",
+    "point_count": 1520,
+    "segment_count": 1,
+    "points_per_km": 100,
+    "stop_count": 2,
+    "total_stop_time": { "display": "5m", "seconds": 300 },
+    "avg_stop_duration": { "display": "2m30s", "seconds": 150 },
+    "heart_rate": {
+      "avg_bpm": 155,
+      "max_bpm": 178,
+      "min_bpm": 95
+    }
+  },
+  "aiReport": {
+    "difficulty": {
+      "grade": "Moderate",
+      "score": 6,
+      "justification": "This trail features moderate elevation gain with a mix of technical and smooth terrain. The sustained climbs require good aerobic fitness."
+    },
+    "key_segments": [
+      {
+        "type": "climb",
+        "description": "Initial ascent through forest trails",
+        "elevation_change": 350,
+        "distance_km": 4.2
+      },
+      {
+        "type": "descent",
+        "description": "Fast downhill on single track",
+        "elevation_change": -280,
+        "distance_km": 3.5
+      }
+    ],
+    "recommendations": [
+      "Carry at least 1L of water for this distance and elevation",
+      "Consider trekking poles for the steeper sections",
+      "Start early to avoid afternoon heat"
+    ],
+    "summary": "A moderate trail run through forested mountain paths with a significant initial climb followed by a fast descent. Good mix of technical and flowing terrain.",
+    "effort": {
+      "fitness_level": "Intermediate",
+      "estimated_duration": "1h30 - 2h",
+      "calorie_estimate": 850
+    }
+  },
+  "createdAt": "2025-01-15T10:00:00Z",
+  "updatedAt": "2025-01-15T10:05:00Z"
+}

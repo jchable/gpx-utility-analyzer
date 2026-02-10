@@ -1,0 +1,19 @@
+[
+  { "distance": 0, "elevation": 680, "speed": 0, "gap": 0, "grade": 0, "elapsedTime": 0, "heartRate": 95 },
+  { "distance": 0.5, "elevation": 710, "speed": 8.5, "gap": 9.2, "grade": 6.0, "elapsedTime": 180, "heartRate": 130 },
+  { "distance": 1.0, "elevation": 750, "speed": 9.0, "gap": 10.1, "grade": 8.0, "elapsedTime": 360, "heartRate": 145 },
+  { "distance": 2.0, "elevation": 830, "speed": 9.5, "gap": 11.0, "grade": 8.0, "elapsedTime": 720, "heartRate": 155 },
+  { "distance": 3.0, "elevation": 920, "speed": 8.0, "gap": 9.5, "grade": 9.0, "elapsedTime": 1100, "heartRate": 162 },
+  { "distance": 4.0, "elevation": 1020, "speed": 7.5, "gap": 9.0, "grade": 10.0, "elapsedTime": 1500, "heartRate": 168 },
+  { "distance": 5.0, "elevation": 1100, "speed": 8.0, "gap": 9.5, "grade": 8.0, "elapsedTime": 1900, "heartRate": 170 },
+  { "distance": 6.0, "elevation": 1180, "speed": 8.5, "gap": 10.0, "grade": 8.0, "elapsedTime": 2280, "heartRate": 172 },
+  { "distance": 7.0, "elevation": 1245, "speed": 7.0, "gap": 8.5, "grade": 6.5, "elapsedTime": 2700, "heartRate": 175 },
+  { "distance": 8.0, "elevation": 1200, "speed": 12.0, "gap": 11.5, "grade": -4.5, "elapsedTime": 3000, "heartRate": 165 },
+  { "distance": 9.0, "elevation": 1100, "speed": 14.0, "gap": 12.0, "grade": -10.0, "elapsedTime": 3250, "heartRate": 158 },
+  { "distance": 10.0, "elevation": 1000, "speed": 15.0, "gap": 12.5, "grade": -10.0, "elapsedTime": 3500, "heartRate": 152 },
+  { "distance": 11.0, "elevation": 920, "speed": 13.0, "gap": 11.0, "grade": -8.0, "elapsedTime": 3780, "heartRate": 148 },
+  { "distance": 12.0, "elevation": 850, "speed": 12.0, "gap": 10.5, "grade": -7.0, "elapsedTime": 4080, "heartRate": 145 },
+  { "distance": 13.0, "elevation": 780, "speed": 11.5, "gap": 10.0, "grade": -7.0, "elapsedTime": 4400, "heartRate": 142 },
+  { "distance": 14.0, "elevation": 720, "speed": 11.0, "gap": 10.0, "grade": -6.0, "elapsedTime": 4720, "heartRate": 140 },
+  { "distance": 15.2, "elevation": 700, "speed": 10.0, "gap": 9.5, "grade": -1.7, "elapsedTime": 5100, "heartRate": 135 }
+]

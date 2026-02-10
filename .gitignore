@@ -30,3 +30,11 @@ Desktop.ini
 .env.test.local
 .env.production.local
 .env.local
+appsettings.Development.json
+
+# ============================================================
+# Playwright
+# ============================================================
+
+ui/client/e2e-results/
+ui/client/e2e-report/

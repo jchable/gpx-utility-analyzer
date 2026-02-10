@@ -1,0 +1,12 @@
+[
+  {
+    "provider": "strava",
+    "isConnected": true,
+    "externalUserId": "12345678",
+    "connectedAt": "2025-01-10T14:00:00Z"
+  },
+  {
+    "provider": "garmin",
+    "isConnected": false
+  }
+]

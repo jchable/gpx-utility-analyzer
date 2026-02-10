@@ -1,0 +1,15 @@
+{
+  "id": "act-5",
+  "name": "Processing Activity",
+  "activityType": "trail",
+  "startTime": "2025-01-16T10:00:00Z",
+  "endTime": "2025-01-16T11:00:00Z",
+  "distanceKm": 0,
+  "elevationGainM": 0,
+  "elevationLossM": 0,
+  "movingTimeSeconds": 0,
+  "source": "upload",
+  "status": "Analyzing",
+  "createdAt": "2025-01-16T10:30:00Z",
+  "updatedAt": "2025-01-16T10:30:00Z"
+}

@@ -30,7 +30,7 @@ export default function Sidebar() {
       <aside
         className={`hidden md:flex flex-col bg-[#0f0f1a] border-r border-white/5 transition-all duration-300 ${
           collapsed ? 'w-16' : 'w-64'
-        } min-h-screen`}
+        } h-full`}
       >
         {/* Logo / brand */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-white/5">
@@ -114,6 +114,7 @@ export default function Sidebar() {
             )}
           </NavLink>
         ))}
+        <LanguageSwitcher mobile />
       </nav>
     </>
   );

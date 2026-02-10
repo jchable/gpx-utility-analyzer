@@ -1,0 +1,28 @@
+{
+  "analysis": {
+    "preset": "trail",
+    "smoothing": "medium",
+    "trackSmoothing": "light",
+    "elevationAlgorithm": "threshold"
+  },
+  "aiProvider": {
+    "name": "openai",
+    "apiKey": "",
+    "hasApiKey": true,
+    "model": "gpt-4o",
+    "endpoint": "",
+    "availableProviders": ["openai", "anthropic", "azure-openai", "mistral", "ollama", "gemini"]
+  },
+  "integrations": {
+    "strava": {
+      "clientId": "12345",
+      "hasClientSecret": true,
+      "clientSecret": ""
+    },
+    "garmin": {
+      "consumerKey": "",
+      "hasConsumerSecret": false,
+      "consumerSecret": ""
+    }
+  }
+}

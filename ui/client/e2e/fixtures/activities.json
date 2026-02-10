@@ -1,0 +1,57 @@
+[
+  {
+    "id": "act-1",
+    "name": "Morning Trail",
+    "activityType": "trail",
+    "startTime": "2025-01-15T08:00:00Z",
+    "distanceKm": 15.2,
+    "elevationGainM": 650,
+    "movingTimeSeconds": 5400,
+    "source": "upload",
+    "status": "Completed"
+  },
+  {
+    "id": "act-2",
+    "name": "Evening Run",
+    "activityType": "run",
+    "startTime": "2025-01-14T18:00:00Z",
+    "distanceKm": 10.0,
+    "elevationGainM": 120,
+    "movingTimeSeconds": 3600,
+    "source": "upload",
+    "status": "Completed"
+  },
+  {
+    "id": "act-3",
+    "name": "Weekend Hike",
+    "activityType": "hike",
+    "startTime": "2025-01-12T09:00:00Z",
+    "distanceKm": 8.5,
+    "elevationGainM": 420,
+    "movingTimeSeconds": 7200,
+    "source": "upload",
+    "status": "Completed"
+  },
+  {
+    "id": "act-4",
+    "name": "City Cycle",
+    "activityType": "cycle",
+    "startTime": "2025-01-10T07:30:00Z",
+    "distanceKm": 32.0,
+    "elevationGainM": 180,
+    "movingTimeSeconds": 4500,
+    "source": "upload",
+    "status": "Completed"
+  },
+  {
+    "id": "act-5",
+    "name": "Processing Activity",
+    "activityType": "trail",
+    "startTime": "2025-01-16T10:00:00Z",
+    "distanceKm": 0,
+    "elevationGainM": 0,
+    "movingTimeSeconds": 0,
+    "source": "upload",
+    "status": "Analyzing"
+  }
+]

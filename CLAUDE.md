@@ -342,6 +342,48 @@ API Dockerfile is a 3-stage build: Go CLI → .NET publish → ASP.NET runtime (
 - **EF Core SQLite + enum string conversion**: Complex query chains with string-converted enums can fail EF Core translation. Materializing with `ToListAsync()` first is safer for dashboard-style queries.
 - **Go DEM memory**: Large tracks spanning many SRTM tiles can use significant memory. Use `--dem-max-memory` flag or preload handles memory checks.
 
+## E2E Testing — Playwright
+
+The client has a Playwright E2E test suite with **full API mocking** (no backend required). Tests intercept all `/api/*` requests and return fixture JSON data.
+
+### Running E2E Tests
+
+```bash
+cd ui/client
+npm run build            # Required: tests run against preview build
+npm run e2e              # All tests (desktop + mobile, ~102 tests)
+npm run e2e:desktop      # Desktop only (Desktop Chrome 1280×720)
+npm run e2e:mobile       # Mobile only (iPhone 14 viewport, Chromium)
+npm run e2e:report       # Open HTML report
+```
+
+The `webServer` config in `playwright.config.ts` auto-starts `npm run preview` (port 4173).
+
+### Test Structure
+
+```
+ui/client/e2e/
+├── fixtures/          → JSON mock data (dashboard, activities, settings, etc.) + test.gpx
+├── helpers/
+│   └── mock-api.ts    → Intercepts all API routes, returns fixtures
+├── dashboard.spec.ts, activities.spec.ts, activity-detail.spec.ts
+├── upload.spec.ts, settings.spec.ts, integrations.spec.ts
+├── navigation.spec.ts, i18n.spec.ts, pwa.spec.ts
+```
+
+### Key Patterns
+
+- Every test calls `mockAllApi(page)` in `beforeEach` — no backend dependency
+- `mock-api.ts` uses `fs.readFileSync` for fixture loading (ESM compatibility)
+- Two projects: **desktop** (Desktop Chrome) and **mobile** (iPhone 14 viewport on Chromium)
+- MapLibre: tests check container presence, not WebGL rendering (headless limitation)
+- i18n tests clear `localStorage('i18nextLng')` via `addInitScript` and use `waitForLoadState('networkidle')` to handle Suspense
+- Outputs (`e2e-results/`, `e2e-report/`) are gitignored
+
+### After UI Changes
+
+Run `npm run e2e` after significant UI modifications to catch regressions. If a test fails, check the screenshot in `e2e-results/` and the HTML report via `npm run e2e:report`.
+
 ## Environment
 
 - Go 1.25.7+, .NET 9.0, Node 22+, React 19, Vite 7, TypeScript 5.9

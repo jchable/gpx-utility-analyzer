@@ -6,7 +6,7 @@ const LANGUAGES = [
   { code: 'fr', flag: '🇫🇷' },
 ] as const;
 
-export default function LanguageSwitcher({ collapsed }: { collapsed?: boolean }) {
+export default function LanguageSwitcher({ collapsed, mobile }: { collapsed?: boolean; mobile?: boolean }) {
   const { i18n } = useTranslation();
   const current = LANGUAGES.find((l) => i18n.language.startsWith(l.code)) ?? LANGUAGES[0];
   const next = LANGUAGES.find((l) => l.code !== current.code) ?? LANGUAGES[1];
@@ -14,6 +14,19 @@ export default function LanguageSwitcher({ collapsed }: { collapsed?: boolean })
   const handleToggle = () => {
     i18n.changeLanguage(next.code);
   };
+
+  if (mobile) {
+    return (
+      <button
+        onClick={handleToggle}
+        className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg text-xs font-medium text-[#a0a0b0] hover:text-white transition-colors"
+        title={`Switch to ${next.code.toUpperCase()}`}
+      >
+        <Globe size={20} />
+        <span>{current.code.toUpperCase()}</span>
+      </button>
+    );
+  }
 
   return (
     <button
