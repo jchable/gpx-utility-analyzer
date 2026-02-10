@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ComposedChart,
   Area,
@@ -11,7 +12,7 @@ import {
   ReferenceArea,
 } from 'recharts';
 import { Mountain, Clock } from 'lucide-react';
-import type { ProfilePoint } from '../../utils/gpx';
+import type { ProfilePoint } from '../../types/activity';
 import type { StopInfo } from '../../types/activity';
 
 interface ElevationProfileChartProps {
@@ -52,6 +53,7 @@ export default function ElevationProfileChart({
   hasTimestamps = false,
   activityStartTime,
 }: ElevationProfileChartProps) {
+  const { t } = useTranslation('activities');
   const [showSpeed, setShowSpeed] = useState(true);
   const [showGap, setShowGap] = useState(true);
   const [xMode, setXMode] = useState<'distance' | 'time'>('distance');
@@ -92,7 +94,7 @@ export default function ElevationProfileChart({
       <div className="bg-[#16213e] rounded-2xl border border-slate-700/50 p-4 h-[340px] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-2 border-[#00d4ff] border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm text-[#a0a0b0]">Computing elevation profile...</span>
+          <span className="text-sm text-[#a0a0b0]">{t('elevation.computing')}</span>
         </div>
       </div>
     );
@@ -101,7 +103,7 @@ export default function ElevationProfileChart({
   if (data.length === 0) {
     return (
       <div className="bg-[#16213e] rounded-2xl border border-slate-700/50 p-4 h-[340px] flex items-center justify-center">
-        <span className="text-sm text-[#a0a0b0]">No elevation data available</span>
+        <span className="text-sm text-[#a0a0b0]">{t('elevation.noData')}</span>
       </div>
     );
   }
@@ -112,7 +114,7 @@ export default function ElevationProfileChart({
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Mountain size={18} className="text-[#00d4ff]" />
-          <h3 className="text-sm font-semibold text-white">Elevation Profile</h3>
+          <h3 className="text-sm font-semibold text-white">{t('elevation.profile')}</h3>
         </div>
 
         <div className="flex items-center gap-3">
@@ -141,23 +143,23 @@ export default function ElevationProfileChart({
                 }`}
               >
                 <Clock size={12} />
-                time
+                {t('elevation.time')}
               </button>
             </div>
           )}
 
           {hasSpeed && (
             <>
-              <LegendItem label="Elevation" color={COLORS.elevation} active={true} dashed={false} />
+              <LegendItem label={t('elevation.elevation')} color={COLORS.elevation} active={true} dashed={false} />
               <LegendItem
-                label="Speed"
+                label={t('elevation.speed')}
                 color={COLORS.speed}
                 active={showSpeed}
                 dashed={false}
                 onClick={() => setShowSpeed((v) => !v)}
               />
               <LegendItem
-                label="GAP"
+                label={t('elevation.gap')}
                 color={COLORS.gap}
                 active={showGap}
                 dashed={true}
@@ -247,10 +249,10 @@ export default function ElevationProfileChart({
             }
             formatter={(value, name) => {
               const labels: Record<string, [string, string]> = {
-                elevation: [`${value} m`, 'Elevation'],
-                speed: [`${value} km/h`, 'Speed'],
-                gap: [`${value} km/h`, 'GAP'],
-                grade: [`${value}%`, 'Grade'],
+                elevation: [`${value} m`, t('elevation.elevation')],
+                speed: [`${value} km/h`, t('elevation.speed')],
+                gap: [`${value} km/h`, t('elevation.gap')],
+                grade: [`${value}%`, t('elevation.grade')],
               };
               return labels[name as string] ?? [`${value}`, name];
             }}

@@ -1,32 +1,20 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { useActivity } from '../hooks/useActivities';
+import { useTranslation } from 'react-i18next';
+import { useActivity, useProfile, useTrack } from '../hooks/useActivities';
 import { api } from '../api/client';
-import { ACTIVITY_COLORS, ACTIVITY_LABELS } from '../types/activity';
+import { ACTIVITY_COLORS } from '../types/activity';
 import type { TrackReport } from '../types/activity';
 import TrackMap from '../components/map/TrackMap';
 import ElevationProfileChart from '../components/activity/ElevationProfileChart';
-import { parseGpxFull, toCoordinates, computeProfileData, profileHasTimestamps } from '../utils/gpx';
-import type { GpxTrackPoint, Coordinate } from '../utils/gpx';
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-const STATUS_CONFIG: Record<string, { color: string; bg: string; label: string; pulse?: boolean }> = {
-  Pending: { color: 'text-slate-400', bg: 'bg-slate-400', label: 'Pending' },
-  Analyzing: { color: 'text-amber-400', bg: 'bg-amber-400', label: 'Analyzing GPX', pulse: true },
-  AiProcessing: { color: 'text-purple-400', bg: 'bg-purple-400', label: 'AI Processing', pulse: true },
-  Completed: { color: 'text-green-400', bg: 'bg-green-400', label: 'Completed' },
-  Failed: { color: 'text-red-400', bg: 'bg-red-400', label: 'Failed' },
+const STATUS_CONFIG: Record<string, { color: string; bg: string; pulse?: boolean }> = {
+  Pending: { color: 'text-slate-400', bg: 'bg-slate-400' },
+  Analyzing: { color: 'text-amber-400', bg: 'bg-amber-400', pulse: true },
+  AiProcessing: { color: 'text-purple-400', bg: 'bg-purple-400', pulse: true },
+  Completed: { color: 'text-green-400', bg: 'bg-green-400' },
+  Failed: { color: 'text-red-400', bg: 'bg-red-400' },
 };
 
 const DIFFICULTY_COLORS: Record<string, string> = {
@@ -90,6 +78,9 @@ function RadialStat({
 }
 
 function AiReportSection({ report }: { report: TrackReport }) {
+  const { t } = useTranslation('activities');
+  const { t: tc } = useTranslation();
+
   const difficultyGrade = report.difficulty.grade.toLowerCase();
   const difficultyClass = DIFFICULTY_COLORS[difficultyGrade] || DIFFICULTY_COLORS.moderate;
 
@@ -100,7 +91,7 @@ function AiReportSection({ report }: { report: TrackReport }) {
           <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
           </svg>
-          AI Analysis Report
+          {t('aiReport.title')}
         </h2>
         <span className={`text-sm font-bold px-3 py-1 rounded-full border ${difficultyClass}`}>
           {report.difficulty.grade} ({report.difficulty.score}/10)
@@ -109,13 +100,13 @@ function AiReportSection({ report }: { report: TrackReport }) {
 
       {/* Summary */}
       <div>
-        <h3 className="text-sm font-medium text-slate-400 mb-2">Summary</h3>
+        <h3 className="text-sm font-medium text-slate-400 mb-2">{t('aiReport.summary')}</h3>
         <p className="text-slate-300 leading-relaxed">{report.summary}</p>
       </div>
 
       {/* Difficulty Justification */}
       <div>
-        <h3 className="text-sm font-medium text-slate-400 mb-2">Difficulty Assessment</h3>
+        <h3 className="text-sm font-medium text-slate-400 mb-2">{t('aiReport.difficultyAssessment')}</h3>
         <p className="text-slate-300 text-sm">{report.difficulty.justification}</p>
       </div>
 
@@ -123,18 +114,18 @@ function AiReportSection({ report }: { report: TrackReport }) {
       {report.effort && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-slate-800/50 rounded-xl p-4">
-            <p className="text-xs text-slate-500 mb-1">Fitness Level</p>
+            <p className="text-xs text-slate-500 mb-1">{t('aiReport.fitnessLevel')}</p>
             <p className="text-sm font-semibold text-white">{report.effort.fitness_level}</p>
           </div>
           <div className="bg-slate-800/50 rounded-xl p-4">
-            <p className="text-xs text-slate-500 mb-1">Estimated Duration</p>
+            <p className="text-xs text-slate-500 mb-1">{t('aiReport.estimatedDuration')}</p>
             <p className="text-sm font-semibold text-white">{report.effort.estimated_duration}</p>
           </div>
           {report.effort.calorie_estimate && (
             <div className="bg-slate-800/50 rounded-xl p-4">
-              <p className="text-xs text-slate-500 mb-1">Calories</p>
+              <p className="text-xs text-slate-500 mb-1">{t('aiReport.calories')}</p>
               <p className="text-sm font-semibold text-white">
-                ~{report.effort.calorie_estimate} kcal
+                ~{report.effort.calorie_estimate} {tc('unit.kcal')}
               </p>
             </div>
           )}
@@ -144,7 +135,7 @@ function AiReportSection({ report }: { report: TrackReport }) {
       {/* Key Segments */}
       {report.key_segments && report.key_segments.length > 0 && (
         <div>
-          <h3 className="text-sm font-medium text-slate-400 mb-3">Key Segments</h3>
+          <h3 className="text-sm font-medium text-slate-400 mb-3">{t('aiReport.keySegments')}</h3>
           <div className="space-y-2">
             {report.key_segments.map((seg, i) => (
               <div
@@ -158,12 +149,12 @@ function AiReportSection({ report }: { report: TrackReport }) {
                   <p className="text-sm text-slate-300">{seg.description}</p>
                   <div className="flex gap-4 mt-1">
                     {seg.distance_km != null && (
-                      <span className="text-xs text-slate-500">{seg.distance_km} km</span>
+                      <span className="text-xs text-slate-500">{seg.distance_km} {tc('unit.km')}</span>
                     )}
                     {seg.elevation_change != null && (
                       <span className="text-xs text-slate-500">
                         {seg.elevation_change > 0 ? '+' : ''}
-                        {seg.elevation_change} m
+                        {seg.elevation_change} {tc('unit.m')}
                       </span>
                     )}
                   </div>
@@ -177,7 +168,7 @@ function AiReportSection({ report }: { report: TrackReport }) {
       {/* Recommendations */}
       {report.recommendations && report.recommendations.length > 0 && (
         <div>
-          <h3 className="text-sm font-medium text-slate-400 mb-3">Recommendations</h3>
+          <h3 className="text-sm font-medium text-slate-400 mb-3">{t('aiReport.recommendations')}</h3>
           <ul className="space-y-2">
             {report.recommendations.map((rec, i) => (
               <li key={i} className="flex items-start gap-2 text-sm text-slate-300">
@@ -198,61 +189,28 @@ export default function ActivityDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { t } = useTranslation('activities');
+  const { t: tc } = useTranslation();
+  const { i18n } = useTranslation();
   const { data: activity, isLoading, error } = useActivity(id!);
+  const isCompleted = activity?.status === 'Completed';
+  const { data: profileData } = useProfile(isCompleted ? id! : '');
+  const { data: trackData, isLoading: trackLoading, error: trackError } = useTrack(isCompleted ? id! : '');
   const [isDeleting, setIsDeleting] = useState(false);
   const [isReanalyzing, setIsReanalyzing] = useState(false);
 
-  // Lift GPX fetching to page level so both TrackMap and ElevationProfileChart share it
-  // Include updatedAt in the URL for cache-busting after reanalysis
-  const gpxUrl = activity
-    ? `${api.getGpxUrl(activity.id)}?v=${encodeURIComponent(activity.updatedAt ?? '')}`
-    : null;
-  const [gpxPoints, setGpxPoints] = useState<GpxTrackPoint[]>([]);
-  const [gpxCoords, setGpxCoords] = useState<Coordinate[]>([]);
-  const [gpxLoading, setGpxLoading] = useState(false);
-  const [gpxError, setGpxError] = useState<string | null>(null);
+  const hasTimestamps = (profileData?.length ?? 0) > 0 && profileData![0].elapsedTime != null;
 
-  // Re-fetch GPX only when status is Completed (avoids fetching during processing)
-  const shouldFetchGpx = activity?.status === 'Completed';
-
-  useEffect(() => {
-    if (!gpxUrl || !shouldFetchGpx) return;
-    let cancelled = false;
-    setGpxLoading(true);
-    setGpxError(null);
-
-    fetch(gpxUrl)
-      .then((res) => {
-        if (!res.ok) throw new Error(`Failed to fetch GPX: ${res.status}`);
-        return res.text();
-      })
-      .then((xml) => {
-        if (cancelled) return;
-        const pts = parseGpxFull(xml);
-        setGpxPoints(pts);
-        setGpxCoords(toCoordinates(pts));
-        setGpxLoading(false);
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        setGpxError(err instanceof Error ? err.message : 'Failed to load GPX');
-        setGpxLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [gpxUrl, shouldFetchGpx]);
-
-  const profileData = useMemo(
-    () => (gpxPoints.length > 0 ? computeProfileData(gpxPoints) : []),
-    [gpxPoints],
-  );
-
-  const hasTimestamps = useMemo(
-    () => profileHasTimestamps(profileData),
-    [profileData],
-  );
+  const formatDate = (iso: string): string => {
+    return new Date(iso).toLocaleDateString(i18n.language, {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
 
   if (isLoading) {
     return (
@@ -265,7 +223,7 @@ export default function ActivityDetail() {
   if (error) {
     return (
       <div className="flex items-center justify-center h-96">
-        <p className="text-red-400 text-lg">Failed to load activity: {error.message}</p>
+        <p className="text-red-400 text-lg">{t('detail.loadError', { message: error.message })}</p>
       </div>
     );
   }
@@ -274,11 +232,10 @@ export default function ActivityDetail() {
 
   const statusCfg = STATUS_CONFIG[activity.status] || STATUS_CONFIG.Pending;
   const color = ACTIVITY_COLORS[activity.activityType] || ACTIVITY_COLORS.other;
-  const label = ACTIVITY_LABELS[activity.activityType] || activity.activityType;
   const stats = activity.stats;
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this activity?')) return;
+    if (!confirm(t('detail.deleteConfirm'))) return;
     setIsDeleting(true);
     try {
       await api.deleteActivity(activity.id);
@@ -318,7 +275,7 @@ export default function ActivityDetail() {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back
+            {tc('button.back')}
           </button>
           <h1 className="text-3xl font-bold text-white tracking-tight">{activity.name}</h1>
           <div className="flex items-center gap-3 mt-2">
@@ -326,11 +283,11 @@ export default function ActivityDetail() {
               className="text-xs font-bold px-2.5 py-1 rounded-full"
               style={{ backgroundColor: color + '22', color }}
             >
-              {label}
+              {tc(`activityType.${activity.activityType}`)}
             </span>
             <div className="flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${statusCfg.bg} ${statusCfg.pulse ? 'animate-pulse' : ''}`} />
-              <span className={`text-sm ${statusCfg.color}`}>{statusCfg.label}</span>
+              <span className={`text-sm ${statusCfg.color}`}>{tc(`status.${activity.status}`)}</span>
             </div>
             <span className="text-sm text-slate-500">{formatDate(activity.startTime)}</span>
           </div>
@@ -351,7 +308,7 @@ export default function ActivityDetail() {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
-            GPX
+            {t('detail.gpx')}
           </a>
           <button
             onClick={handleReanalyze}
@@ -361,7 +318,7 @@ export default function ActivityDetail() {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            {isReanalyzing ? 'Reanalyzing...' : 'Reanalyze'}
+            {isReanalyzing ? t('detail.reanalyzing') : t('detail.reanalyze')}
           </button>
           <button
             onClick={handleDelete}
@@ -371,21 +328,20 @@ export default function ActivityDetail() {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
-            {isDeleting ? 'Deleting...' : 'Delete'}
+            {isDeleting ? t('detail.deleting') : tc('button.delete')}
           </button>
         </div>
       </div>
 
       {/* Track Map */}
       <div className="h-[500px] rounded-2xl overflow-hidden">
-        <TrackMap coordinates={gpxCoords} externalLoading={gpxLoading} externalError={gpxError} />
+        <TrackMap coordinates={trackData?.coordinates} loading={trackLoading} error={trackError?.message} />
       </div>
 
       {/* Elevation Profile */}
       {activity.status === 'Completed' && (
         <ElevationProfileChart
-          data={profileData}
-          loading={gpxLoading}
+          data={profileData ?? []}
           stops={activity.stats?.stops}
           hasTimestamps={hasTimestamps}
           activityStartTime={activity.stats?.start_time}
@@ -395,38 +351,38 @@ export default function ActivityDetail() {
       {/* Stats Grid - Radial Gauges */}
       {stats && (
         <div>
-          <h2 className="text-xl font-semibold text-white mb-4">Performance Stats</h2>
+          <h2 className="text-xl font-semibold text-white mb-4">{t('detail.performanceStats')}</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             <RadialStat
-              label="Distance"
+              label={t('distance')}
               value={stats.total_distance_km.toFixed(1)}
-              unit="km"
+              unit={tc('unit.km')}
               percentage={distPct}
               color="#00d4ff"
             />
             <RadialStat
-              label="Elevation D+"
+              label={t('elevationGain')}
               value={Math.round(stats.elevation_gain_m).toString()}
-              unit="meters"
+              unit={tc('unit.meters')}
               percentage={gainPct}
               color="#00ff88"
             />
             <RadialStat
-              label="Elevation D-"
+              label={t('elevationLoss')}
               value={Math.round(stats.elevation_loss_m).toString()}
-              unit="meters"
+              unit={tc('unit.meters')}
               percentage={lossPct}
               color="#ff6b6b"
             />
             <RadialStat
-              label="Avg Speed"
+              label={t('detail.avgSpeed')}
               value={stats.avg_moving_speed_kmh.toFixed(1)}
-              unit="km/h"
+              unit={tc('unit.kmh')}
               percentage={speedPct}
               color="#ff8800"
             />
             <RadialStat
-              label="Moving Time"
+              label={t('detail.movingTime')}
               value={stats.moving_time.display}
               unit=""
               percentage={timePct}
@@ -440,35 +396,35 @@ export default function ActivityDetail() {
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-            <p className="text-xs text-slate-500 mb-1">Max Speed</p>
-            <p className="text-lg font-bold text-white">{stats.max_speed_kmh.toFixed(1)} km/h</p>
+            <p className="text-xs text-slate-500 mb-1">{t('detail.maxSpeed')}</p>
+            <p className="text-lg font-bold text-white">{stats.max_speed_kmh.toFixed(1)} {tc('unit.kmh')}</p>
           </div>
           <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-            <p className="text-xs text-slate-500 mb-1">Avg Pace</p>
+            <p className="text-xs text-slate-500 mb-1">{t('detail.avgPace')}</p>
             <p className="text-lg font-bold text-white">{stats.avg_moving_pace}</p>
           </div>
           <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-            <p className="text-xs text-slate-500 mb-1">Max Elevation</p>
-            <p className="text-lg font-bold text-white">{Math.round(stats.max_elevation_m)} m</p>
+            <p className="text-xs text-slate-500 mb-1">{t('detail.maxElevation')}</p>
+            <p className="text-lg font-bold text-white">{Math.round(stats.max_elevation_m)} {tc('unit.m')}</p>
           </div>
           <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-            <p className="text-xs text-slate-500 mb-1">Min Elevation</p>
-            <p className="text-lg font-bold text-white">{Math.round(stats.min_elevation_m)} m</p>
+            <p className="text-xs text-slate-500 mb-1">{t('detail.minElevation')}</p>
+            <p className="text-lg font-bold text-white">{Math.round(stats.min_elevation_m)} {tc('unit.m')}</p>
           </div>
           <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-            <p className="text-xs text-slate-500 mb-1">Total Time</p>
+            <p className="text-xs text-slate-500 mb-1">{t('detail.totalTime')}</p>
             <p className="text-lg font-bold text-white">{stats.total_time.display}</p>
           </div>
           <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-            <p className="text-xs text-slate-500 mb-1">Stopped Time</p>
+            <p className="text-xs text-slate-500 mb-1">{t('detail.stoppedTime')}</p>
             <p className="text-lg font-bold text-white">{stats.stopped_time.display}</p>
           </div>
           <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-            <p className="text-xs text-slate-500 mb-1">Stops</p>
+            <p className="text-xs text-slate-500 mb-1">{t('detail.stops')}</p>
             <p className="text-lg font-bold text-white">{stats.stop_count}</p>
           </div>
           <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-            <p className="text-xs text-slate-500 mb-1">Points / km</p>
+            <p className="text-xs text-slate-500 mb-1">{t('detail.pointsPerKm')}</p>
             <p className="text-lg font-bold text-white">{Math.round(stats.points_per_km)}</p>
           </div>
 
@@ -476,25 +432,25 @@ export default function ActivityDetail() {
           {stats.heart_rate && (
             <>
               <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-                <p className="text-xs text-slate-500 mb-1">Avg HR</p>
-                <p className="text-lg font-bold text-red-400">{stats.heart_rate.avg_bpm} bpm</p>
+                <p className="text-xs text-slate-500 mb-1">{t('detail.avgHR')}</p>
+                <p className="text-lg font-bold text-red-400">{stats.heart_rate.avg_bpm} {tc('unit.bpm')}</p>
               </div>
               <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-                <p className="text-xs text-slate-500 mb-1">Max HR</p>
-                <p className="text-lg font-bold text-red-400">{stats.heart_rate.max_bpm} bpm</p>
+                <p className="text-xs text-slate-500 mb-1">{t('detail.maxHR')}</p>
+                <p className="text-lg font-bold text-red-400">{stats.heart_rate.max_bpm} {tc('unit.bpm')}</p>
               </div>
             </>
           )}
           {stats.power && (
             <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-              <p className="text-xs text-slate-500 mb-1">Avg Power</p>
-              <p className="text-lg font-bold text-yellow-400">{stats.power.avg_watts} W</p>
+              <p className="text-xs text-slate-500 mb-1">{t('detail.avgPower')}</p>
+              <p className="text-lg font-bold text-yellow-400">{stats.power.avg_watts} {tc('unit.watts')}</p>
             </div>
           )}
           {stats.cadence && (
             <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-              <p className="text-xs text-slate-500 mb-1">Avg Cadence</p>
-              <p className="text-lg font-bold text-blue-400">{stats.cadence.avg_rpm} rpm</p>
+              <p className="text-xs text-slate-500 mb-1">{t('detail.avgCadence')}</p>
+              <p className="text-lg font-bold text-blue-400">{stats.cadence.avg_rpm} {tc('unit.rpm')}</p>
             </div>
           )}
         </div>
@@ -508,9 +464,9 @@ export default function ActivityDetail() {
         <div className="bg-[#16213e] rounded-2xl p-8 border border-slate-700/50 text-center">
           <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-purple-400 mx-auto mb-4" />
           <p className="text-slate-300 font-medium">
-            {activity.status === 'Analyzing' ? 'Analyzing GPX track data...' : 'AI is processing your activity...'}
+            {activity.status === 'Analyzing' ? t('detail.analyzingGpx') : t('detail.aiProcessing')}
           </p>
-          <p className="text-slate-500 text-sm mt-1">This page will refresh automatically.</p>
+          <p className="text-slate-500 text-sm mt-1">{t('detail.autoRefresh')}</p>
         </div>
       )}
     </div>

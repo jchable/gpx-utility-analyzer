@@ -1,4 +1,5 @@
 import { Mountain, Satellite, Map } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export type MapView = '3d-terrain' | '3d-satellite' | '2d-topo';
 
@@ -7,17 +8,20 @@ interface MapViewSwitcherProps {
   onChange: (view: MapView) => void;
 }
 
-const views: { id: MapView; label: string; Icon: typeof Mountain }[] = [
-  { id: '3d-terrain', label: '3D Terrain', Icon: Mountain },
-  { id: '3d-satellite', label: 'Satellite', Icon: Satellite },
-  { id: '2d-topo', label: 'Topo 2D', Icon: Map },
+const views: { id: MapView; labelKey: string; Icon: typeof Mountain }[] = [
+  { id: '3d-terrain', labelKey: '3dTerrain', Icon: Mountain },
+  { id: '3d-satellite', labelKey: 'satellite', Icon: Satellite },
+  { id: '2d-topo', labelKey: 'topo2d', Icon: Map },
 ];
 
 export default function MapViewSwitcher({ current, onChange }: MapViewSwitcherProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="absolute top-3 right-3 z-10 flex rounded-lg overflow-hidden border border-white/10 bg-[#0f0f1a]/90 backdrop-blur-sm shadow-lg">
-      {views.map(({ id, label, Icon }) => {
+      {views.map(({ id, labelKey, Icon }) => {
         const isActive = current === id;
+        const label = t(`map.${labelKey}`);
         return (
           <button
             key={id}

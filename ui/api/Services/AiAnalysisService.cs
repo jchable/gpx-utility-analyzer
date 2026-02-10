@@ -20,7 +20,7 @@ public class AiAnalysisService
         _logger = logger;
     }
 
-    public async Task<TrackReport> AnalyzeAsync(GpxStats stats, CancellationToken ct = default)
+    public async Task<TrackReport> AnalyzeAsync(GpxStats stats, string language = "en", CancellationToken ct = default)
     {
         var providerName = await _settings.GetAsync("AiProvider:Name")
             ?? throw new InvalidOperationException("AI provider not configured. Set AiProvider:Name in settings.");
@@ -38,6 +38,6 @@ public class AiAnalysisService
         var chatClient = _registry.CreateClient(providerName, options);
         var analyzer = new TrackAnalyzer(chatClient);
 
-        return await analyzer.AnalyzeAsync(stats, ct);
+        return await analyzer.AnalyzeAsync(stats, language, ct);
     }
 }

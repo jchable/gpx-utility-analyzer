@@ -1,0 +1,14 @@
+{
+  "title": "Dashboard",
+  "subtitle": "Your activity overview at a glance",
+  "totalActivities": "Total Activities",
+  "distanceThisMonth": "Distance This Month",
+  "elevationThisMonth": "D+ This Month",
+  "timeThisMonth": "Time This Month",
+  "activityBreakdown": "Activity Breakdown",
+  "total": "total",
+  "recentActivities": "Recent Activities",
+  "viewAll": "View all",
+  "emptyState": "No activities yet. Upload a GPX file to get started.",
+  "loadError": "Failed to load dashboard: {{message}}"
+}

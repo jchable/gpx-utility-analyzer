@@ -1,0 +1,50 @@
+{
+  "title": "Settings",
+  "integrationCredentials": "Integration Credentials",
+  "strava": "Strava",
+  "garminConnect": "Garmin Connect",
+  "clientId": "Client ID",
+  "clientSecret": "Client Secret",
+  "consumerKey": "Consumer Key",
+  "consumerSecret": "Consumer Secret",
+  "configured": "Configured",
+  "placeholder": {
+    "stravaClientId": "Enter Strava Client ID",
+    "newSecret": "Enter new secret to update",
+    "garminConsumerKey": "Enter Garmin Consumer Key",
+    "model": "e.g. gemini-2.5-flash",
+    "newKey": "Enter new key to update",
+    "endpoint": "Custom endpoint URL"
+  },
+  "analysisPreferences": "Analysis Preferences",
+  "defaultPreset": "Default Preset",
+  "smoothing": "Smoothing",
+  "trackSmoothing": "Track Smoothing",
+  "elevationAlgorithm": "Elevation Algorithm",
+  "preset": {
+    "trail": "Trail",
+    "hiking": "Hiking",
+    "cycling": "Cycling"
+  },
+  "smoothingLevel": {
+    "none": "None",
+    "light": "Light",
+    "medium": "Medium",
+    "heavy": "Heavy"
+  },
+  "elevAlgo": {
+    "threshold": "Threshold",
+    "douglas-peucker": "Douglas-Peucker",
+    "segments": "Segments"
+  },
+  "aiProvider": "AI Provider",
+  "provider": "Provider",
+  "model": "Model",
+  "apiKey": "API Key",
+  "endpointOptional": "Endpoint (optional)",
+  "selectProvider": "Select provider...",
+  "saveSettings": "Save Settings",
+  "saving": "Saving...",
+  "savedSuccess": "Settings saved successfully.",
+  "saveFailed": "Failed to save: {{message}}"
+}

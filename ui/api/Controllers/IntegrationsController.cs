@@ -43,7 +43,7 @@ public class IntegrationsController : ControllerBase
     public async Task<ActionResult<object>> Connect(string provider)
     {
         var importer = _importers.FirstOrDefault(i => i.ProviderName == provider);
-        if (importer is null) return NotFound($"Unknown provider: {provider}");
+        if (importer is null) return NotFound(new { code = "UNKNOWN_PROVIDER" });
 
         var callbackUrl = $"{Request.Scheme}://{Request.Host}/api/integrations/{provider}/callback";
         var authUrl = await importer.GetAuthorizationUrlAsync(callbackUrl);
@@ -68,7 +68,7 @@ public class IntegrationsController : ControllerBase
                 ? $"{oauth_token}|{oauth_verifier}"
                 : null;
 
-        if (exchangeCode is null) return BadRequest("Missing OAuth callback parameters.");
+        if (exchangeCode is null) return BadRequest(new { code = "MISSING_OAUTH_PARAMS" });
 
         var callbackUrl = $"{Request.Scheme}://{Request.Host}/api/integrations/{provider}/callback";
         var tokenInfo = await importer.ExchangeCodeAsync(exchangeCode, callbackUrl);

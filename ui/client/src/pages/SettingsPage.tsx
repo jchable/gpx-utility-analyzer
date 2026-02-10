@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSettings, useUpdateSettings } from '../hooks/useActivities';
 import type { AppSettings } from '../types/activity';
 
@@ -66,35 +67,17 @@ function TextInput({
   );
 }
 
-function ConfiguredBadge({ configured }: { configured: boolean }) {
-  if (!configured) return null;
+function ConfiguredBadge({ label }: { label: string }) {
+  if (!label) return null;
   return (
     <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/20 text-emerald-400">
-      Configured
+      {label}
     </span>
   );
 }
 
-const PRESET_OPTIONS = [
-  { value: 'trail', label: 'Trail' },
-  { value: 'hiking', label: 'Hiking' },
-  { value: 'cycling', label: 'Cycling' },
-];
-
-const SMOOTHING_OPTIONS = [
-  { value: 'none', label: 'None' },
-  { value: 'light', label: 'Light' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'heavy', label: 'Heavy' },
-];
-
-const ELEVATION_ALGORITHM_OPTIONS = [
-  { value: 'threshold', label: 'Threshold' },
-  { value: 'douglas-peucker', label: 'Douglas-Peucker' },
-  { value: 'segments', label: 'Segments' },
-];
-
 export default function SettingsPage() {
+  const { t } = useTranslation('settings');
   const { data: settings, isLoading } = useSettings();
   const updateMutation = useUpdateSettings();
 
@@ -170,13 +153,32 @@ export default function SettingsPage() {
     label: p.charAt(0).toUpperCase() + p.slice(1),
   }));
 
+  const presetOptions = [
+    { value: 'trail', label: t('preset.trail') },
+    { value: 'hiking', label: t('preset.hiking') },
+    { value: 'cycling', label: t('preset.cycling') },
+  ];
+
+  const smoothingOptions = [
+    { value: 'none', label: t('smoothingLevel.none') },
+    { value: 'light', label: t('smoothingLevel.light') },
+    { value: 'medium', label: t('smoothingLevel.medium') },
+    { value: 'heavy', label: t('smoothingLevel.heavy') },
+  ];
+
+  const elevationAlgorithmOptions = [
+    { value: 'threshold', label: t('elevAlgo.threshold') },
+    { value: 'douglas-peucker', label: t('elevAlgo.douglas-peucker') },
+    { value: 'segments', label: t('elevAlgo.segments') },
+  ];
+
   return (
     <div>
-      <h1 className="text-2xl font-bold text-white mb-6">Settings</h1>
+      <h1 className="text-2xl font-bold text-white mb-6">{t('title')}</h1>
 
       <div className="space-y-6 max-w-2xl">
         {/* Integration Credentials */}
-        <SectionCard title="Integration Credentials">
+        <SectionCard title={t('integrationCredentials')}>
           <div className="space-y-5">
             <div>
               <h3 className="text-sm font-semibold text-white mb-3 flex items-center">
@@ -186,21 +188,21 @@ export default function SettingsPage() {
                 >
                   S
                 </span>
-                Strava
+                {t('strava')}
               </h3>
               <div className="grid grid-cols-2 gap-4">
-                <FieldGroup label="Client ID">
+                <FieldGroup label={t('clientId')}>
                   <TextInput
                     value={form.integrations.strava.clientId}
                     onChange={(v) => updateStrava('clientId', v)}
-                    placeholder="Enter Strava Client ID"
+                    placeholder={t('placeholder.stravaClientId')}
                   />
                 </FieldGroup>
-                <FieldGroup label={<>Client Secret<ConfiguredBadge configured={settings?.integrations.strava.hasClientSecret ?? false} /></>}>
+                <FieldGroup label={<>{t('clientSecret')}{(settings?.integrations.strava.hasClientSecret ?? false) && <ConfiguredBadge label={t('configured')} />}</>}>
                   <TextInput
                     value={form.integrations.strava.clientSecret}
                     onChange={(v) => updateStrava('clientSecret', v)}
-                    placeholder="Enter new secret to update"
+                    placeholder={t('placeholder.stravaClientSecret')}
                     type="password"
                   />
                 </FieldGroup>
@@ -215,21 +217,21 @@ export default function SettingsPage() {
                 >
                   G
                 </span>
-                Garmin Connect
+                {t('garminConnect')}
               </h3>
               <div className="grid grid-cols-2 gap-4">
-                <FieldGroup label="Consumer Key">
+                <FieldGroup label={t('consumerKey')}>
                   <TextInput
                     value={form.integrations.garmin.consumerKey}
                     onChange={(v) => updateGarmin('consumerKey', v)}
-                    placeholder="Enter Garmin Consumer Key"
+                    placeholder={t('placeholder.garminConsumerKey')}
                   />
                 </FieldGroup>
-                <FieldGroup label={<>Consumer Secret<ConfiguredBadge configured={settings?.integrations.garmin.hasConsumerSecret ?? false} /></>}>
+                <FieldGroup label={<>{t('consumerSecret')}{(settings?.integrations.garmin.hasConsumerSecret ?? false) && <ConfiguredBadge label={t('configured')} />}</>}>
                   <TextInput
                     value={form.integrations.garmin.consumerSecret}
                     onChange={(v) => updateGarmin('consumerSecret', v)}
-                    placeholder="Enter new secret to update"
+                    placeholder={t('placeholder.garminConsumerSecret')}
                     type="password"
                   />
                 </FieldGroup>
@@ -239,69 +241,69 @@ export default function SettingsPage() {
         </SectionCard>
 
         {/* Analysis Preferences */}
-        <SectionCard title="Analysis Preferences">
+        <SectionCard title={t('analysisPreferences')}>
           <div className="grid grid-cols-2 gap-4">
-            <FieldGroup label="Default Preset">
+            <FieldGroup label={t('defaultPreset')}>
               <SelectInput
                 value={form.analysis.preset}
                 onChange={(v) => updateAnalysis('preset', v)}
-                options={PRESET_OPTIONS}
+                options={presetOptions}
               />
             </FieldGroup>
-            <FieldGroup label="Smoothing">
+            <FieldGroup label={t('smoothing')}>
               <SelectInput
                 value={form.analysis.smoothing}
                 onChange={(v) => updateAnalysis('smoothing', v)}
-                options={SMOOTHING_OPTIONS}
+                options={smoothingOptions}
               />
             </FieldGroup>
-            <FieldGroup label="Track Smoothing">
+            <FieldGroup label={t('trackSmoothing')}>
               <SelectInput
                 value={form.analysis.trackSmoothing}
                 onChange={(v) => updateAnalysis('trackSmoothing', v)}
-                options={SMOOTHING_OPTIONS}
+                options={smoothingOptions}
               />
             </FieldGroup>
-            <FieldGroup label="Elevation Algorithm">
+            <FieldGroup label={t('elevationAlgorithm')}>
               <SelectInput
                 value={form.analysis.elevationAlgorithm}
                 onChange={(v) => updateAnalysis('elevationAlgorithm', v)}
-                options={ELEVATION_ALGORITHM_OPTIONS}
+                options={elevationAlgorithmOptions}
               />
             </FieldGroup>
           </div>
         </SectionCard>
 
         {/* AI Provider */}
-        <SectionCard title="AI Provider">
+        <SectionCard title={t('aiProvider')}>
           <div className="grid grid-cols-2 gap-4">
-            <FieldGroup label="Provider">
+            <FieldGroup label={t('provider')}>
               <SelectInput
                 value={form.aiProvider.name}
                 onChange={(v) => updateAiProvider('name', v)}
-                options={[{ value: '', label: 'Select provider...' }, ...providerOptions]}
+                options={[{ value: '', label: t('selectProvider') }, ...providerOptions]}
               />
             </FieldGroup>
-            <FieldGroup label="Model">
+            <FieldGroup label={t('model')}>
               <TextInput
                 value={form.aiProvider.model}
                 onChange={(v) => updateAiProvider('model', v)}
                 placeholder="e.g. gemini-2.5-flash"
               />
             </FieldGroup>
-            <FieldGroup label={<>API Key<ConfiguredBadge configured={settings?.aiProvider.hasApiKey ?? false} /></>}>
+            <FieldGroup label={<>{t('apiKey')}{(settings?.aiProvider.hasApiKey ?? false) && <ConfiguredBadge label={t('configured')} />}</>}>
               <TextInput
                 value={form.aiProvider.apiKey}
                 onChange={(v) => updateAiProvider('apiKey', v)}
-                placeholder="Enter new key to update"
+                placeholder={t('placeholder.apiKey')}
                 type="password"
               />
             </FieldGroup>
-            <FieldGroup label="Endpoint (optional)">
+            <FieldGroup label={t('endpointOptional')}>
               <TextInput
                 value={form.aiProvider.endpoint}
                 onChange={(v) => updateAiProvider('endpoint', v)}
-                placeholder="Custom endpoint URL"
+                placeholder={t('placeholder.endpoint')}
               />
             </FieldGroup>
           </div>
@@ -314,14 +316,14 @@ export default function SettingsPage() {
             disabled={updateMutation.isPending}
             className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white font-medium rounded-lg transition-colors"
           >
-            {updateMutation.isPending ? 'Saving...' : 'Save Settings'}
+            {updateMutation.isPending ? t('saving') : t('saveSettings')}
           </button>
           {saved && (
-            <span className="text-emerald-400 text-sm">Settings saved successfully.</span>
+            <span className="text-emerald-400 text-sm">{t('savedSuccess')}</span>
           )}
           {updateMutation.isError && (
             <span className="text-red-400 text-sm">
-              Failed to save: {updateMutation.error.message}
+              {t('saveFailed', { message: updateMutation.error.message })}
             </span>
           )}
         </div>

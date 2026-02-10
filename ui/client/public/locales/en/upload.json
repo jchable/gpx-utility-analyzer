@@ -1,0 +1,21 @@
+{
+  "title": "Upload GPX Files",
+  "activityType": "Activity Type",
+  "dropZone": "Drag & drop GPX files here",
+  "dropZoneActive": "Drop your GPX files here",
+  "browseHint": "or click to browse",
+  "fileCount_one": "{{count}} file selected",
+  "fileCount_other": "{{count}} files selected",
+  "clearAll": "Clear all",
+  "statusReady": "Ready",
+  "statusUploading": "Uploading...",
+  "statusProcessing": "Processing...",
+  "statusComplete": "Complete",
+  "statusFailed": "Failed",
+  "uploadButton_one": "Upload {{count}} file",
+  "uploadButton_other": "Upload {{count}} files",
+  "uploading": "Uploading...",
+  "viewAllActivities": "View all activities",
+  "retryFailed": "Retry failed",
+  "uploadFailed": "Upload failed"
+}

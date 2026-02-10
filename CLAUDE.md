@@ -159,6 +159,8 @@ npm run lint     # ESLint
 | DELETE | `/api/activities/{id}` | Delete activity |
 | POST | `/api/activities/{id}/reanalyze` | Re-trigger processing pipeline |
 | GET | `/api/activities/{id}/gpx` | Download original GPX file |
+| GET | `/api/activities/{id}/profile` | Precomputed elevation profile (500 points, JSON, cache 1h) |
+| GET | `/api/activities/{id}/track` | Full track GeoJSON LineString (all points, cache 1h) |
 | GET | `/api/dashboard/summary` | Dashboard aggregates |
 | GET | `/api/integrations` | List integration status |
 | POST | `/api/integrations/{provider}/connect` | Start OAuth flow |
@@ -167,10 +169,11 @@ npm run lint     # ESLint
 | GET/POST | `/api/webhooks/{provider}` | Webhook validation/handling |
 
 **Services** (`Services/`):
-- `GpxCliService` — invokes Go CLI as subprocess (`Process.Start`), deserializes JSON to `GpxStats`
-- `ActivityProcessingService` — orchestrates the 2-step pipeline: Go CLI analysis → AI analysis
+- `GpxCliService` — invokes Go CLI as subprocess (`Process.Start`) with `--enrich --export`, deserializes JSON to `GpxStats`
+- `ActivityProcessingService` — orchestrates the 3-step pipeline: Go CLI analysis → profile computation → AI analysis
+- `ProfileComputationService` — parses enriched GPX extensions, computes Minetti GAP, smoothing, downsampling (500 pts for charts), full-precision GeoJSON track for map
 - `AiAnalysisService` — creates `TrackAnalyzer` from `ProviderRegistry` using configuration
-- `GpxStorageService` — file-based GPX storage (GUID-prefixed filenames)
+- `GpxStorageService` — file-based GPX storage (GUID-prefixed filenames, original archived as zip)
 
 **Integrations** (`Services/Integrations/`):
 - `IActivityImporter` — interface for external providers (OAuth + webhook + activity fetch)
@@ -179,11 +182,11 @@ npm run lint     # ESLint
 **Background processing**:
 - `Channel<Guid>` (unbounded) as in-process queue
 - `ActivityProcessingWorker` (`BackgroundService`) reads from channel, delegates to `ActivityProcessingService`
-- Processing states: `Pending` → `Analyzing` (Go CLI) → `AiProcessing` (AI) → `Completed` / `Failed`
+- Processing states: `Pending` → `Analyzing` (Go CLI + profile computation) → `AiProcessing` (AI) → `Completed` / `Failed`
 
 **Data** (`Data/`, `Entities/`):
 - EF Core with dual DB support: **SQLite** (dev) / **PostgreSQL** (prod) via `Database:Provider` config
-- Entities: `Activity`, `Integration`
+- Entities: `Activity` (includes `ProfileJson`, `TrackGeoJson` for precomputed chart/map data), `Integration`
 - `ProcessingStatus` enum: `Pending`, `Analyzing`, `AiProcessing`, `Completed`, `Failed` (stored as string)
 - Auto-creates DB on startup (`EnsureCreated()`)
 
@@ -207,19 +210,80 @@ React 19 + TypeScript 5.9 + Vite 7 + TailwindCSS v4 + MapLibre GL JS.
 - `/settings` — App settings
 
 **Key components**:
-- `components/map/TrackMap.tsx` — MapLibre GL JS with 3 views (3D terrain, 3D satellite, 2D OpenTopo)
+- `components/map/TrackMap.tsx` — MapLibre GL JS with 3 views (3D terrain, 3D satellite, 2D OpenTopo). Receives precomputed GeoJSON track coordinates from API
 - `components/map/MapViewSwitcher.tsx` — view toggle
-- `components/activity/ElevationChart.tsx` — Recharts elevation profile
+- `components/activity/ElevationProfileChart.tsx` — Recharts elevation/speed/GAP profile. Receives precomputed `ProfilePoint[]` from API (no client-side computation)
 - `components/activity/AiReportPanel.tsx` — AI analysis display
 - `components/widgets/StatCard.tsx`, `RadialGauge.tsx` — dashboard widgets
 - `components/layout/Layout.tsx`, `Sidebar.tsx` — dark theme layout with sidebar nav
 
 **Data layer**:
-- `api/client.ts` — typed API client (fetch-based, all endpoints)
-- `hooks/useActivities.ts` — TanStack React Query hooks
-- `types/activity.ts` — TypeScript types mirroring API DTOs and Go JSON contract
+- `api/client.ts` — typed API client (fetch-based, all endpoints, sends `Accept-Language` header). Includes `getProfile()` and `getTrack()` for precomputed data
+- `hooks/useActivities.ts` — TanStack React Query hooks including `useProfile(id)` and `useTrack(id)` with 1h staleTime (immutable data)
+- `types/activity.ts` — TypeScript types mirroring API DTOs, Go JSON contract, and `ProfilePoint` for chart data
+- `i18n.ts` — i18next initialization (react-i18next, HTTP backend, browser language detection)
 
-**Activity types**: `run`, `trail`, `hike`, `cycle`, `walk`, `swim`, `other` (with associated colors and labels).
+**Activity types**: `run`, `trail`, `hike`, `cycle`, `walk`, `swim`, `other` (with associated colors in `ACTIVITY_COLORS`). Labels are i18n-driven via `t('activityType.xxx')`.
+
+**i18n components**:
+- `components/layout/LanguageSwitcher.tsx` — EN/FR toggle in sidebar
+- `i18n.ts` — i18next initialization (HTTP backend, browser language detection)
+
+## Internationalization (i18n)
+
+The application supports **English** (default) and **French**. Go CLI remains English-only.
+
+### Frontend (react-i18next)
+
+- **Framework**: `react-i18next` with `i18next-http-backend` (loads JSON) + `i18next-browser-languagedetector`
+- **Translation files**: `ui/client/public/locales/{lang}/{namespace}.json`
+- **Namespaces**: `common`, `dashboard`, `activities`, `upload`, `integrations`, `settings`
+- **Default namespace**: `common` (shared strings: nav, buttons, units, statuses, activity types, error codes)
+- **Key convention**: flat dot-notation within namespace, e.g. `t('activityType.trail')` from common
+- **Language detection**: `localStorage` → browser navigator → fallback `en`
+- **LanguageSwitcher**: toggle in sidebar footer, persists via localStorage (`i18nextLng`)
+
+**Usage pattern in components**:
+```tsx
+const { t } = useTranslation('activities');      // page-specific namespace
+const { t: tc } = useTranslation();              // common namespace
+// Use: t('title'), tc('activityType.run'), tc('button.save')
+```
+
+**Dates**: use `i18n.language` for locale-aware formatting: `new Date(iso).toLocaleDateString(i18n.language, options)`
+
+**Pluralization**: i18next `_one`/`_other` suffixes (e.g. `fileCount_one`, `fileCount_other`)
+
+### API Error Strategy
+
+The API returns **structured error codes** (not localized messages):
+```json
+{ "code": "NO_FILE_PROVIDED" }
+```
+The frontend translates these via `common:apiError.{CODE}` keys. Error codes: `NO_FILE_PROVIDED`, `INVALID_FILE_TYPE`, `GPX_NOT_FOUND`, `UNKNOWN_PROVIDER`, `MISSING_OAUTH_PARAMS`, `AI_PROVIDER_NOT_CONFIGURED`.
+
+### API Accept-Language Header
+
+`client.ts` sends `Accept-Language` header on every request (from `i18n.language`). The API uses this to:
+1. Store `Language` on the `Activity` entity at upload/reanalyze time
+2. Pass the language through to AI analysis for localized reports
+
+### AI Report Localization
+
+Language propagation chain:
+```
+Frontend (Accept-Language) → ActivitiesController → Activity.Language (stored)
+→ ActivityProcessingService → AiAnalysisService → TrackAnalyzer → PromptBuilder
+```
+`PromptBuilder.BuildAnalysisPrompt(stats, language)` appends a language instruction to the prompt when `language != "en"`. The system prompt stays in English (best LLM comprehension); only the response language instruction is localized.
+
+### Adding a New Language
+
+1. Create `ui/client/public/locales/{lang}/` with all 6 namespace JSON files
+2. Add the language code to `supportedLngs` in `ui/client/src/i18n.ts`
+3. Add language name mapping in `LanguageSwitcher.tsx`
+4. Add language name in `PromptBuilder.cs` switch expression
+5. Add `language.{code}` entry in all existing `common.json` files
 
 ## Documentation — docs/
 
@@ -257,3 +321,4 @@ API Dockerfile is a 3-stage build: Go CLI → .NET publish → ASP.NET runtime (
 
 - Go 1.25.7+, .NET 9.0, Node 22+, React 19, Vite 7, TypeScript 5.9
 - For local scripts and system operations, use **PowerShell** (Python is not installed)
+- At the end of a new feature, suggest to tracked only added or modified in this feature and in a second step to commit your work.

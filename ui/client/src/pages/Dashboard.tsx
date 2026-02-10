@@ -1,24 +1,28 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useDashboard } from '../hooks/useActivities';
-import { ACTIVITY_COLORS, ACTIVITY_LABELS } from '../types/activity';
-
-function formatDuration(seconds: number): string {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  if (h > 0) return `${h}h ${m}m`;
-  return `${m}m`;
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
+import { ACTIVITY_COLORS } from '../types/activity';
 
 export default function Dashboard() {
+  const { t } = useTranslation('dashboard');
+  const { t: tc } = useTranslation();
+  const { i18n } = useTranslation();
   const { data, isLoading, error } = useDashboard();
+
+  function formatDuration(seconds: number): string {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    if (h > 0) return tc('format.durationHM', { h, m });
+    return tc('format.durationM', { m });
+  }
+
+  function formatDate(iso: string): string {
+    return new Date(iso).toLocaleDateString(i18n.language, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  }
 
   if (isLoading) {
     return (
@@ -31,7 +35,7 @@ export default function Dashboard() {
   if (error) {
     return (
       <div className="flex items-center justify-center h-96">
-        <p className="text-red-400 text-lg">Failed to load dashboard: {error.message}</p>
+        <p className="text-red-400 text-lg">{t('loadError', { message: error.message })}</p>
       </div>
     );
   }
@@ -40,7 +44,7 @@ export default function Dashboard() {
 
   const statWidgets = [
     {
-      label: 'Total Activities',
+      label: t('totalActivities'),
       value: data.totalActivities.toString(),
       icon: (
         <svg className="w-8 h-8 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -50,8 +54,8 @@ export default function Dashboard() {
       accent: 'text-cyan-400',
     },
     {
-      label: 'Distance This Month',
-      value: `${data.distanceThisMonthKm.toFixed(1)} km`,
+      label: t('distanceThisMonth'),
+      value: `${data.distanceThisMonthKm.toFixed(1)} ${tc('unit.km')}`,
       icon: (
         <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
@@ -60,8 +64,8 @@ export default function Dashboard() {
       accent: 'text-green-400',
     },
     {
-      label: 'D+ This Month',
-      value: `${Math.round(data.totalElevationGainM)} m`,
+      label: t('elevationThisMonth'),
+      value: `${Math.round(data.totalElevationGainM)} ${tc('unit.m')}`,
       icon: (
         <svg className="w-8 h-8 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
@@ -70,7 +74,7 @@ export default function Dashboard() {
       accent: 'text-amber-400',
     },
     {
-      label: 'Time This Month',
+      label: t('timeThisMonth'),
       value: formatDuration(data.totalMovingTimeSeconds),
       icon: (
         <svg className="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -81,12 +85,10 @@ export default function Dashboard() {
     },
   ];
 
-  // Activity type breakdown
   const breakdown = data.activityTypeBreakdown;
   const breakdownEntries = Object.entries(breakdown).sort(([, a], [, b]) => b - a);
   const totalBreakdown = breakdownEntries.reduce((sum, [, count]) => sum + count, 0);
 
-  // Build conic gradient for donut chart
   let cumulativePct = 0;
   const conicStops = breakdownEntries.map(([type, count]) => {
     const pct = totalBreakdown > 0 ? (count / totalBreakdown) * 100 : 0;
@@ -99,13 +101,11 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
-      {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white tracking-tight">Dashboard</h1>
-        <p className="text-slate-400 mt-1">Your activity overview at a glance</p>
+        <h1 className="text-3xl font-bold text-white tracking-tight">{t('title')}</h1>
+        <p className="text-slate-400 mt-1">{t('subtitle')}</p>
       </div>
 
-      {/* Stat Widgets Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {statWidgets.map((widget) => (
           <div
@@ -122,11 +122,9 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Activity Type Breakdown */}
         <div className="bg-[#16213e] rounded-2xl p-6 border border-slate-700/50">
-          <h2 className="text-lg font-semibold text-white mb-6">Activity Breakdown</h2>
+          <h2 className="text-lg font-semibold text-white mb-6">{t('activityBreakdown')}</h2>
           <div className="flex flex-col items-center gap-6">
-            {/* Donut Chart */}
             <div className="relative w-40 h-40 shrink-0">
               <div
                 className="w-full h-full rounded-full"
@@ -135,11 +133,10 @@ export default function Dashboard() {
               <div className="absolute inset-5 bg-[#16213e] rounded-full flex items-center justify-center">
                 <div className="text-center">
                   <p className="text-2xl font-bold text-white">{totalBreakdown}</p>
-                  <p className="text-xs text-slate-400">total</p>
+                  <p className="text-xs text-slate-400">{t('total')}</p>
                 </div>
               </div>
             </div>
-            {/* Legend */}
             <div className="space-y-3 w-full">
               {breakdownEntries.map(([type, count]) => {
                 const pct = totalBreakdown > 0 ? ((count / totalBreakdown) * 100).toFixed(0) : '0';
@@ -151,7 +148,7 @@ export default function Dashboard() {
                         style={{ backgroundColor: ACTIVITY_COLORS[type] || ACTIVITY_COLORS.other }}
                       />
                       <span className="text-sm text-slate-300">
-                        {ACTIVITY_LABELS[type] || type}
+                        {tc(`activityType.${type}`, { defaultValue: type })}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -165,21 +162,20 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Recent Activities */}
         <div className="lg:col-span-2 bg-[#16213e] rounded-2xl p-6 border border-slate-700/50">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-white">Recent Activities</h2>
+            <h2 className="text-lg font-semibold text-white">{t('recentActivities')}</h2>
             <Link
               to="/activities"
               className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
             >
-              View all
+              {t('viewAll')}
             </Link>
           </div>
           <div className="space-y-2">
             {data.recentActivities.length === 0 && (
               <p className="text-slate-500 text-center py-8">
-                No activities yet. Upload a GPX file to get started.
+                {t('emptyState')}
               </p>
             )}
             {data.recentActivities.map((activity) => (
@@ -197,7 +193,7 @@ export default function Dashboard() {
                       color: ACTIVITY_COLORS[activity.activityType] || ACTIVITY_COLORS.other,
                     }}
                   >
-                    {(ACTIVITY_LABELS[activity.activityType] || activity.activityType)
+                    {tc(`activityType.${activity.activityType}`, { defaultValue: activity.activityType })
                       .slice(0, 3)
                       .toUpperCase()}
                   </div>
@@ -209,8 +205,8 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="flex items-center gap-6 text-sm text-slate-400 shrink-0 ml-4">
-                  <span>{activity.distanceKm.toFixed(1)} km</span>
-                  <span className="hidden sm:inline">{activity.elevationGainM} m D+</span>
+                  <span>{activity.distanceKm.toFixed(1)} {tc('unit.km')}</span>
+                  <span className="hidden sm:inline">{activity.elevationGainM} {tc('unit.m')} D+</span>
                   <span className="hidden md:inline">{formatDuration(activity.movingTimeSeconds)}</span>
                 </div>
               </Link>

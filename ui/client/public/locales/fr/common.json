@@ -1,0 +1,81 @@
+{
+  "appName": "GPX Analyzer",
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "activities": "Activités",
+    "upload": "Import",
+    "integrations": "Intégrations",
+    "settings": "Paramètres"
+  },
+  "sidebar": {
+    "expand": "Développer la barre latérale",
+    "collapse": "Réduire la barre latérale"
+  },
+  "activityType": {
+    "run": "Course à pied",
+    "trail": "Trail",
+    "hike": "Randonnée",
+    "cycle": "Cyclisme",
+    "walk": "Marche",
+    "swim": "Natation",
+    "other": "Autre"
+  },
+  "status": {
+    "Pending": "En attente",
+    "Analyzing": "Analyse GPX",
+    "AiProcessing": "Analyse IA",
+    "Completed": "Terminé",
+    "Failed": "Échoué"
+  },
+  "unit": {
+    "km": "km",
+    "m": "m",
+    "meters": "mètres",
+    "kmh": "km/h",
+    "bpm": "bpm",
+    "watts": "W",
+    "rpm": "rpm",
+    "kcal": "kcal",
+    "minPerKm": "min/km",
+    "kb": "Ko"
+  },
+  "button": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "back": "Retour",
+    "upload": "Importer",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "view": "Voir",
+    "connect": "Connecter",
+    "disconnect": "Déconnecter"
+  },
+  "error": {
+    "loadFailed": "Échec du chargement : {{message}}",
+    "apiError": "Erreur API {{status}} : {{message}}"
+  },
+  "apiError": {
+    "NO_FILE_PROVIDED": "Aucun fichier fourni.",
+    "INVALID_FILE_TYPE": "Seuls les fichiers .gpx sont acceptés.",
+    "GPX_NOT_FOUND": "Fichier GPX introuvable.",
+    "UNKNOWN_PROVIDER": "Fournisseur inconnu.",
+    "MISSING_OAUTH_PARAMS": "Paramètres OAuth manquants.",
+    "AI_PROVIDER_NOT_CONFIGURED": "Fournisseur IA non configuré."
+  },
+  "format": {
+    "durationHM": "{{h}}h {{m}}min",
+    "durationM": "{{m}}min",
+    "page": "Page {{page}}"
+  },
+  "map": {
+    "3dTerrain": "3D Terrain",
+    "satellite": "Satellite",
+    "topo2d": "Topo 2D",
+    "loadingTrack": "Chargement du tracé..."
+  },
+  "language": {
+    "en": "English",
+    "fr": "Français"
+  }
+}

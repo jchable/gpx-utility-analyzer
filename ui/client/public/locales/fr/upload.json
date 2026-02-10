@@ -1,0 +1,21 @@
+{
+  "title": "Importer des fichiers GPX",
+  "activityType": "Type d'activité",
+  "dropZone": "Glissez-déposez vos fichiers GPX ici",
+  "dropZoneActive": "Déposez vos fichiers GPX ici",
+  "browseHint": "ou cliquez pour parcourir",
+  "fileCount_one": "{{count}} fichier sélectionné",
+  "fileCount_other": "{{count}} fichiers sélectionnés",
+  "clearAll": "Tout effacer",
+  "statusReady": "Prêt",
+  "statusUploading": "Envoi...",
+  "statusProcessing": "Traitement...",
+  "statusComplete": "Terminé",
+  "statusFailed": "Échoué",
+  "uploadButton_one": "Importer {{count}} fichier",
+  "uploadButton_other": "Importer {{count}} fichiers",
+  "uploading": "Envoi en cours...",
+  "viewAllActivities": "Voir toutes les activités",
+  "retryFailed": "Réessayer les échecs",
+  "uploadFailed": "Échec de l'envoi"
+}

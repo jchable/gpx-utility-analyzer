@@ -1,0 +1,81 @@
+{
+  "appName": "GPX Analyzer",
+  "nav": {
+    "dashboard": "Dashboard",
+    "activities": "Activities",
+    "upload": "Upload",
+    "integrations": "Integrations",
+    "settings": "Settings"
+  },
+  "sidebar": {
+    "expand": "Expand sidebar",
+    "collapse": "Collapse sidebar"
+  },
+  "activityType": {
+    "run": "Running",
+    "trail": "Trail",
+    "hike": "Hiking",
+    "cycle": "Cycling",
+    "walk": "Walking",
+    "swim": "Swimming",
+    "other": "Other"
+  },
+  "status": {
+    "Pending": "Pending",
+    "Analyzing": "Analyzing GPX",
+    "AiProcessing": "AI Processing",
+    "Completed": "Completed",
+    "Failed": "Failed"
+  },
+  "unit": {
+    "km": "km",
+    "m": "m",
+    "meters": "meters",
+    "kmh": "km/h",
+    "bpm": "bpm",
+    "watts": "W",
+    "rpm": "rpm",
+    "kcal": "kcal",
+    "minPerKm": "min/km",
+    "kb": "KB"
+  },
+  "button": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "back": "Back",
+    "upload": "Upload",
+    "previous": "Previous",
+    "next": "Next",
+    "view": "View",
+    "connect": "Connect",
+    "disconnect": "Disconnect"
+  },
+  "error": {
+    "loadFailed": "Failed to load: {{message}}",
+    "apiError": "API error {{status}}: {{message}}"
+  },
+  "apiError": {
+    "NO_FILE_PROVIDED": "No file provided.",
+    "INVALID_FILE_TYPE": "Only .gpx files are supported.",
+    "GPX_NOT_FOUND": "GPX file not found.",
+    "UNKNOWN_PROVIDER": "Unknown provider.",
+    "MISSING_OAUTH_PARAMS": "Missing OAuth callback parameters.",
+    "AI_PROVIDER_NOT_CONFIGURED": "AI provider not configured."
+  },
+  "format": {
+    "durationHM": "{{h}}h {{m}}m",
+    "durationM": "{{m}}m",
+    "page": "Page {{page}}"
+  },
+  "map": {
+    "3dTerrain": "3D Terrain",
+    "satellite": "Satellite",
+    "topo2d": "Topo 2D",
+    "loadingTrack": "Loading track..."
+  },
+  "language": {
+    "en": "English",
+    "fr": "Français"
+  }
+}

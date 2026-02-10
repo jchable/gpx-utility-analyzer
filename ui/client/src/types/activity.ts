@@ -127,6 +127,18 @@ export interface TrackReport {
   };
 }
 
+export interface ProfilePoint {
+  distance: number;     // km cumulative
+  elevation: number;    // metres
+  speed: number;        // km/h smoothed
+  gap: number;          // km/h GAP smoothed
+  grade: number;        // percentage smoothed
+  elapsedTime?: number; // seconds since start
+  heartRate?: number;   // bpm
+  cadence?: number;     // rpm
+  power?: number;       // watts
+}
+
 export interface DashboardSummary {
   totalActivities: number;
   totalDistanceKm: number;
@@ -194,12 +206,5 @@ export const ACTIVITY_COLORS: Record<string, string> = {
   other: '#888888',
 };
 
-export const ACTIVITY_LABELS: Record<string, string> = {
-  run: 'Running',
-  trail: 'Trail',
-  hike: 'Hiking',
-  cycle: 'Cycling',
-  walk: 'Walking',
-  swim: 'Swimming',
-  other: 'Other',
-};
+export const ACTIVITY_TYPES = ['run', 'trail', 'hike', 'cycle', 'walk', 'swim', 'other'] as const;
+export type ActivityType = (typeof ACTIVITY_TYPES)[number];

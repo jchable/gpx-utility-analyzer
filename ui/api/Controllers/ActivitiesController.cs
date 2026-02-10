@@ -87,13 +87,16 @@ public class ActivitiesController : ControllerBase
     public async Task<ActionResult<ActivityDetailDto>> Upload(IFormFile file, [FromForm] string? activityType = null)
     {
         if (file is null || file.Length == 0)
-            return BadRequest("No file provided.");
+            return BadRequest(new { code = "NO_FILE_PROVIDED" });
 
         if (!file.FileName.EndsWith(".gpx", StringComparison.OrdinalIgnoreCase))
-            return BadRequest("Only .gpx files are supported.");
+            return BadRequest(new { code = "INVALID_FILE_TYPE" });
 
         using var stream = file.OpenReadStream();
         var relativePath = await _storage.StoreAsync(stream, file.FileName);
+
+        var language = Request.Headers.AcceptLanguage.FirstOrDefault()?.Split(',')[0]?.Trim() ?? "en";
+        if (language.Length > 2) language = language[..2];
 
         var activity = new Activity
         {
@@ -103,6 +106,7 @@ public class ActivitiesController : ControllerBase
             GpxFilePath = relativePath,
             Source = "upload",
             Status = ProcessingStatus.Pending,
+            Language = language,
         };
 
         _db.Activities.Add(activity);
@@ -141,9 +145,35 @@ public class ActivitiesController : ControllerBase
         if (activity is null) return NotFound();
 
         var fullPath = _storage.GetFullPath(activity.GpxFilePath);
-        if (!System.IO.File.Exists(fullPath)) return NotFound("GPX file not found.");
+        if (!System.IO.File.Exists(fullPath)) return NotFound(new { code = "GPX_NOT_FOUND" });
 
         return PhysicalFile(Path.GetFullPath(fullPath), "application/gpx+xml", $"{activity.Name}.gpx");
+    }
+
+    [HttpGet("{id:guid}/profile")]
+    public async Task<IActionResult> GetProfile(Guid id)
+    {
+        var activity = await _db.Activities.FindAsync(id);
+        if (activity is null) return NotFound();
+
+        if (activity.Status != ProcessingStatus.Completed || activity.ProfileJson is null)
+            return NotFound(new { code = "PROFILE_NOT_AVAILABLE" });
+
+        Response.Headers.CacheControl = "public, max-age=3600";
+        return Content(activity.ProfileJson, "application/json");
+    }
+
+    [HttpGet("{id:guid}/track")]
+    public async Task<IActionResult> GetTrack(Guid id)
+    {
+        var activity = await _db.Activities.FindAsync(id);
+        if (activity is null) return NotFound();
+
+        if (activity.Status != ProcessingStatus.Completed || activity.TrackGeoJson is null)
+            return NotFound(new { code = "TRACK_NOT_AVAILABLE" });
+
+        Response.Headers.CacheControl = "public, max-age=3600";
+        return Content(activity.TrackGeoJson, "application/json");
     }
 
     [HttpPost("{id:guid}/reanalyze")]
@@ -152,9 +182,15 @@ public class ActivitiesController : ControllerBase
         var activity = await _db.Activities.FindAsync(id);
         if (activity is null) return NotFound();
 
+        var language = Request.Headers.AcceptLanguage.FirstOrDefault()?.Split(',')[0]?.Trim() ?? "en";
+        if (language.Length > 2) language = language[..2];
+
         activity.Status = ProcessingStatus.Pending;
         activity.ErrorMessage = null;
         activity.AiReportJson = null;
+        activity.ProfileJson = null;
+        activity.TrackGeoJson = null;
+        activity.Language = language;
         activity.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
 

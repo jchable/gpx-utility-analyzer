@@ -1,12 +1,23 @@
-import type { ActivityListItem, ActivityDetail, DashboardSummary, IntegrationInfo, AppSettings } from '../types/activity';
+import i18n from '../i18n';
+import type { ActivityListItem, ActivityDetail, DashboardSummary, IntegrationInfo, AppSettings, ProfilePoint } from '../types/activity';
 
 const BASE = '/api';
 
+function langHeaders(): Record<string, string> {
+  return { 'Accept-Language': i18n.language || 'en' };
+}
+
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${url}`, init);
+  const headers = { ...langHeaders(), ...init?.headers };
+  const res = await fetch(`${BASE}${url}`, { ...init, headers });
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`API error ${res.status}: ${text}`);
+    let code = '';
+    try {
+      const json = await res.json();
+      code = json.code || '';
+    } catch { /* not JSON */ }
+    if (code) throw new Error(code);
+    throw new Error(`API error ${res.status}`);
   }
   return res.json();
 }
@@ -30,19 +41,32 @@ export const api = {
     if (activityType) formData.append('activityType', activityType);
     const res = await fetch(`${BASE}/activities/upload`, {
       method: 'POST',
+      headers: langHeaders(),
       body: formData,
     });
-    if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
+    if (!res.ok) {
+      let code = '';
+      try {
+        const json = await res.json();
+        code = json.code || '';
+      } catch { /* not JSON */ }
+      if (code) throw new Error(code);
+      throw new Error(`Upload failed: ${res.status}`);
+    }
     return res.json();
   },
 
   deleteActivity: async (id: string) => {
-    await fetch(`${BASE}/activities/${id}`, { method: 'DELETE' });
+    await fetch(`${BASE}/activities/${id}`, { method: 'DELETE', headers: langHeaders() });
   },
 
   reanalyzeActivity: async (id: string) => {
-    await fetch(`${BASE}/activities/${id}/reanalyze`, { method: 'POST' });
+    await fetch(`${BASE}/activities/${id}/reanalyze`, { method: 'POST', headers: langHeaders() });
   },
+
+  getProfile: (id: string) => fetchJson<ProfilePoint[]>(`/activities/${id}/profile`),
+
+  getTrack: (id: string) => fetchJson<{ type: string; coordinates: number[][] }>(`/activities/${id}/track`),
 
   getGpxUrl: (id: string) => `${BASE}/activities/${id}/gpx`,
 
@@ -57,7 +81,7 @@ export const api = {
   },
 
   disconnectIntegration: async (provider: string) => {
-    await fetch(`${BASE}/integrations/${provider}`, { method: 'DELETE' });
+    await fetch(`${BASE}/integrations/${provider}`, { method: 'DELETE', headers: langHeaders() });
   },
 
   // Settings
@@ -66,7 +90,7 @@ export const api = {
   updateSettings: async (settings: AppSettings): Promise<void> => {
     const res = await fetch(`${BASE}/settings`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...langHeaders() },
       body: JSON.stringify(settings),
     });
     if (!res.ok) {

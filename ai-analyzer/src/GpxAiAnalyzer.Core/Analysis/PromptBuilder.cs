@@ -12,7 +12,7 @@ public static class PromptBuilder
 {
     private const int MaxStopsInPrompt = 10;
 
-    public static string BuildAnalysisPrompt(GpxStats stats)
+    public static string BuildAnalysisPrompt(GpxStats stats, string language = "en")
     {
         var ci = CultureInfo.InvariantCulture;
         var sb = new StringBuilder();
@@ -78,6 +78,17 @@ public static class PromptBuilder
         sb.AppendLine("3. **recommendations**: practical advice for someone attempting this track");
         sb.AppendLine("4. **summary**: 2-3 sentence overview of the track character");
         sb.AppendLine("5. **effort**: fitness_level (beginner/intermediate/advanced), estimated_duration, calorie_estimate");
+
+        if (!string.IsNullOrEmpty(language) && !language.Equals("en", StringComparison.OrdinalIgnoreCase))
+        {
+            var langName = language.ToLowerInvariant() switch
+            {
+                "fr" => "French (français)",
+                _ => language,
+            };
+            sb.AppendLine();
+            sb.AppendLine($"IMPORTANT: Respond entirely in {langName}. All text content in your response (summary, descriptions, recommendations, segment names) must be written in {langName}.");
+        }
 
         return sb.ToString();
     }

@@ -10,6 +10,7 @@ public class ActivityProcessingService
     private readonly GpxStorageService _storage;
     private readonly GpxCliService _cliService;
     private readonly AiAnalysisService _aiService;
+    private readonly ProfileComputationService _profileService;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<ActivityProcessingService> _logger;
 
@@ -17,12 +18,14 @@ public class ActivityProcessingService
         GpxStorageService storage,
         GpxCliService cliService,
         AiAnalysisService aiService,
+        ProfileComputationService profileService,
         IServiceScopeFactory scopeFactory,
         ILogger<ActivityProcessingService> logger)
     {
         _storage = storage;
         _cliService = cliService;
         _aiService = aiService;
+        _profileService = profileService;
         _scopeFactory = scopeFactory;
         _logger = logger;
     }
@@ -96,6 +99,19 @@ public class ActivityProcessingService
                 _logger.LogInformation("[{Id}] Replaced GPX with processed version", activityId);
             }
 
+            // Compute profile and track GeoJSON from enriched GPX
+            stepSw.Restart();
+            var enrichedGpxPath = _storage.GetFullPath(activity.GpxFilePath);
+            var (profileJson, trackGeoJson) = _profileService.ComputeFromEnrichedGpx(enrichedGpxPath);
+            stepSw.Stop();
+
+            activity.ProfileJson = profileJson;
+            activity.TrackGeoJson = trackGeoJson;
+            _logger.LogInformation("[{Id}] Profile computed in {Elapsed:F1}s ({ProfileSize} profile, {TrackSize} track)",
+                activityId, stepSw.Elapsed.TotalSeconds,
+                profileJson?.Length.ToString("N0") ?? "null",
+                trackGeoJson?.Length.ToString("N0") ?? "null");
+
             // Cleanup temp directories
             try
             {
@@ -131,7 +147,7 @@ public class ActivityProcessingService
             try
             {
                 stepSw.Restart();
-                var report = await _aiService.AnalyzeAsync(stats, ct);
+                var report = await _aiService.AnalyzeAsync(stats, activity.Language, ct);
                 stepSw.Stop();
                 activity.AiReportJson = JsonSerializer.Serialize(report);
                 _logger.LogInformation("[{Id}] AI analysis completed in {Elapsed:F1}s", activityId, stepSw.Elapsed.TotalSeconds);

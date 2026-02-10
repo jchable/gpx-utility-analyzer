@@ -1,0 +1,14 @@
+{
+  "title": "Tableau de bord",
+  "subtitle": "Vue d'ensemble de vos activités",
+  "totalActivities": "Activités totales",
+  "distanceThisMonth": "Distance ce mois",
+  "elevationThisMonth": "D+ ce mois",
+  "timeThisMonth": "Temps ce mois",
+  "activityBreakdown": "Répartition des activités",
+  "total": "total",
+  "recentActivities": "Activités récentes",
+  "viewAll": "Tout voir",
+  "emptyState": "Aucune activité. Importez un fichier GPX pour commencer.",
+  "loadError": "Échec du chargement du tableau de bord : {{message}}"
+}

@@ -1,45 +1,16 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useIntegrations } from '../hooks/useActivities';
 import { api } from '../api/client';
 import type { IntegrationInfo } from '../types/activity';
 
-const PROVIDER_CONFIG: Record<string, { name: string; description: string; color: string; icon: string }> = {
-  strava: {
-    name: 'Strava',
-    description: 'Sync activities from your Strava account automatically.',
-    color: '#FC4C02',
-    icon: 'S',
-  },
-  garmin: {
-    name: 'Garmin Connect',
-    description: 'Import activities from your Garmin watch and devices.',
-    color: '#007CC3',
-    icon: 'G',
-  },
-  coros: {
-    name: 'COROS',
-    description: 'Sync workout data from your COROS training hub.',
-    color: '#00D4AA',
-    icon: 'C',
-  },
-  suunto: {
-    name: 'Suunto',
-    description: 'Connect your Suunto app to import activities.',
-    color: '#E4032E',
-    icon: 'S',
-  },
-  polar: {
-    name: 'Polar Flow',
-    description: 'Sync training sessions from Polar Flow.',
-    color: '#D0021B',
-    icon: 'P',
-  },
-  komoot: {
-    name: 'Komoot',
-    description: 'Import tours and planned routes from Komoot.',
-    color: '#6AA127',
-    icon: 'K',
-  },
+const PROVIDER_STYLE: Record<string, { color: string; icon: string }> = {
+  strava: { color: '#FC4C02', icon: 'S' },
+  garmin: { color: '#007CC3', icon: 'G' },
+  coros: { color: '#00D4AA', icon: 'C' },
+  suunto: { color: '#E4032E', icon: 'S' },
+  polar: { color: '#D0021B', icon: 'P' },
+  komoot: { color: '#6AA127', icon: 'K' },
 };
 
 function IntegrationCard({
@@ -52,12 +23,17 @@ function IntegrationCard({
   onDisconnect: () => void;
 }) {
   const [loading, setLoading] = useState(false);
-  const config = PROVIDER_CONFIG[integration.provider] || {
-    name: integration.provider,
-    description: 'Connect this service to sync your activities.',
+  const { t } = useTranslation('integrations');
+  const { t: tc } = useTranslation();
+  const { i18n } = useTranslation();
+
+  const style = PROVIDER_STYLE[integration.provider] || {
     color: '#888888',
     icon: integration.provider.charAt(0).toUpperCase(),
   };
+
+  const providerName = t(`provider.${integration.provider}.name`, { defaultValue: integration.provider });
+  const providerDescription = t(`provider.${integration.provider}.description`, { defaultValue: t('defaultDescription') });
 
   const handleAction = async () => {
     setLoading(true);
@@ -78,29 +54,29 @@ function IntegrationCard({
         {/* Provider Icon */}
         <div
           className="w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold text-white shrink-0"
-          style={{ backgroundColor: config.color + '33', color: config.color }}
+          style={{ backgroundColor: style.color + '33', color: style.color }}
         >
-          {config.icon}
+          {style.icon}
         </div>
 
         {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <h3 className="text-white font-semibold">{config.name}</h3>
+            <h3 className="text-white font-semibold">{providerName}</h3>
             {integration.isConnected && (
               <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">
-                Connected
+                {t('connected')}
               </span>
             )}
           </div>
-          <p className="text-sm text-slate-400 mb-4">{config.description}</p>
+          <p className="text-sm text-slate-400 mb-4">{providerDescription}</p>
 
           {/* Connected details */}
           {integration.isConnected && integration.externalUserId && (
             <p className="text-xs text-slate-500 mb-3">
-              Account: {integration.externalUserId}
+              {t('account', { userId: integration.externalUserId })}
               {integration.connectedAt && (
-                <> -- Connected {new Date(integration.connectedAt).toLocaleDateString()}</>
+                <> -- {t('connected')} {new Date(integration.connectedAt).toLocaleDateString(i18n.language)}</>
               )}
             </p>
           )}
@@ -116,15 +92,15 @@ function IntegrationCard({
             }`}
             style={
               !integration.isConnected
-                ? { backgroundColor: config.color }
+                ? { backgroundColor: style.color }
                 : undefined
             }
           >
             {loading
-              ? 'Processing...'
+              ? t('processing')
               : integration.isConnected
-                ? 'Disconnect'
-                : 'Connect'}
+                ? tc('button.disconnect')
+                : tc('button.connect')}
           </button>
         </div>
       </div>
@@ -134,6 +110,7 @@ function IntegrationCard({
 
 export default function Integrations() {
   const { data: integrations, isLoading, error, refetch } = useIntegrations();
+  const { t } = useTranslation('integrations');
 
   const handleConnect = async (provider: string) => {
     await api.connectIntegration(provider);
@@ -156,7 +133,7 @@ export default function Integrations() {
   if (error) {
     return (
       <div className="flex items-center justify-center h-96">
-        <p className="text-red-400 text-lg">Failed to load integrations: {error.message}</p>
+        <p className="text-red-400 text-lg">{t('loadError', { message: error.message })}</p>
       </div>
     );
   }
@@ -169,9 +146,9 @@ export default function Integrations() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white tracking-tight">Integrations</h1>
+        <h1 className="text-3xl font-bold text-white tracking-tight">{t('title')}</h1>
         <p className="text-slate-400 mt-1">
-          Connect your favorite sports platforms to sync activities automatically
+          {t('subtitle')}
         </p>
       </div>
 
@@ -180,7 +157,7 @@ export default function Integrations() {
         <div>
           <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-green-400" />
-            Connected Services
+            {t('connectedServices')}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {connected.map((integration) => (
@@ -198,7 +175,7 @@ export default function Integrations() {
       {/* Available */}
       {available.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold text-white mb-4">Available Integrations</h2>
+          <h2 className="text-lg font-semibold text-white mb-4">{t('availableIntegrations')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {available.map((integration) => (
               <IntegrationCard
@@ -218,9 +195,9 @@ export default function Integrations() {
           <svg className="w-16 h-16 mx-auto text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
           </svg>
-          <p className="text-slate-400 text-lg">No integrations available</p>
+          <p className="text-slate-400 text-lg">{t('emptyState')}</p>
           <p className="text-slate-500 text-sm mt-1">
-            Integrations will appear here once configured by the server.
+            {t('emptyStateHint')}
           </p>
         </div>
       )}

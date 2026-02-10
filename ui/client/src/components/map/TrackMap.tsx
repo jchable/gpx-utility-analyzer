@@ -1,19 +1,16 @@
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import MapViewSwitcher, { type MapView } from './MapViewSwitcher';
-import { parseGpxFull, toCoordinates } from '../../utils/gpx';
-import type { Coordinate } from '../../utils/gpx';
 
 interface TrackMapProps {
-  /** Pre-parsed coordinates (preferred). When provided, gpxUrl fetch is skipped. */
-  coordinates?: Coordinate[];
-  /** Legacy: URL to fetch GPX from. Used only if coordinates is not provided. */
-  gpxUrl?: string;
-  /** External loading state (when coordinates are provided by parent). */
-  externalLoading?: boolean;
-  /** External error state. */
-  externalError?: string | null;
+  /** Coordinates as [lon, lat] or [lon, lat, ele] arrays. */
+  coordinates?: number[][];
+  /** Loading state. */
+  loading?: boolean;
+  /** Error state. */
+  error?: string | null;
 }
 
 function getMapTilerKey(): string {
@@ -27,7 +24,7 @@ function getMapTilerKey(): string {
   return '';
 }
 
-function computeBounds(coords: Coordinate[]): maplibregl.LngLatBoundsLike {
+function computeBounds(coords: number[][]): maplibregl.LngLatBoundsLike {
   let minLon = Infinity,
     minLat = Infinity,
     maxLon = -Infinity,
@@ -72,24 +69,17 @@ const TRACK_LAYER_ID = 'gpx-track-line';
 
 export default function TrackMap({
   coordinates,
-  gpxUrl,
-  externalLoading,
-  externalError,
+  loading,
+  error,
 }: TrackMapProps) {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
-  const coordsRef = useRef<Coordinate[]>([]);
+  const coordsRef = useRef<number[][]>([]);
   const key = getMapTilerKey();
   const [view, setView] = useState<MapView>(key ? '3d-terrain' : '2d-topo');
-  const [internalLoading, setInternalLoading] = useState(true);
-  const [internalError, setInternalError] = useState<string | null>(null);
 
-  // Use external state when coordinates are provided externally, otherwise internal
-  const useExternal = coordinates !== undefined;
-  const loading = useExternal ? (externalLoading ?? false) : internalLoading;
-  const error = useExternal ? (externalError ?? null) : internalError;
-
-  const addTrackLayer = useCallback((map: maplibregl.Map, coords: Coordinate[]) => {
+  const addTrackLayer = useCallback((map: maplibregl.Map, coords: number[][]) => {
     if (map.getSource(TRACK_SOURCE_ID)) {
       map.removeLayer(TRACK_LAYER_ID);
       map.removeSource(TRACK_SOURCE_ID);
@@ -161,42 +151,6 @@ export default function TrackMap({
     }
   }, [coordinates, addTrackLayer]);
 
-  // Fetch GPX data internally (only when no coordinates prop)
-  useEffect(() => {
-    if (useExternal || !gpxUrl) return;
-    let cancelled = false;
-
-    async function fetchGpx() {
-      setInternalLoading(true);
-      setInternalError(null);
-      try {
-        const res = await fetch(gpxUrl!);
-        if (!res.ok) throw new Error(`Failed to fetch GPX: ${res.status}`);
-        const xml = await res.text();
-        const points = parseGpxFull(xml);
-        const coords = toCoordinates(points);
-        if (coords.length === 0) throw new Error('No track points found in GPX file');
-        if (!cancelled) {
-          coordsRef.current = coords;
-          if (mapRef.current?.isStyleLoaded()) {
-            addTrackLayer(mapRef.current, coords);
-          }
-          setInternalLoading(false);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setInternalError(err instanceof Error ? err.message : 'Failed to load GPX');
-          setInternalLoading(false);
-        }
-      }
-    }
-
-    fetchGpx();
-    return () => {
-      cancelled = true;
-    };
-  }, [gpxUrl, useExternal, addTrackLayer]);
-
   // Initialize and update the map
   useEffect(() => {
     if (!containerRef.current) return;
@@ -255,7 +209,7 @@ export default function TrackMap({
         <div className="absolute inset-0 flex items-center justify-center bg-[#0f0f1a]/80 backdrop-blur-sm z-20">
           <div className="flex flex-col items-center gap-3">
             <div className="w-8 h-8 border-2 border-[#00d4ff] border-t-transparent rounded-full animate-spin" />
-            <span className="text-sm text-[#a0a0b0]">Loading track...</span>
+            <span className="text-sm text-[#a0a0b0]">{t('map.loadingTrack')}</span>
           </div>
         </div>
       )}

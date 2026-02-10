@@ -49,7 +49,7 @@ public sealed class TrackAnalyzer
         return trimmed;
     }
 
-    public async Task<TrackReport> AnalyzeAsync(GpxStats stats, CancellationToken ct = default)
+    public async Task<TrackReport> AnalyzeAsync(GpxStats stats, string language = "en", CancellationToken ct = default)
     {
         var tools = new AITool[]
         {
@@ -70,7 +70,7 @@ public sealed class TrackAnalyzer
             .UseFunctionInvocation()
             .Build();
 
-        var prompt = PromptBuilder.BuildAnalysisPrompt(stats);
+        var prompt = PromptBuilder.BuildAnalysisPrompt(stats, language);
 
         var messages = new List<ChatMessage>
         {

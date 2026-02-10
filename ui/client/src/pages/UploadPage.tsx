@@ -1,8 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
-import { ACTIVITY_LABELS, ACTIVITY_COLORS } from '../types/activity';
+import { ACTIVITY_TYPES, ACTIVITY_COLORS } from '../types/activity';
 
 type UploadStatus = 'pending' | 'uploading' | 'processing' | 'done' | 'error';
 
@@ -13,10 +14,11 @@ interface FileEntry {
   error?: string;
 }
 
-const ACTIVITY_TYPES = Object.entries(ACTIVITY_LABELS);
 const POLL_INTERVAL = 2000;
 
 export default function UploadPage() {
+  const { t } = useTranslation('upload');
+  const { t: tc } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -25,7 +27,6 @@ export default function UploadPage() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
-  // Poll for processing status updates
   useEffect(() => {
     const processingFiles = files.filter((f) => f.status === 'processing' && f.activityId);
     if (processingFiles.length === 0) return;
@@ -41,7 +42,7 @@ export default function UploadPage() {
                   ? {
                       ...f,
                       status: activity.status === 'Completed' ? 'done' : 'error',
-                      error: activity.status === 'Failed' ? activity.errorMessage ?? 'Processing failed' : undefined,
+                      error: activity.status === 'Failed' ? activity.errorMessage ?? t('uploadFailed') : undefined,
                     }
                   : f
               )
@@ -50,13 +51,13 @@ export default function UploadPage() {
             queryClient.invalidateQueries({ queryKey: ['dashboard'] });
           }
         } catch {
-          // Ignore polling errors, will retry next interval
+          // Ignore polling errors
         }
       }
     }, POLL_INTERVAL);
 
     return () => clearInterval(interval);
-  }, [files, queryClient]);
+  }, [files, queryClient, t]);
 
   const addFiles = useCallback((newFiles: FileList | File[]) => {
     const gpxFiles = Array.from(newFiles).filter((f) =>
@@ -114,7 +115,7 @@ export default function UploadPage() {
         setFiles((prev) =>
           prev.map((f, idx) =>
             idx === i
-              ? { ...f, status: 'error', error: err instanceof Error ? err.message : 'Upload failed' }
+              ? { ...f, status: 'error', error: err instanceof Error ? err.message : t('uploadFailed') }
               : f
           )
         );
@@ -133,17 +134,11 @@ export default function UploadPage() {
   const statusIcon = (status: UploadStatus) => {
     switch (status) {
       case 'pending':
-        return (
-          <div className="w-5 h-5 rounded-full border-2 border-slate-600" />
-        );
+        return <div className="w-5 h-5 rounded-full border-2 border-slate-600" />;
       case 'uploading':
-        return (
-          <div className="w-5 h-5 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin" />
-        );
+        return <div className="w-5 h-5 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin" />;
       case 'processing':
-        return (
-          <div className="w-5 h-5 rounded-full border-2 border-purple-400 border-t-transparent animate-spin" />
-        );
+        return <div className="w-5 h-5 rounded-full border-2 border-purple-400 border-t-transparent animate-spin" />;
       case 'done':
         return (
           <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -161,23 +156,22 @@ export default function UploadPage() {
 
   const statusLabel = (status: UploadStatus) => {
     switch (status) {
-      case 'pending': return 'Ready';
-      case 'uploading': return 'Uploading...';
-      case 'processing': return 'Processing...';
-      case 'done': return 'Complete';
-      case 'error': return 'Failed';
+      case 'pending': return t('statusReady');
+      case 'uploading': return t('statusUploading');
+      case 'processing': return t('statusProcessing');
+      case 'done': return t('statusComplete');
+      case 'error': return t('statusFailed');
     }
   };
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-white">Upload GPX Files</h1>
+      <h1 className="text-2xl font-bold text-white">{t('title')}</h1>
 
-      {/* Activity Type Selector */}
       <div>
-        <label className="block text-sm font-medium text-slate-400 mb-3">Activity Type</label>
+        <label className="block text-sm font-medium text-slate-400 mb-3">{t('activityType')}</label>
         <div className="flex flex-wrap gap-2">
-          {ACTIVITY_TYPES.map(([key, label]) => {
+          {ACTIVITY_TYPES.map((key) => {
             const color = ACTIVITY_COLORS[key] || '#888';
             const isSelected = activityType === key;
             return (
@@ -192,14 +186,13 @@ export default function UploadPage() {
                 } disabled:opacity-50`}
                 style={isSelected ? { backgroundColor: color + '33', color, borderColor: color + '55' } : undefined}
               >
-                {label}
+                {tc(`activityType.${key}`)}
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Drop Zone */}
       <div
         onDrop={handleDrop}
         onDragOver={handleDragOver}
@@ -223,39 +216,31 @@ export default function UploadPage() {
           }}
         />
         <svg
-          className={`w-16 h-16 mx-auto mb-4 transition-colors ${
-            isDragOver ? 'text-cyan-400' : 'text-slate-600'
-          }`}
+          className={`w-16 h-16 mx-auto mb-4 transition-colors ${isDragOver ? 'text-cyan-400' : 'text-slate-600'}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1.5}
-            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-          />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
         </svg>
         <p className={`text-lg font-medium mb-1 ${isDragOver ? 'text-cyan-400' : 'text-slate-300'}`}>
-          {isDragOver ? 'Drop your GPX files here' : 'Drag & drop GPX files here'}
+          {isDragOver ? t('dropZoneActive') : t('dropZone')}
         </p>
-        <p className="text-sm text-slate-500">or click to browse</p>
+        <p className="text-sm text-slate-500">{t('browseHint')}</p>
       </div>
 
-      {/* File List */}
       {files.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-white">
-              {files.length} file{files.length > 1 ? 's' : ''} selected
+              {t('fileCount', { count: files.length })}
             </h2>
             {pendingCount > 0 && !isUploading && (
               <button
                 onClick={() => setFiles([])}
                 className="text-sm text-slate-500 hover:text-red-400 transition-colors"
               >
-                Clear all
+                {t('clearAll')}
               </button>
             )}
           </div>
@@ -270,7 +255,7 @@ export default function UploadPage() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-white truncate">{entry.file.name}</p>
                   <p className="text-xs text-slate-500">
-                    {(entry.file.size / 1024).toFixed(0)} KB
+                    {(entry.file.size / 1024).toFixed(0)} {tc('unit.kb')}
                     {entry.error && <span className="text-red-400 ml-2">{entry.error}</span>}
                   </p>
                 </div>
@@ -287,7 +272,7 @@ export default function UploadPage() {
                     onClick={() => navigate(`/activities/${entry.activityId}`)}
                     className="px-3 py-1 rounded-lg bg-cyan-600/20 text-cyan-400 text-xs font-medium hover:bg-cyan-600/30 transition-colors shrink-0"
                   >
-                    View
+                    {tc('button.view')}
                   </button>
                 ) : entry.status === 'pending' ? (
                   <button
@@ -303,7 +288,6 @@ export default function UploadPage() {
             ))}
           </div>
 
-          {/* Actions */}
           <div className="flex items-center gap-3">
             {pendingCount > 0 && (
               <button
@@ -314,7 +298,7 @@ export default function UploadPage() {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                 </svg>
-                {isUploading ? 'Uploading...' : `Upload ${pendingCount} file${pendingCount > 1 ? 's' : ''}`}
+                {isUploading ? t('uploading') : t('uploadButton', { count: pendingCount })}
               </button>
             )}
             {processedFiles.length > 0 && !isUploading && (
@@ -322,7 +306,7 @@ export default function UploadPage() {
                 onClick={() => navigate('/activities')}
                 className="px-6 py-3 rounded-xl bg-[#16213e] border border-slate-700 text-slate-300 font-medium hover:bg-slate-700/50 transition-colors"
               >
-                View all activities
+                {t('viewAllActivities')}
               </button>
             )}
             {hasErrors && !isUploading && (
@@ -334,7 +318,7 @@ export default function UploadPage() {
                 }}
                 className="px-4 py-3 rounded-xl text-amber-400 text-sm hover:text-amber-300 transition-colors"
               >
-                Retry failed
+                {t('retryFailed')}
               </button>
             )}
           </div>

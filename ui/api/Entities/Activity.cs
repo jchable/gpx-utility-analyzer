@@ -14,10 +14,13 @@ public class Activity
     public string GpxFilePath { get; set; } = "";
     public string? StatsJson { get; set; }
     public string? AiReportJson { get; set; }
+    public string? ProfileJson { get; set; }
+    public string? TrackGeoJson { get; set; }
     public string Source { get; set; } = "upload";
     public string? ExternalId { get; set; }
     public ProcessingStatus Status { get; set; } = ProcessingStatus.Pending;
     public string? ErrorMessage { get; set; }
+    public string Language { get; set; } = "en";
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }

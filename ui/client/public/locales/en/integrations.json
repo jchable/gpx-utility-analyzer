@@ -1,0 +1,40 @@
+{
+  "title": "Integrations",
+  "subtitle": "Connect your favorite sports platforms to sync activities automatically",
+  "connectedServices": "Connected Services",
+  "availableIntegrations": "Available Integrations",
+  "connected": "Connected",
+  "processing": "Processing...",
+  "account": "Account: {{userId}}",
+  "connectedAt": " -- Connected {{date}}",
+  "emptyState": "No integrations available",
+  "emptyStateHint": "Integrations will appear here once configured by the server.",
+  "loadError": "Failed to load integrations: {{message}}",
+  "defaultDescription": "Connect this service to sync your activities.",
+  "provider": {
+    "strava": {
+      "name": "Strava",
+      "description": "Sync activities from your Strava account automatically."
+    },
+    "garmin": {
+      "name": "Garmin Connect",
+      "description": "Import activities from your Garmin watch and devices."
+    },
+    "coros": {
+      "name": "COROS",
+      "description": "Sync workout data from your COROS training hub."
+    },
+    "suunto": {
+      "name": "Suunto",
+      "description": "Connect your Suunto app to import activities."
+    },
+    "polar": {
+      "name": "Polar Flow",
+      "description": "Sync training sessions from Polar Flow."
+    },
+    "komoot": {
+      "name": "Komoot",
+      "description": "Import tours and planned routes from Komoot."
+    }
+  }
+}
