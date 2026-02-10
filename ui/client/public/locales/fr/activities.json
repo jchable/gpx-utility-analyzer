@@ -54,6 +54,7 @@
     "speed": "Vitesse",
     "gap": "GAP",
     "grade": "Pente",
-    "time": "temps"
+    "time": "temps",
+    "stops": "Arrêts"
   }
 }

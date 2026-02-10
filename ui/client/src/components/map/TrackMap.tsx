@@ -182,7 +182,7 @@ export default function TrackMap({
       attributionControl: { compact: true },
     });
 
-    map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
+    map.addControl(new maplibregl.NavigationControl(), 'top-left');
 
     map.on('style.load', () => {
       setupTerrain(map, view, key);
@@ -201,9 +201,9 @@ export default function TrackMap({
   }, [view]);
 
   return (
-    <div className="relative w-full h-full min-h-[400px] rounded-xl overflow-hidden border border-white/5 bg-[#0f0f1a]">
+    <div className="relative w-full h-full min-h-[250px] sm:min-h-[400px] rounded-xl overflow-hidden border border-white/5 bg-[#0f0f1a]">
       <MapViewSwitcher current={view} onChange={setView} />
-      <div ref={containerRef} className="w-full h-full min-h-[400px]" />
+      <div ref={containerRef} className="w-full h-full min-h-[250px] sm:min-h-[400px]" />
 
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-[#0f0f1a]/80 backdrop-blur-sm z-20">

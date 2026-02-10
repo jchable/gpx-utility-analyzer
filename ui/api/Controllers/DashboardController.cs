@@ -42,7 +42,7 @@ public class DashboardController : ControllerBase
             .Select(g => new { Type = g.Key, Count = g.Count() })
             .ToListAsync();
 
-        var recentActivities = await _db.Activities
+        var recentActivities = await completed
             .OrderByDescending(a => a.StartTime)
             .Take(10)
             .ToListAsync();

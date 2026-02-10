@@ -239,6 +239,8 @@ export default function ActivityDetail() {
     setIsDeleting(true);
     try {
       await api.deleteActivity(activity.id);
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['activities'] });
       navigate('/activities');
     } catch {
       setIsDeleting(false);
@@ -266,7 +268,7 @@ export default function ActivityDetail() {
   return (
     <div className="space-y-6">
       {/* Back Button & Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <button
             onClick={() => navigate(-1)}
@@ -299,7 +301,7 @@ export default function ActivityDetail() {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 flex-wrap">
           <a
             href={api.getGpxUrl(activity.id)}
             download
@@ -334,7 +336,7 @@ export default function ActivityDetail() {
       </div>
 
       {/* Track Map */}
-      <div className="h-[500px] rounded-2xl overflow-hidden">
+      <div className="h-[300px] sm:h-[400px] lg:h-[500px] rounded-2xl overflow-hidden">
         <TrackMap coordinates={trackData?.coordinates} loading={trackLoading} error={trackError?.message} />
       </div>
 

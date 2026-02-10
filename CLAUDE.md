@@ -215,15 +215,39 @@ React 19 + TypeScript 5.9 + Vite 7 + TailwindCSS v4 + MapLibre GL JS.
 - `components/activity/ElevationProfileChart.tsx` — Recharts elevation/speed/GAP profile. Receives precomputed `ProfilePoint[]` from API (no client-side computation)
 - `components/activity/AiReportPanel.tsx` — AI analysis display
 - `components/widgets/StatCard.tsx`, `RadialGauge.tsx` — dashboard widgets
-- `components/layout/Layout.tsx`, `Sidebar.tsx` — dark theme layout with sidebar nav
+- `components/layout/Layout.tsx`, `Sidebar.tsx` — dark theme layout with sidebar nav (mobile bottom nav)
+- `components/layout/OfflineBanner.tsx` — offline status indicator (shown when navigator.onLine is false)
 
 **Data layer**:
 - `api/client.ts` — typed API client (fetch-based, all endpoints, sends `Accept-Language` header). Includes `getProfile()` and `getTrack()` for precomputed data
 - `hooks/useActivities.ts` — TanStack React Query hooks including `useProfile(id)` and `useTrack(id)` with 1h staleTime (immutable data)
+- `hooks/useOnlineStatus.ts` — online/offline detection hook (navigator events)
 - `types/activity.ts` — TypeScript types mirroring API DTOs, Go JSON contract, and `ProfilePoint` for chart data
 - `i18n.ts` — i18next initialization (react-i18next, HTTP backend, browser language detection)
 
 **Activity types**: `run`, `trail`, `hike`, `cycle`, `walk`, `swim`, `other` (with associated colors in `ACTIVITY_COLORS`). Labels are i18n-driven via `t('activityType.xxx')`.
+
+### PWA (Progressive Web App)
+
+The client is a **PWA** powered by `vite-plugin-pwa` (Workbox under the hood).
+
+**Configuration**: `vite.config.ts` — `VitePWA` plugin with `registerType: 'autoUpdate'`, manifest, and Workbox runtime caching rules.
+
+**Service Worker registration**: `main.tsx` — `registerSW({ immediate: true })` from `virtual:pwa-register`.
+
+**Caching strategies** (Workbox runtime caching):
+- `StaleWhileRevalidate` — API list/detail endpoints (`/api/activities`, `/api/dashboard/*`, `/api/activities/{id}`) — 100 entries, 24h
+- `CacheFirst` — Track/profile data (`/api/activities/{id}/track`, `/api/activities/{id}/profile`) — 50 entries, 7 days
+- `CacheFirst` — GPX downloads (`/api/activities/{id}/gpx`) — 50 entries, 7 days
+- Static assets (JS/CSS/fonts/images) — precached at build time
+
+**Manifest**: `manifest.webmanifest` (auto-generated), theme/background `#0f0f1a`, display `standalone`.
+
+**Icons** (in `public/`): `favicon.svg`, `pwa-192x192.png`, `pwa-512x512.png`, `apple-touch-icon-180x180.png` (placeholder).
+
+**Offline support**: `useOnlineStatus` hook + `OfflineBanner` component in Layout. Cached API data is served when offline.
+
+**nginx** (`nginx.conf`): Service worker (`sw.js`) and Workbox chunks served with `no-cache` headers. Manifest served with 1h cache.
 
 **i18n components**:
 - `components/layout/LanguageSwitcher.tsx` — EN/FR toggle in sidebar

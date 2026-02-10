@@ -190,7 +190,7 @@ export default function SettingsPage() {
                 </span>
                 {t('strava')}
               </h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FieldGroup label={t('clientId')}>
                   <TextInput
                     value={form.integrations.strava.clientId}
@@ -219,7 +219,7 @@ export default function SettingsPage() {
                 </span>
                 {t('garminConnect')}
               </h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FieldGroup label={t('consumerKey')}>
                   <TextInput
                     value={form.integrations.garmin.consumerKey}
@@ -242,7 +242,7 @@ export default function SettingsPage() {
 
         {/* Analysis Preferences */}
         <SectionCard title={t('analysisPreferences')}>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FieldGroup label={t('defaultPreset')}>
               <SelectInput
                 value={form.analysis.preset}
@@ -276,7 +276,7 @@ export default function SettingsPage() {
 
         {/* AI Provider */}
         <SectionCard title={t('aiProvider')}>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FieldGroup label={t('provider')}>
               <SelectInput
                 value={form.aiProvider.name}

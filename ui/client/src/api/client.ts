@@ -57,7 +57,8 @@ export const api = {
   },
 
   deleteActivity: async (id: string) => {
-    await fetch(`${BASE}/activities/${id}`, { method: 'DELETE', headers: langHeaders() });
+    const res = await fetch(`${BASE}/activities/${id}`, { method: 'DELETE', headers: langHeaders() });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
   },
 
   reanalyzeActivity: async (id: string) => {

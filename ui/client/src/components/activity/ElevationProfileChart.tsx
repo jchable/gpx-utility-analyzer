@@ -9,7 +9,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  ReferenceArea,
 } from 'recharts';
 import { Mountain, Clock } from 'lucide-react';
 import type { ProfilePoint } from '../../types/activity';
@@ -31,8 +30,6 @@ const COLORS = {
   grid: 'rgba(255,255,255,0.05)',
   axisLine: 'rgba(255,255,255,0.08)',
   tooltipBg: '#0f0f1a',
-  stop: 'rgba(255, 100, 100, 0.12)',
-  stopStroke: 'rgba(255, 100, 100, 0.25)',
 } as const;
 
 /** Format elapsed seconds as h:mm:ss or m:ss */
@@ -89,6 +86,12 @@ export default function ElevationProfileChart({
     }));
   }, [xMode, stops, activityStartTime]);
 
+  const totalDuration = useMemo(() => {
+    if (data.length === 0) return 0;
+    const last = data[data.length - 1].elapsedTime;
+    return last ?? 0;
+  }, [data]);
+
   if (loading) {
     return (
       <div className="bg-[#16213e] rounded-2xl border border-slate-700/50 p-4 h-[340px] flex items-center justify-center">
@@ -111,13 +114,13 @@ export default function ElevationProfileChart({
   return (
     <div className="bg-[#16213e] rounded-2xl border border-slate-700/50 p-4">
       {/* Header + legend */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
         <div className="flex items-center gap-2">
           <Mountain size={18} className="text-[#00d4ff]" />
           <h3 className="text-sm font-semibold text-white">{t('elevation.profile')}</h3>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           {/* Distance / Time toggle */}
           {hasTimestamps && (
             <div className="flex items-center bg-slate-800/60 rounded-lg p-0.5">
@@ -267,6 +270,7 @@ export default function ElevationProfileChart({
             fill="url(#elevGradient)"
             dot={false}
             activeDot={false}
+            isAnimationActive={false}
             name="elevation"
           />
 
@@ -279,6 +283,7 @@ export default function ElevationProfileChart({
               strokeWidth={1.5}
               dot={false}
               activeDot={false}
+              isAnimationActive={false}
               name="speed"
             />
           )}
@@ -293,35 +298,35 @@ export default function ElevationProfileChart({
               strokeDasharray="4 2"
               dot={false}
               activeDot={false}
+              isAnimationActive={false}
               name="gap"
             />
           )}
-
-          {/* Stop zones (time mode only) */}
-          {stopAreas.map((stop, i) => (
-            <ReferenceArea
-              key={`stop-${i}`}
-              x1={stop.x1}
-              x2={stop.x2}
-              yAxisId="elevation"
-              fill={COLORS.stop}
-              stroke={COLORS.stopStroke}
-              strokeWidth={0.5}
-              ifOverflow="hidden"
-              label={
-                stopAreas.length <= 10
-                  ? {
-                      value: stop.label,
-                      position: 'insideTop',
-                      fill: 'rgba(255,150,150,0.6)',
-                      fontSize: 9,
-                    }
-                  : undefined
-              }
-            />
-          ))}
         </ComposedChart>
       </ResponsiveContainer>
+
+      {/* Stop timeline band (time mode only) */}
+      {xMode === 'time' && stopAreas.length > 0 && totalDuration > 0 && (
+        <div className="flex items-center gap-2 mt-1">
+          <span className="text-[10px] text-slate-500 w-[50px] text-right">{t('elevation.stops')}</span>
+          <div
+            className="relative h-2.5 flex-1 bg-slate-800/40 rounded-sm overflow-hidden"
+            style={{ marginRight: hasSpeed ? 63 : 8 }}
+          >
+            {stopAreas.map((stop, i) => (
+              <div
+                key={i}
+                className="absolute top-0 h-full bg-red-400/40 border-x border-red-400/60 rounded-sm"
+                style={{
+                  left: `${(stop.x1 / totalDuration) * 100}%`,
+                  width: `${Math.max(((stop.x2 - stop.x1) / totalDuration) * 100, 0.3)}%`,
+                }}
+                title={stop.label}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

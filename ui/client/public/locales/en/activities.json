@@ -54,6 +54,7 @@
     "speed": "Speed",
     "gap": "GAP",
     "grade": "Grade",
-    "time": "time"
+    "time": "time",
+    "stops": "Stops"
   }
 }

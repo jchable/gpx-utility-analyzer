@@ -198,7 +198,7 @@ export default function UploadPage() {
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onClick={() => fileInputRef.current?.click()}
-        className={`relative border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all ${
+        className={`relative border-2 border-dashed rounded-2xl p-6 sm:p-12 text-center cursor-pointer transition-all ${
           isDragOver
             ? 'border-cyan-400 bg-cyan-400/5'
             : 'border-slate-700 hover:border-slate-500 bg-[#16213e]/50'
@@ -216,7 +216,7 @@ export default function UploadPage() {
           }}
         />
         <svg
-          className={`w-16 h-16 mx-auto mb-4 transition-colors ${isDragOver ? 'text-cyan-400' : 'text-slate-600'}`}
+          className={`w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 transition-colors ${isDragOver ? 'text-cyan-400' : 'text-slate-600'}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
