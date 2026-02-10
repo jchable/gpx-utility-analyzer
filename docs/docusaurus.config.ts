@@ -42,7 +42,13 @@ const config: Config = {
           editUrl: ({docPath}) => {
             // Remap generated docs back to their source in sub-projects
             if (docPath.startsWith('cli/')) {
-              const file = docPath.replace('cli/index.md', 'README.md').replace('cli/cli-usage.md', 'docs/CLI_USAGE.md');
+              let file = docPath;
+              if (docPath === 'cli/index.md') {
+                file = 'README.md';
+              } else {
+                // cli/analyze.md → docs/analyze.md, cli/benchmark.md → docs/benchmark.md, etc.
+                file = docPath.replace('cli/', 'docs/');
+              }
               return `https://github.com/jchable/gpx-utility-analyzer/edit/main/cli/${file}`;
             }
             if (docPath.startsWith('ai-analyzer/')) {

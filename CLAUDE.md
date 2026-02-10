@@ -49,7 +49,7 @@ Requires Go 1.25.7+. Key dependencies: `spf13/cobra` (CLI), `olekukonko/tablewri
 
 **Entry point**: `main.go` → `cmd.Execute()` (Cobra CLI framework).
 
-**Three subcommands** in `cmd/`: `analyze`, `split`, `merge`.
+**Four subcommands** in `cmd/`: `analyze`, `benchmark`, `split`, `merge`.
 
 **Core processing pipeline** (in `stats.Compute()`):
 
@@ -73,6 +73,7 @@ Requires Go 1.25.7+. Key dependencies: `spf13/cobra` (CLI), `olekukonko/tablewri
 - `internal/input/` — file resolution (glob support)
 - `internal/split/` — time-based track splitting
 - `internal/merge/` — multi-file GPX merging
+- `internal/benchmark/` — multi-configuration comparison: matrix generation (`matrix.go`), runner (`runner.go`), results (`result.go`), output formatters (`output.go`)
 
 ### Go Key Patterns
 

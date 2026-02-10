@@ -9,7 +9,20 @@ const sidebars: SidebarsConfig = {
       collapsed: false,
       items: [
         'cli/index',
-        'cli/cli-usage',
+        {
+          type: 'category',
+          label: 'Commands',
+          collapsed: false,
+          items: [
+            'cli/analyze',
+            'cli/benchmark',
+            'cli/split',
+            'cli/merge',
+          ],
+        },
+        'cli/elevation',
+        'cli/biometrics',
+        'cli/recipes',
       ],
     },
     {

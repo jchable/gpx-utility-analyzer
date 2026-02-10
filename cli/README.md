@@ -78,7 +78,25 @@ gpx-analyzer analyze my-hike.gpx --export ./processed/
 gpx-analyzer analyze my-hike.gpx --export ./processed/ --enrich
 ```
 
-For complete command documentation, flags and advanced examples, see [docs/CLI_USAGE.md](docs/CLI_USAGE.md).
+**Benchmark a trace across multiple configurations:**
+
+```bash
+gpx-analyzer benchmark my-hike.gpx
+```
+
+**Full benchmark matrix with CSV export:**
+
+```bash
+gpx-analyzer benchmark my-hike.gpx --full -o results.csv -v
+```
+
+**Benchmark specific axes only:**
+
+```bash
+gpx-analyzer benchmark my-hike.gpx --vary preset,elev-algo
+```
+
+For complete command documentation, flags and advanced examples, see the individual command docs: [analyze](docs/analyze.md), [benchmark](docs/benchmark.md), [split](docs/split.md), [merge](docs/merge.md), [elevation](docs/elevation.md), [biometrics](docs/biometrics.md), [recipes](docs/recipes.md).
 
 ## Development
 
