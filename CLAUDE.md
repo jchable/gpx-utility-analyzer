@@ -321,4 +321,6 @@ API Dockerfile is a 3-stage build: Go CLI → .NET publish → ASP.NET runtime (
 
 - Go 1.25.7+, .NET 9.0, Node 22+, React 19, Vite 7, TypeScript 5.9
 - For local scripts and system operations, use **PowerShell** (Python is not installed)
+- After a modification or an addition on the source code, rebuild and test the modified component.
+- After a modification in the backend, use ef core migrations for database changes, and apply it to the current compose deployment once the feature finished
 - At the end of a new feature, suggest to tracked only added or modified in this feature and in a second step to commit your work.
