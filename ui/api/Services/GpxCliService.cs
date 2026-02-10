@@ -26,7 +26,7 @@ public class GpxCliService
         var args = $"analyze \"{gpxFilePath}\" --format json --preset {preset} --smoothing {smoothing} --track-smoothing {trackSmoothing}";
 
         if (!string.IsNullOrEmpty(exportDir))
-            args += $" --export \"{exportDir}\"";
+            args += $" --export \"{exportDir}\" --enrich";
 
         _logger.LogInformation("Running: {Binary} {Args}", _binaryPath, args);
 

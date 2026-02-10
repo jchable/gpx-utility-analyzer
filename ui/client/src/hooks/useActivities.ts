@@ -28,6 +28,24 @@ export function useActivity(id: string) {
   });
 }
 
+export function useProfile(id: string) {
+  return useQuery({
+    queryKey: ['activity', id, 'profile'],
+    queryFn: () => api.getProfile(id),
+    enabled: !!id,
+    staleTime: 3600_000,
+  });
+}
+
+export function useTrack(id: string) {
+  return useQuery({
+    queryKey: ['activity', id, 'track'],
+    queryFn: () => api.getTrack(id),
+    enabled: !!id,
+    staleTime: 3600_000,
+  });
+}
+
 export function useIntegrations() {
   return useQuery({
     queryKey: ['integrations'],

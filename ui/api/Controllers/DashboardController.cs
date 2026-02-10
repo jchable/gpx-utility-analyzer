@@ -20,15 +20,27 @@ public class DashboardController : ControllerBase
     [HttpGet("summary")]
     public async Task<ActionResult<DashboardSummaryDto>> GetSummary()
     {
-        // Materialize in memory to avoid EF Core SQLite translation issues
-        // with enum string conversions + DateTimeOffset comparisons
-        var completedActivities = await _db.Activities
-            .Where(a => a.Status == ProcessingStatus.Completed)
-            .ToListAsync();
+        // Use SQL-level aggregation instead of materializing all activities in memory.
+        // Pattern: nullable Select + SumAsync to handle empty sets in SQLite.
+        var completed = _db.Activities.Where(a => a.Status == ProcessingStatus.Completed);
+
+        var totalActivities = await completed.CountAsync();
+        var totalDistanceKm = await completed.Select(a => (double?)a.DistanceKm).SumAsync() ?? 0;
+        var totalElevationGainM = await completed.Select(a => (double?)a.ElevationGainM).SumAsync() ?? 0;
+        var totalMovingTimeSeconds = await completed.Select(a => (double?)a.MovingTimeSeconds).SumAsync() ?? 0;
 
         var now = DateTime.UtcNow;
         var monthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-        var thisMonth = completedActivities.Where(a => a.StartTime >= monthStart).ToList();
+        var thisMonth = completed.Where(a => a.StartTime >= monthStart);
+
+        var activitiesThisMonth = await thisMonth.CountAsync();
+        var distanceThisMonthKm = await thisMonth.Select(a => (double?)a.DistanceKm).SumAsync() ?? 0;
+
+        // Activity type breakdown: materialize only the type column
+        var typeBreakdown = await completed
+            .GroupBy(a => a.ActivityType)
+            .Select(g => new { Type = g.Key, Count = g.Count() })
+            .ToListAsync();
 
         var recentActivities = await _db.Activities
             .OrderByDescending(a => a.StartTime)
@@ -37,12 +49,12 @@ public class DashboardController : ControllerBase
 
         return new DashboardSummaryDto
         {
-            TotalActivities = completedActivities.Count,
-            TotalDistanceKm = completedActivities.Sum(a => a.DistanceKm),
-            TotalElevationGainM = completedActivities.Sum(a => a.ElevationGainM),
-            TotalMovingTimeSeconds = completedActivities.Sum(a => a.MovingTimeSeconds),
-            ActivitiesThisMonth = thisMonth.Count,
-            DistanceThisMonthKm = thisMonth.Sum(a => a.DistanceKm),
+            TotalActivities = totalActivities,
+            TotalDistanceKm = totalDistanceKm,
+            TotalElevationGainM = totalElevationGainM,
+            TotalMovingTimeSeconds = totalMovingTimeSeconds,
+            ActivitiesThisMonth = activitiesThisMonth,
+            DistanceThisMonthKm = distanceThisMonthKm,
             RecentActivities = recentActivities.Select(a => new ActivityListDto
             {
                 Id = a.Id,
@@ -55,9 +67,7 @@ public class DashboardController : ControllerBase
                 Source = a.Source,
                 Status = a.Status.ToString(),
             }).ToList(),
-            ActivityTypeBreakdown = completedActivities
-                .GroupBy(a => a.ActivityType)
-                .ToDictionary(g => g.Key, g => g.Count()),
+            ActivityTypeBreakdown = typeBreakdown.ToDictionary(g => g.Type, g => g.Count),
         };
     }
 }

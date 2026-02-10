@@ -1,9 +1,11 @@
+using System.IO.Compression;
 using System.Threading.Channels;
 using GpxAnalyzer.Api.BackgroundServices;
 using GpxAnalyzer.Api.Data;
 using GpxAnalyzer.Api.Services;
 using GpxAnalyzer.Api.Services.Integrations;
 using GpxAiAnalyzer.Core.Providers;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -35,10 +37,21 @@ builder.Services.AddSingleton(registry);
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<ISettingsService, SettingsService>();
 
+// Response compression
+builder.Services.AddResponseCompression(o =>
+{
+    o.EnableForHttps = true;
+    o.Providers.Add<BrotliCompressionProvider>();
+    o.Providers.Add<GzipCompressionProvider>();
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
+builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
+
 // Services
 builder.Services.AddSingleton<GpxStorageService>();
 builder.Services.AddSingleton<GpxCliService>();
 builder.Services.AddSingleton<AiAnalysisService>();
+builder.Services.AddSingleton<ProfileComputationService>();
 builder.Services.AddSingleton<ActivityProcessingService>();
 
 // Processing channel
@@ -81,6 +94,7 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
 }
 
+app.UseResponseCompression();
 app.UseCors();
 
 // Serve React static files in production
