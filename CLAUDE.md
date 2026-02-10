@@ -82,6 +82,7 @@ Requires Go 1.25.7+. Key dependencies: `spf13/cobra` (CLI), `olekukonko/tablewri
 - Elevation algorithms: `threshold` (default), `douglas-peucker`, `segments`
 - GPS outlier filtering: per-preset max speed thresholds or `--max-speed` override
 - `Compute()` returns `(Summary, []TrackPoint, error)` — processed points enable GPX re-export via `--export`
+- `--enrich` flag: when combined with `--export`, writes per-point computed metrics (speed, cumulative distance, grade) as `gpxa:TrackPointMetrics` extensions and preserves biometrics (HR, cadence, power, temperature) as `gpxtpx:TrackPointExtension` in the exported GPX
 
 ### JSON Contract
 

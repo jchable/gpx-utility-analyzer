@@ -72,6 +72,12 @@ gpx-analyzer analyze pct.gpx --track-smoothing medium --elevation-algo douglas-p
 gpx-analyzer analyze my-hike.gpx --export ./processed/
 ```
 
+**Export enriched GPX with computed metrics (speed, distance, grade, biometrics):**
+
+```bash
+gpx-analyzer analyze my-hike.gpx --export ./processed/ --enrich
+```
+
 For complete command documentation, flags and advanced examples, see [docs/CLI_USAGE.md](docs/CLI_USAGE.md).
 
 ## Development

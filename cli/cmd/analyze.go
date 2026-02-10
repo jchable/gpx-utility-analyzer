@@ -33,6 +33,7 @@ var (
 	segMinLenFlag     float64
 	segMaxDevFlag     float64
 	exportDirFlag     string
+	enrichFlag        bool
 	maxHRFlag         int
 	maxSpeedFlag      float64
 )
@@ -78,6 +79,8 @@ func init() {
 		"Segments algo: max RMS residual in meters")
 	analyzeCmd.Flags().StringVar(&exportDirFlag, "export", "",
 		"Export preprocessed GPX files to this directory")
+	analyzeCmd.Flags().BoolVar(&enrichFlag, "enrich", false,
+		"Include computed metrics (speed, distance, grade) and biometrics as GPX extensions in export")
 	analyzeCmd.Flags().IntVar(&maxHRFlag, "max-hr", 0,
 		"Maximum heart rate (bpm) for HR zone calculation")
 	analyzeCmd.Flags().Float64Var(&maxSpeedFlag, "max-speed", 0,
@@ -134,7 +137,15 @@ func analyzeFile(path string, formatter output.Formatter, cfg stats.ComputeConfi
 		base := filepath.Base(path)
 		name := strings.TrimSuffix(base, filepath.Ext(base)) + "_processed.gpx"
 		outPath := filepath.Join(exportDirFlag, name)
-		exported := gpx.NewGPXFromPoints(processed, strings.TrimSuffix(base, filepath.Ext(base)))
+		trackName := strings.TrimSuffix(base, filepath.Ext(base))
+
+		var exported *gpx.GPX
+		if enrichFlag {
+			exported = gpx.NewEnrichedGPXFromPoints(processed, trackName)
+		} else {
+			exported = gpx.NewGPXFromPoints(processed, trackName)
+		}
+
 		if err := gpx.WriteFile(exported, outPath); err != nil {
 			return fmt.Errorf("exporting %s: %w", outPath, err)
 		}

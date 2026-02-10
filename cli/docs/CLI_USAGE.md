@@ -48,6 +48,7 @@ gpx-analyzer analyze [files...] [flags]
 | `--stop-speed` | Override max speed for a stop (m/s) | _(per preset)_ |
 | `--stop-duration` | Override min duration for a stop (e.g., `2m`) | _(per preset)_ |
 | `--export` | Export reprocessed GPX files (DEM + smoothing) to this directory | _(disabled)_ |
+| `--enrich` | Include computed metrics (speed, distance, grade) and biometrics as GPX extensions in export | `false` |
 | `--max-hr` | Maximum heart rate (bpm) for HR zone calculation | `0` _(disabled)_ |
 
 ### Examples
@@ -610,6 +611,19 @@ gpx-analyzer analyze pct.gpx --elevation-algo segments --smoothing medium --expo
 ```
 
 The exported file contains coordinates and elevations after the full reprocessing pipeline (lat/lon smoothing, DEM correction, elevation smoothing). It can be imported into any GPX-compatible tool.
+
+### Export an enriched GPX with computed metrics
+
+```bash
+gpx-analyzer analyze my-hike.gpx --export ./processed/ --enrich
+```
+
+When `--enrich` is used with `--export`, the output GPX includes per-point extensions:
+
+- `gpxa:TrackPointMetrics` — computed speed (m/s), cumulative distance (m), grade (fraction)
+- `gpxtpx:TrackPointExtension` — heart rate, cadence, power, temperature (when present in the source GPX)
+
+This is used by the web API to precompute elevation profiles and map tracks without client-side reprocessing.
 
 ### Analyze a bike ride
 
