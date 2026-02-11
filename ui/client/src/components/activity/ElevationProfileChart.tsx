@@ -102,45 +102,25 @@ export default function ElevationProfileChart({
   const rightDomain = overlayMode === 'hr' ? hrDomain : overlayMode === 'power' ? powerDomain : speedDomain;
   const rightLabel = overlayMode === 'hr' ? 'bpm' : overlayMode === 'power' ? 'W' : 'km/h';
 
+  // Stop band uses data point indices to match categorical chart positioning
   const stopAreas = useMemo(() => {
-    if (!stops || stops.length === 0 || !activityStartTime) return [];
+    if (!stops || stops.length === 0 || !activityStartTime || data.length < 2) return [];
     const startMs = new Date(activityStartTime).getTime();
+    const n = data.length;
 
-    if (xMode === 'time') {
-      return stops.map((stop) => ({
-        x1: (new Date(stop.start_time).getTime() - startMs) / 1000,
-        x2: (new Date(stop.end_time).getTime() - startMs) / 1000,
-        label: formatDuration(stop.duration.seconds, tc),
-      }));
-    }
-
-    // Distance mode: map stop times to distances via profile interpolation
-    if (data.length < 2) return [];
-    const timeToDistance = (elapsed: number): number => {
-      for (let i = 1; i < data.length; i++) {
-        const t1 = data[i].elapsedTime ?? 0;
-        if (elapsed <= t1) {
-          const t0 = data[i - 1].elapsedTime ?? 0;
-          const ratio = t1 > t0 ? (elapsed - t0) / (t1 - t0) : 0;
-          return data[i - 1].distance + ratio * (data[i].distance - data[i - 1].distance);
-        }
+    const timeToIndex = (elapsed: number): number => {
+      for (let i = 0; i < n; i++) {
+        if ((data[i].elapsedTime ?? 0) >= elapsed) return i;
       }
-      return data[data.length - 1].distance;
+      return n - 1;
     };
 
     return stops.map((stop) => ({
-      x1: timeToDistance((new Date(stop.start_time).getTime() - startMs) / 1000),
-      x2: timeToDistance((new Date(stop.end_time).getTime() - startMs) / 1000),
+      idx1: timeToIndex((new Date(stop.start_time).getTime() - startMs) / 1000),
+      idx2: timeToIndex((new Date(stop.end_time).getTime() - startMs) / 1000),
       label: formatDuration(stop.duration.seconds, tc),
     }));
-  }, [xMode, stops, activityStartTime, tc, data]);
-
-  const totalXRange = useMemo(() => {
-    if (data.length === 0) return 0;
-    return xMode === 'time'
-      ? (data[data.length - 1].elapsedTime ?? 0)
-      : data[data.length - 1].distance;
-  }, [data, xMode]);
+  }, [stops, activityStartTime, tc, data]);
 
   if (loading) {
     return (
@@ -434,25 +414,25 @@ export default function ElevationProfileChart({
         </ComposedChart>
       </ResponsiveContainer>
 
-      {/* Stop timeline band */}
-      {stopAreas.length > 0 && totalXRange > 0 && (
-        <div className="flex items-center gap-2 mt-1">
-          <span className="text-[10px] text-slate-500 w-[50px] text-right">{t('elevation.stops')}</span>
-          <div
-            className="relative h-2.5 flex-1 bg-slate-800/40 rounded-sm overflow-hidden"
-            style={{ marginRight: (hasSpeed || hasHR || hasPower) ? 63 : 8 }}
-          >
-            {stopAreas.map((stop, i) => (
-              <div
-                key={i}
-                className="absolute top-0 h-full bg-red-400/40 border-x border-red-400/60 rounded-sm"
-                style={{
-                  left: `${(stop.x1 / totalXRange) * 100}%`,
-                  width: `${Math.max(((stop.x2 - stop.x1) / totalXRange) * 100, 0.3)}%`,
-                }}
-                title={stop.label}
-              />
-            ))}
+      {/* Stop timeline band — index-based to match categorical chart */}
+      {stopAreas.length > 0 && data.length > 1 && (
+        <div className="flex items-center mt-1" style={{ paddingLeft: 50, paddingRight: (hasSpeed || hasHR || hasPower) ? 63 : 8 }}>
+          <span className="text-[10px] text-slate-500 shrink-0 -ml-[50px] w-[50px] text-right pr-2">{t('elevation.stops')}</span>
+          <div className="relative h-2.5 w-full bg-slate-800/40 rounded-sm overflow-hidden">
+            {stopAreas.map((stop, i) => {
+              const total = data.length - 1;
+              return (
+                <div
+                  key={i}
+                  className="absolute top-0 h-full bg-red-400/40 border-x border-red-400/60 rounded-sm"
+                  style={{
+                    left: `${(stop.idx1 / total) * 100}%`,
+                    width: `${Math.max(((stop.idx2 - stop.idx1) / total) * 100, 0.3)}%`,
+                  }}
+                  title={stop.label}
+                />
+              );
+            })}
           </div>
         </div>
       )}
