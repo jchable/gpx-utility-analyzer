@@ -34,7 +34,9 @@
     "avgCadence": "Avg Cadence",
     "analyzingGpx": "Analyzing GPX track data...",
     "aiProcessing": "AI is processing your activity...",
-    "autoRefresh": "This page will refresh automatically."
+    "autoRefresh": "This page will refresh automatically.",
+    "movingRatio": "Moving %",
+    "elevationChange": "Elevation"
   },
   "aiReport": {
     "title": "AI Analysis Report",
@@ -66,7 +68,12 @@
     "usingUserMaxHR": "Using configured max HR: {{value}} bpm",
     "usingAgeMaxHR": "Using age-based max HR: {{value}} bpm (220 − age)",
     "usingObservedMaxHR": "Using observed max HR: {{value}} bpm",
-    "configureMaxHR": "Configure in Settings"
+    "configureMaxHR": "Configure in Settings",
+    "trimpTooltipDesc": "Training Impulse — weighted training load based on time spent in each heart rate zone.",
+    "trimpScaleLight": "< 100: Light",
+    "trimpScaleModerate": "100–200: Moderate",
+    "trimpScaleHigh": "200–300: High",
+    "trimpScaleVeryHigh": "300+: Very high"
   },
   "powerZones": {
     "title": "Power Zones",

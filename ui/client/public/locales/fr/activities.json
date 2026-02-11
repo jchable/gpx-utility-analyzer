@@ -34,7 +34,9 @@
     "avgCadence": "Cadence moy.",
     "analyzingGpx": "Analyse de la trace GPX en cours...",
     "aiProcessing": "L'IA analyse votre activité...",
-    "autoRefresh": "Cette page se rafraîchira automatiquement."
+    "autoRefresh": "Cette page se rafraîchira automatiquement.",
+    "movingRatio": "% en mouvement",
+    "elevationChange": "Dénivelé"
   },
   "aiReport": {
     "title": "Rapport d'analyse IA",
@@ -66,7 +68,12 @@
     "usingUserMaxHR": "FC max configurée : {{value}} bpm",
     "usingAgeMaxHR": "FC max estimée par l'âge : {{value}} bpm (220 − âge)",
     "usingObservedMaxHR": "FC max observée : {{value}} bpm",
-    "configureMaxHR": "Configurer dans les Réglages"
+    "configureMaxHR": "Configurer dans les Réglages",
+    "trimpTooltipDesc": "Impulsion d'entraînement — charge pondérée par le temps passé dans chaque zone cardiaque.",
+    "trimpScaleLight": "< 100 : Léger",
+    "trimpScaleModerate": "100–200 : Modéré",
+    "trimpScaleHigh": "200–300 : Élevé",
+    "trimpScaleVeryHigh": "300+ : Très élevé"
   },
   "powerZones": {
     "title": "Zones de puissance",

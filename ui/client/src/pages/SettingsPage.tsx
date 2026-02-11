@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSettings, useUpdateSettings } from '../hooks/useActivities';
 import type { AppSettings } from '../types/activity';
 
-function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
+function SectionCard({ title, id, children }: { title: string; id?: string; children: React.ReactNode }) {
   return (
-    <div className="bg-[#16213e] rounded-xl border border-slate-700/50 p-6">
+    <div id={id} className="bg-[#16213e] rounded-xl border border-slate-700/50 p-6 scroll-mt-6">
       <h2 className="text-lg font-semibold text-white mb-4">{title}</h2>
       {children}
     </div>
@@ -81,21 +81,49 @@ export default function SettingsPage() {
   const { data: settings, isLoading } = useSettings();
   const updateMutation = useUpdateSettings();
 
-  const [form, setForm] = useState<AppSettings | null>(null);
+  // Derive initial form from settings (secrets blanked for editing)
+  const baseForm = useMemo((): AppSettings | null => {
+    if (!settings) return null;
+    return {
+      ...settings,
+      aiProvider: { ...settings.aiProvider, apiKey: '' },
+      integrations: {
+        strava: { ...settings.integrations.strava, clientSecret: '' },
+        garmin: { ...settings.integrations.garmin, consumerSecret: '' },
+      },
+    };
+  }, [settings]);
+
+  const [formEdits, setFormEdits] = useState<AppSettings | null>(null);
+  const form = formEdits ?? baseForm;
   const [saved, setSaved] = useState(false);
 
-  useEffect(() => {
-    if (settings && !form) {
-      setForm({
-        ...settings,
-        aiProvider: { ...settings.aiProvider, apiKey: '' },
-        integrations: {
-          strava: { ...settings.integrations.strava, clientSecret: '' },
-          garmin: { ...settings.integrations.garmin, consumerSecret: '' },
-        },
-      });
+  // Wrap setForm so first edit copies from baseForm
+  const setForm = useCallback(
+    (updater: (prev: AppSettings | null) => AppSettings | null) => {
+      setFormEdits((prev) => updater(prev ?? baseForm));
+    },
+    [baseForm],
+  );
+
+  // Scroll to anchor section (e.g. #athlete-profile) on mount
+  const scrollToHash = useCallback(() => {
+    const hash = window.location.hash;
+    if (hash) {
+      const el = document.querySelector(hash);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     }
-  }, [settings, form]);
+  }, []);
+
+  // Scroll to hash after form loads (DOM ready)
+  useEffect(() => {
+    if (form) {
+      const timer = setTimeout(scrollToHash, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [form, scrollToHash]);
 
   if (isLoading || !form) {
     return (
@@ -189,7 +217,7 @@ export default function SettingsPage() {
 
       <div className="space-y-6 max-w-2xl">
         {/* Athlete Profile */}
-        <SectionCard title={t('athleteProfile')}>
+        <SectionCard title={t('athleteProfile')} id="athlete-profile">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <FieldGroup label={t('maxHeartRate')}>
               <TextInput

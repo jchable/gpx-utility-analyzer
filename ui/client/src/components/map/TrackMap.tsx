@@ -79,12 +79,15 @@ export default function TrackMap({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const coordsRef = useRef<number[][]>([]);
+  const styleReadyRef = useRef(false);
   const key = getMapTilerKey();
   const [view, setView] = useState<MapView>(key ? '3d-terrain' : '2d-topo');
 
   const addTrackLayer = useCallback((map: maplibregl.Map, coords: number[][]) => {
-    if (map.getSource(TRACK_SOURCE_ID)) {
+    if (map.getLayer(TRACK_LAYER_ID)) {
       map.removeLayer(TRACK_LAYER_ID);
+    }
+    if (map.getSource(TRACK_SOURCE_ID)) {
       map.removeSource(TRACK_SOURCE_ID);
     }
 
@@ -147,7 +150,7 @@ export default function TrackMap({
     const map = mapRef.current;
     if (!map) return;
 
-    if (map.isStyleLoaded()) {
+    if (styleReadyRef.current) {
       addTrackLayer(map, coordinates);
     } else {
       map.once('style.load', () => addTrackLayer(map, coordinates));
@@ -162,9 +165,11 @@ export default function TrackMap({
 
     // If map already exists, change the style
     if (mapRef.current) {
+      styleReadyRef.current = false;
       mapRef.current.setStyle(style as string | maplibregl.StyleSpecification);
 
       mapRef.current.once('style.load', () => {
+        styleReadyRef.current = true;
         const map = mapRef.current;
         if (!map) return;
         setupTerrain(map, view, key);
@@ -188,6 +193,7 @@ export default function TrackMap({
     map.addControl(new maplibregl.NavigationControl(), 'top-left');
 
     map.on('style.load', () => {
+      styleReadyRef.current = true;
       setupTerrain(map, view, key);
       if (coordsRef.current.length > 0) {
         addTrackLayer(map, coordsRef.current);
@@ -199,6 +205,7 @@ export default function TrackMap({
     return () => {
       map.remove();
       mapRef.current = null;
+      styleReadyRef.current = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);

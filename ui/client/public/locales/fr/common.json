@@ -64,6 +64,12 @@
     "AI_PROVIDER_NOT_CONFIGURED": "Fournisseur IA non configuré.",
     "SPLITS_NOT_AVAILABLE": "Données de splits non disponibles. Relancez l'analyse."
   },
+  "duration": {
+    "d": "j",
+    "h": "h",
+    "m": "min",
+    "s": "s"
+  },
   "format": {
     "durationHM": "{{h}}h {{m}}min",
     "durationM": "{{m}}min",

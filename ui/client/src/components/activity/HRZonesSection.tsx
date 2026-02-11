@@ -36,9 +36,20 @@ export default function HRZonesSection({ zones, trimp, maxHR, source }: Props) {
           {t('hrZones.title')}
         </h2>
         {hasData && (
-          <span className="text-sm font-bold px-3 py-1 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30">
-            TRIMP {trimp}
-          </span>
+          <div className="relative group">
+            <span className="text-sm font-bold px-3 py-1 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 cursor-help">
+              TRIMP {trimp}
+            </span>
+            <div className="absolute right-0 top-full mt-2 w-64 p-3 bg-slate-900 border border-slate-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+              <p className="text-xs text-slate-300 mb-2">{t('hrZones.trimpTooltipDesc')}</p>
+              <div className="space-y-0.5 text-xs text-slate-400">
+                <p>{t('hrZones.trimpScaleLight')}</p>
+                <p>{t('hrZones.trimpScaleModerate')}</p>
+                <p>{t('hrZones.trimpScaleHigh')}</p>
+                <p>{t('hrZones.trimpScaleVeryHigh')}</p>
+              </div>
+            </div>
+          </div>
         )}
       </div>
 
@@ -98,7 +109,7 @@ export default function HRZonesSection({ zones, trimp, maxHR, source }: Props) {
         {source !== 'user' && (
           <>
             {' — '}
-            <Link to="/settings" className="text-cyan-400 hover:underline">{t('hrZones.configureMaxHR')}</Link>
+            <Link to="/settings#athlete-profile" className="text-cyan-400 hover:underline">{t('hrZones.configureMaxHR')}</Link>
           </>
         )}
       </p>

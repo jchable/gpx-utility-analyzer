@@ -13,6 +13,7 @@ import PowerZonesSection from '../components/activity/PowerZonesSection';
 import StopsTable from '../components/activity/StopsTable';
 import SplitsSection from '../components/activity/SplitsSection';
 import { getEffectiveMaxHR, computeHRZones, computePowerZones, computeTRIMP, computePowerMetrics } from '../utils/zones';
+import { formatDuration } from '../utils/format';
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; pulse?: boolean }> = {
   Pending: { color: 'text-slate-400', bg: 'bg-slate-400' },
@@ -51,24 +52,11 @@ function RadialStat({
     <div className="bg-[#16213e] rounded-2xl p-5 border border-slate-700/50 flex flex-col items-center">
       <div className="relative w-24 h-24 mb-3">
         <svg className="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r={radius} fill="none" stroke="#334155" strokeWidth="6" />
           <circle
-            cx="50"
-            cy="50"
-            r={radius}
-            fill="none"
-            stroke="#334155"
-            strokeWidth="6"
-          />
-          <circle
-            cx="50"
-            cy="50"
-            r={radius}
-            fill="none"
-            stroke={color}
-            strokeWidth="6"
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={offset}
+            cx="50" cy="50" r={radius} fill="none"
+            stroke={color} strokeWidth="6" strokeLinecap="round"
+            strokeDasharray={circumference} strokeDashoffset={offset}
             className="transition-all duration-1000"
           />
         </svg>
@@ -77,6 +65,57 @@ function RadialStat({
         </div>
       </div>
       <p className="text-xs text-slate-400">{unit}</p>
+      <p className="text-sm font-medium text-slate-300 mt-1">{label}</p>
+    </div>
+  );
+}
+
+/** Dual-arc gauge showing D+ (green) and D- (red) proportions */
+function ElevationGauge({
+  gain,
+  loss,
+  label,
+  unitLabel,
+}: {
+  gain: number;
+  loss: number;
+  label: string;
+  unitLabel: string;
+}) {
+  const radius = 40;
+  const circumference = 2 * Math.PI * radius;
+  const total = gain + loss;
+  const gainPct = total > 0 ? gain / total : 0.5;
+  const gainArc = gainPct * circumference;
+  const lossArc = (1 - gainPct) * circumference;
+
+  return (
+    <div className="bg-[#16213e] rounded-2xl p-5 border border-slate-700/50 flex flex-col items-center">
+      <div className="relative w-24 h-24 mb-3">
+        <svg className="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r={radius} fill="none" stroke="#334155" strokeWidth="6" />
+          {/* D+ green arc from top */}
+          <circle
+            cx="50" cy="50" r={radius} fill="none"
+            stroke="#00ff88" strokeWidth="6"
+            strokeDasharray={circumference} strokeDashoffset={circumference - gainArc}
+            className="transition-all duration-1000"
+          />
+          {/* D- red arc continuing after green */}
+          <circle
+            cx="50" cy="50" r={radius} fill="none"
+            stroke="#ff6b6b" strokeWidth="6"
+            strokeDasharray={circumference} strokeDashoffset={circumference - lossArc}
+            className="transition-all duration-1000"
+            style={{ transform: `rotate(${gainPct * 360}deg)`, transformOrigin: '50px 50px' }}
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-sm font-bold text-[#00ff88] leading-tight">+{Math.round(gain)}</span>
+          <span className="text-sm font-bold text-[#ff6b6b] leading-tight">&minus;{Math.round(loss)}</span>
+        </div>
+      </div>
+      <p className="text-xs text-slate-400">{unitLabel}</p>
       <p className="text-sm font-medium text-slate-300 mt-1">{label}</p>
     </div>
   );
@@ -300,12 +339,10 @@ export default function ActivityDetail() {
     }
   };
 
-  // Gauge percentages (normalized to reasonable maxima for display)
-  const distPct = stats ? Math.min((stats.total_distance_km / 50) * 100, 100) : 0;
-  const gainPct = stats ? Math.min((stats.elevation_gain_m / 3000) * 100, 100) : 0;
-  const lossPct = stats ? Math.min((stats.elevation_loss_m / 3000) * 100, 100) : 0;
-  const speedPct = stats ? Math.min((stats.avg_moving_speed_kmh / 30) * 100, 100) : 0;
-  const timePct = stats ? Math.min((stats.moving_time.seconds / 28800) * 100, 100) : 0;
+  // Gauge: moving time as percentage of total time
+  const movingPct = stats && stats.total_time.seconds > 0
+    ? Math.round((stats.moving_time.seconds / stats.total_time.seconds) * 100)
+    : 0;
 
   return (
     <div className="space-y-6">
@@ -392,45 +429,23 @@ export default function ActivityDetail() {
         />
       )}
 
-      {/* Stats Grid - Radial Gauges */}
+      {/* Ratio Gauges */}
       {stats && (
         <div>
           <h2 className="text-xl font-semibold text-white mb-4">{t('detail.performanceStats')}</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
             <RadialStat
-              label={t('distance')}
-              value={stats.total_distance_km.toFixed(1)}
-              unit={tc('unit.km')}
-              percentage={distPct}
-              color="#00d4ff"
-            />
-            <RadialStat
-              label={t('elevationGain')}
-              value={Math.round(stats.elevation_gain_m).toString()}
-              unit={tc('unit.meters')}
-              percentage={gainPct}
-              color="#00ff88"
-            />
-            <RadialStat
-              label={t('elevationLoss')}
-              value={Math.round(stats.elevation_loss_m).toString()}
-              unit={tc('unit.meters')}
-              percentage={lossPct}
-              color="#ff6b6b"
-            />
-            <RadialStat
-              label={t('detail.avgSpeed')}
-              value={stats.avg_moving_speed_kmh.toFixed(1)}
-              unit={tc('unit.kmh')}
-              percentage={speedPct}
-              color="#ff8800"
-            />
-            <RadialStat
-              label={t('detail.movingTime')}
-              value={stats.moving_time.display}
-              unit=""
-              percentage={timePct}
+              label={t('detail.movingRatio')}
+              value={`${movingPct}`}
+              unit="%"
+              percentage={movingPct}
               color="#aa88ff"
+            />
+            <ElevationGauge
+              gain={stats.elevation_gain_m}
+              loss={stats.elevation_loss_m}
+              label={t('detail.elevationChange')}
+              unitLabel={tc('unit.meters')}
             />
           </div>
         </div>
@@ -440,12 +455,24 @@ export default function ActivityDetail() {
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-            <p className="text-xs text-slate-500 mb-1">{t('detail.maxSpeed')}</p>
-            <p className="text-lg font-bold text-white">{stats.max_speed_kmh.toFixed(1)} {tc('unit.kmh')}</p>
+            <p className="text-xs text-slate-500 mb-1">{t('distance')}</p>
+            <p className="text-lg font-bold text-cyan-400">{stats.total_distance_km.toFixed(1)} {tc('unit.km')}</p>
+          </div>
+          <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
+            <p className="text-xs text-slate-500 mb-1">{t('detail.avgSpeed')}</p>
+            <p className="text-lg font-bold text-white">{stats.avg_moving_speed_kmh.toFixed(1)} {tc('unit.kmh')}</p>
+          </div>
+          <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
+            <p className="text-xs text-slate-500 mb-1">{t('detail.movingTime')}</p>
+            <p className="text-lg font-bold text-white">{stats.moving_time.display}</p>
           </div>
           <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
             <p className="text-xs text-slate-500 mb-1">{t('detail.avgPace')}</p>
             <p className="text-lg font-bold text-white">{stats.avg_moving_pace}</p>
+          </div>
+          <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
+            <p className="text-xs text-slate-500 mb-1">{t('detail.maxSpeed')}</p>
+            <p className="text-lg font-bold text-white">{stats.max_speed_kmh.toFixed(1)} {tc('unit.kmh')}</p>
           </div>
           <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
             <p className="text-xs text-slate-500 mb-1">{t('detail.maxElevation')}</p>
@@ -457,11 +484,11 @@ export default function ActivityDetail() {
           </div>
           <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
             <p className="text-xs text-slate-500 mb-1">{t('detail.totalTime')}</p>
-            <p className="text-lg font-bold text-white">{stats.total_time.display}</p>
+            <p className="text-lg font-bold text-white">{formatDuration(stats.total_time.seconds, tc)}</p>
           </div>
           <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
             <p className="text-xs text-slate-500 mb-1">{t('detail.stoppedTime')}</p>
-            <p className="text-lg font-bold text-white">{stats.stopped_time.display}</p>
+            <p className="text-lg font-bold text-white">{formatDuration(stats.stopped_time.seconds, tc)}</p>
           </div>
           <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
             <p className="text-xs text-slate-500 mb-1">{t('detail.stops')}</p>
@@ -477,7 +504,7 @@ export default function ActivityDetail() {
             <>
               <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
                 <p className="text-xs text-slate-500 mb-1">{t('detail.avgHR')}</p>
-                <p className="text-lg font-bold text-red-400">{stats.heart_rate.avg_bpm} {tc('unit.bpm')}</p>
+                <p className="text-lg font-bold text-red-400">{Math.round(stats.heart_rate.avg_bpm)} {tc('unit.bpm')}</p>
               </div>
               <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
                 <p className="text-xs text-slate-500 mb-1">{t('detail.maxHR')}</p>
@@ -488,13 +515,13 @@ export default function ActivityDetail() {
           {stats.power && (
             <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
               <p className="text-xs text-slate-500 mb-1">{t('detail.avgPower')}</p>
-              <p className="text-lg font-bold text-yellow-400">{stats.power.avg_watts} {tc('unit.watts')}</p>
+              <p className="text-lg font-bold text-yellow-400">{Math.round(stats.power.avg_watts)} {tc('unit.watts')}</p>
             </div>
           )}
           {stats.cadence && (
             <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
               <p className="text-xs text-slate-500 mb-1">{t('detail.avgCadence')}</p>
-              <p className="text-lg font-bold text-blue-400">{stats.cadence.avg_rpm} {tc('unit.rpm')}</p>
+              <p className="text-lg font-bold text-blue-400">{Math.round(stats.cadence.avg_rpm)} {tc('unit.rpm')}</p>
             </div>
           )}
         </div>

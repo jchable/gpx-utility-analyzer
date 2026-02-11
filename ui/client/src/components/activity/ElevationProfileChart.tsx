@@ -13,6 +13,7 @@ import {
 import { Mountain, Clock } from 'lucide-react';
 import type { ProfilePoint } from '../../types/activity';
 import type { StopInfo } from '../../types/activity';
+import { formatDuration } from '../../utils/format';
 
 interface ElevationProfileChartProps {
   data: ProfilePoint[];
@@ -55,6 +56,7 @@ export default function ElevationProfileChart({
   activityStartTime,
 }: ElevationProfileChartProps) {
   const { t } = useTranslation('activities');
+  const { t: tc } = useTranslation();
   const [showSpeed, setShowSpeed] = useState(true);
   const [showGap, setShowGap] = useState(true);
   const [xMode, setXMode] = useState<'distance' | 'time'>('distance');
@@ -101,22 +103,44 @@ export default function ElevationProfileChart({
   const rightLabel = overlayMode === 'hr' ? 'bpm' : overlayMode === 'power' ? 'W' : 'km/h';
 
   const stopAreas = useMemo(() => {
-    if (xMode !== 'time' || !stops || stops.length === 0 || !activityStartTime) {
-      return [];
-    }
+    if (!stops || stops.length === 0 || !activityStartTime) return [];
     const startMs = new Date(activityStartTime).getTime();
-    return stops.map((stop) => ({
-      x1: (new Date(stop.start_time).getTime() - startMs) / 1000,
-      x2: (new Date(stop.end_time).getTime() - startMs) / 1000,
-      label: stop.duration.display,
-    }));
-  }, [xMode, stops, activityStartTime]);
 
-  const totalDuration = useMemo(() => {
+    if (xMode === 'time') {
+      return stops.map((stop) => ({
+        x1: (new Date(stop.start_time).getTime() - startMs) / 1000,
+        x2: (new Date(stop.end_time).getTime() - startMs) / 1000,
+        label: formatDuration(stop.duration.seconds, tc),
+      }));
+    }
+
+    // Distance mode: map stop times to distances via profile interpolation
+    if (data.length < 2) return [];
+    const timeToDistance = (elapsed: number): number => {
+      for (let i = 1; i < data.length; i++) {
+        const t1 = data[i].elapsedTime ?? 0;
+        if (elapsed <= t1) {
+          const t0 = data[i - 1].elapsedTime ?? 0;
+          const ratio = t1 > t0 ? (elapsed - t0) / (t1 - t0) : 0;
+          return data[i - 1].distance + ratio * (data[i].distance - data[i - 1].distance);
+        }
+      }
+      return data[data.length - 1].distance;
+    };
+
+    return stops.map((stop) => ({
+      x1: timeToDistance((new Date(stop.start_time).getTime() - startMs) / 1000),
+      x2: timeToDistance((new Date(stop.end_time).getTime() - startMs) / 1000),
+      label: formatDuration(stop.duration.seconds, tc),
+    }));
+  }, [xMode, stops, activityStartTime, tc, data]);
+
+  const totalXRange = useMemo(() => {
     if (data.length === 0) return 0;
-    const last = data[data.length - 1].elapsedTime;
-    return last ?? 0;
-  }, [data]);
+    return xMode === 'time'
+      ? (data[data.length - 1].elapsedTime ?? 0)
+      : data[data.length - 1].distance;
+  }, [data, xMode]);
 
   if (loading) {
     return (
@@ -410,8 +434,8 @@ export default function ElevationProfileChart({
         </ComposedChart>
       </ResponsiveContainer>
 
-      {/* Stop timeline band (time mode only) */}
-      {xMode === 'time' && stopAreas.length > 0 && totalDuration > 0 && (
+      {/* Stop timeline band */}
+      {stopAreas.length > 0 && totalXRange > 0 && (
         <div className="flex items-center gap-2 mt-1">
           <span className="text-[10px] text-slate-500 w-[50px] text-right">{t('elevation.stops')}</span>
           <div
@@ -423,8 +447,8 @@ export default function ElevationProfileChart({
                 key={i}
                 className="absolute top-0 h-full bg-red-400/40 border-x border-red-400/60 rounded-sm"
                 style={{
-                  left: `${(stop.x1 / totalDuration) * 100}%`,
-                  width: `${Math.max(((stop.x2 - stop.x1) / totalDuration) * 100, 0.3)}%`,
+                  left: `${(stop.x1 / totalXRange) * 100}%`,
+                  width: `${Math.max(((stop.x2 - stop.x1) / totalXRange) * 100, 0.3)}%`,
                 }}
                 title={stop.label}
               />

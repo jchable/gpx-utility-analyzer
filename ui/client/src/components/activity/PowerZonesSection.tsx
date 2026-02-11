@@ -124,7 +124,7 @@ export default function PowerZonesSection({ zones, ftp, metrics, avgWatts, maxWa
       <p className="text-xs text-slate-500">
         {t('powerZones.usingFtp', { value: ftp })}
         {' — '}
-        <Link to="/settings" className="text-cyan-400 hover:underline">{t('powerZones.configureFtp')}</Link>
+        <Link to="/settings#athlete-profile" className="text-cyan-400 hover:underline">{t('powerZones.configureFtp')}</Link>
       </p>
     </div>
   );
