@@ -26,11 +26,15 @@ const COLORS = {
   elevation: '#00d4ff',
   speed: '#ff8800',
   gap: '#00ff88',
+  hr: '#ef4444',
+  power: '#eab308',
   text: '#a0a0b0',
   grid: 'rgba(255,255,255,0.05)',
   axisLine: 'rgba(255,255,255,0.08)',
   tooltipBg: '#0f0f1a',
 } as const;
+
+type OverlayMode = 'speed' | 'hr' | 'power';
 
 /** Format elapsed seconds as h:mm:ss or m:ss */
 function formatElapsedTime(seconds: number): string {
@@ -54,10 +58,13 @@ export default function ElevationProfileChart({
   const [showSpeed, setShowSpeed] = useState(true);
   const [showGap, setShowGap] = useState(true);
   const [xMode, setXMode] = useState<'distance' | 'time'>('distance');
+  const [overlayMode, setOverlayMode] = useState<OverlayMode>('speed');
 
   const xDataKey = xMode === 'time' ? 'elapsedTime' : 'distance';
 
   const hasSpeed = useMemo(() => data.some((d) => d.speed > 0), [data]);
+  const hasHR = useMemo(() => data.some((d) => d.heartRate != null && d.heartRate > 0), [data]);
+  const hasPower = useMemo(() => data.some((d) => d.power != null && d.power > 0), [data]);
 
   const elevDomain = useMemo(() => {
     if (data.length === 0) return [0, 100];
@@ -73,6 +80,25 @@ export default function ElevationProfileChart({
     const maxVal = Math.max(...data.map((d) => d.speed), ...data.map((d) => d.gap));
     return [0, Math.ceil(maxVal * 1.1)];
   }, [data, hasSpeed]);
+
+  const hrDomain = useMemo(() => {
+    if (data.length === 0 || !hasHR) return [60, 200];
+    const hrs = data.filter((d) => d.heartRate != null).map((d) => d.heartRate!);
+    if (hrs.length === 0) return [60, 200];
+    const min = Math.min(...hrs);
+    const max = Math.max(...hrs);
+    return [Math.max(Math.floor(min - 10), 40), Math.ceil(max + 10)];
+  }, [data, hasHR]);
+
+  const powerDomain = useMemo(() => {
+    if (data.length === 0 || !hasPower) return [0, 400];
+    const pws = data.filter((d) => d.power != null).map((d) => d.power!);
+    if (pws.length === 0) return [0, 400];
+    return [0, Math.ceil(Math.max(...pws) * 1.1)];
+  }, [data, hasPower]);
+
+  const rightDomain = overlayMode === 'hr' ? hrDomain : overlayMode === 'power' ? powerDomain : speedDomain;
+  const rightLabel = overlayMode === 'hr' ? 'bpm' : overlayMode === 'power' ? 'W' : 'km/h';
 
   const stopAreas = useMemo(() => {
     if (xMode !== 'time' || !stops || stops.length === 0 || !activityStartTime) {
@@ -151,9 +177,50 @@ export default function ElevationProfileChart({
             </div>
           )}
 
-          {hasSpeed && (
+          <LegendItem label={t('elevation.elevation')} color={COLORS.elevation} active={true} dashed={false} />
+
+          {/* Overlay mode selector */}
+          {(hasSpeed || hasHR || hasPower) && (
+            <div className="flex items-center bg-slate-800/60 rounded-lg p-0.5">
+              {hasSpeed && (
+                <button
+                  type="button"
+                  onClick={() => setOverlayMode('speed')}
+                  className={`px-2 py-1 rounded-md text-xs transition-colors ${
+                    overlayMode === 'speed' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-300'
+                  }`}
+                >
+                  {t('elevation.overlaySpeed')}
+                </button>
+              )}
+              {hasHR && (
+                <button
+                  type="button"
+                  onClick={() => setOverlayMode('hr')}
+                  className={`px-2 py-1 rounded-md text-xs transition-colors ${
+                    overlayMode === 'hr' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-300'
+                  }`}
+                >
+                  {t('elevation.overlayHR')}
+                </button>
+              )}
+              {hasPower && (
+                <button
+                  type="button"
+                  onClick={() => setOverlayMode('power')}
+                  className={`px-2 py-1 rounded-md text-xs transition-colors ${
+                    overlayMode === 'power' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-300'
+                  }`}
+                >
+                  {t('elevation.overlayPower')}
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Speed/GAP toggles (only when speed mode active) */}
+          {overlayMode === 'speed' && hasSpeed && (
             <>
-              <LegendItem label={t('elevation.elevation')} color={COLORS.elevation} active={true} dashed={false} />
               <LegendItem
                 label={t('elevation.speed')}
                 color={COLORS.speed}
@@ -169,6 +236,12 @@ export default function ElevationProfileChart({
                 onClick={() => setShowGap((v) => !v)}
               />
             </>
+          )}
+          {overlayMode === 'hr' && hasHR && (
+            <LegendItem label={t('elevation.overlayHR')} color={COLORS.hr} active={true} dashed={false} />
+          )}
+          {overlayMode === 'power' && hasPower && (
+            <LegendItem label={t('elevation.overlayPower')} color={COLORS.power} active={true} dashed={false} />
           )}
         </div>
       </div>
@@ -216,18 +289,18 @@ export default function ElevationProfileChart({
             tickFormatter={(v: number) => `${v} m`}
           />
 
-          {hasSpeed && (
+          {(hasSpeed || hasHR || hasPower) && (
             <YAxis
-              yAxisId="speed"
+              yAxisId="right"
               orientation="right"
-              domain={speedDomain}
+              domain={rightDomain}
               tick={{ fill: COLORS.text, fontSize: 11 }}
               axisLine={false}
               tickLine={false}
               width={55}
               tickFormatter={(v: number) => `${v}`}
               label={{
-                value: 'km/h',
+                value: rightLabel,
                 position: 'insideTopRight',
                 offset: -10,
                 fill: COLORS.text,
@@ -256,6 +329,8 @@ export default function ElevationProfileChart({
                 speed: [`${value} km/h`, t('elevation.speed')],
                 gap: [`${value} km/h`, t('elevation.gap')],
                 grade: [`${value}%`, t('elevation.grade')],
+                heartRate: [`${value} bpm`, t('elevation.overlayHR')],
+                power: [`${value} W`, t('elevation.overlayPower')],
               };
               return labels[name as string] ?? [`${value}`, name];
             }}
@@ -274,9 +349,9 @@ export default function ElevationProfileChart({
             name="elevation"
           />
 
-          {hasSpeed && showSpeed && (
+          {overlayMode === 'speed' && hasSpeed && showSpeed && (
             <Line
-              yAxisId="speed"
+              yAxisId="right"
               type="monotone"
               dataKey="speed"
               stroke={COLORS.speed}
@@ -288,9 +363,9 @@ export default function ElevationProfileChart({
             />
           )}
 
-          {hasSpeed && showGap && (
+          {overlayMode === 'speed' && hasSpeed && showGap && (
             <Line
-              yAxisId="speed"
+              yAxisId="right"
               type="monotone"
               dataKey="gap"
               stroke={COLORS.gap}
@@ -302,6 +377,36 @@ export default function ElevationProfileChart({
               name="gap"
             />
           )}
+
+          {overlayMode === 'hr' && hasHR && (
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="heartRate"
+              stroke={COLORS.hr}
+              strokeWidth={1.5}
+              dot={false}
+              activeDot={false}
+              isAnimationActive={false}
+              name="heartRate"
+              connectNulls
+            />
+          )}
+
+          {overlayMode === 'power' && hasPower && (
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="power"
+              stroke={COLORS.power}
+              strokeWidth={1.5}
+              dot={false}
+              activeDot={false}
+              isAnimationActive={false}
+              name="power"
+              connectNulls
+            />
+          )}
         </ComposedChart>
       </ResponsiveContainer>
 
@@ -311,7 +416,7 @@ export default function ElevationProfileChart({
           <span className="text-[10px] text-slate-500 w-[50px] text-right">{t('elevation.stops')}</span>
           <div
             className="relative h-2.5 flex-1 bg-slate-800/40 rounded-sm overflow-hidden"
-            style={{ marginRight: hasSpeed ? 63 : 8 }}
+            style={{ marginRight: (hasSpeed || hasHR || hasPower) ? 63 : 8 }}
           >
             {stopAreas.map((stop, i) => (
               <div

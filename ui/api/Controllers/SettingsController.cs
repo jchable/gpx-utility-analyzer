@@ -23,6 +23,12 @@ public class SettingsController : ControllerBase
     {
         var dto = new AppSettingsDto
         {
+            Athlete = new AthleteSettingsDto
+            {
+                MaxHeartRate = int.TryParse(await _settings.GetAsync("Athlete:MaxHR"), out var mhr) ? mhr : null,
+                Age = int.TryParse(await _settings.GetAsync("Athlete:Age"), out var age) ? age : null,
+                Ftp = int.TryParse(await _settings.GetAsync("Athlete:FTP"), out var ftp) ? ftp : null,
+            },
             Analysis = new AnalysisSettingsDto
             {
                 Preset = await _settings.GetAsync("GpxCli:DefaultPreset", "trail") ?? "trail",
@@ -60,6 +66,14 @@ public class SettingsController : ControllerBase
     public async Task<IActionResult> UpdateSettings([FromBody] AppSettingsDto dto)
     {
         var updates = new Dictionary<string, string>();
+
+        // Athlete settings
+        if (dto.Athlete.MaxHeartRate.HasValue)
+            updates["Athlete:MaxHR"] = dto.Athlete.MaxHeartRate.Value.ToString();
+        if (dto.Athlete.Age.HasValue)
+            updates["Athlete:Age"] = dto.Athlete.Age.Value.ToString();
+        if (dto.Athlete.Ftp.HasValue)
+            updates["Athlete:FTP"] = dto.Athlete.Ftp.Value.ToString();
 
         // Analysis settings
         updates["GpxCli:DefaultPreset"] = dto.Analysis.Preset;

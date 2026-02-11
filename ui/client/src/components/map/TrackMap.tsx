@@ -11,6 +11,8 @@ interface TrackMapProps {
   loading?: boolean;
   /** Error state. */
   error?: string | null;
+  /** When set, the map flies to this location (e.g. clicked stop). */
+  focusedPoint?: { lat: number; lon: number } | null;
 }
 
 function getMapTilerKey(): string {
@@ -71,6 +73,7 @@ export default function TrackMap({
   coordinates,
   loading,
   error,
+  focusedPoint,
 }: TrackMapProps) {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -199,6 +202,16 @@ export default function TrackMap({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
+
+  // Fly to focused point (e.g. clicked stop)
+  useEffect(() => {
+    if (!focusedPoint || !mapRef.current) return;
+    mapRef.current.flyTo({
+      center: [focusedPoint.lon, focusedPoint.lat],
+      zoom: 15,
+      duration: 1000,
+    });
+  }, [focusedPoint]);
 
   return (
     <div className="relative w-full h-full min-h-[250px] sm:min-h-[400px] rounded-xl overflow-hidden border border-white/5 bg-[#0f0f1a]">

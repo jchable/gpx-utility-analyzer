@@ -46,6 +46,15 @@ export function useTrack(id: string) {
   });
 }
 
+export function useSplits(id: string) {
+  return useQuery({
+    queryKey: ['activity', id, 'splits'],
+    queryFn: () => api.getSplits(id),
+    enabled: !!id,
+    staleTime: 3600_000,
+  });
+}
+
 export function useIntegrations() {
   return useQuery({
     queryKey: ['integrations'],

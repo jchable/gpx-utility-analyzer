@@ -176,6 +176,19 @@ public class ActivitiesController : ControllerBase
         return Content(activity.TrackGeoJson, "application/json");
     }
 
+    [HttpGet("{id:guid}/splits")]
+    public async Task<IActionResult> GetSplits(Guid id)
+    {
+        var activity = await _db.Activities.FindAsync(id);
+        if (activity is null) return NotFound();
+
+        if (activity.Status != ProcessingStatus.Completed || activity.SplitsJson is null)
+            return NotFound(new { code = "SPLITS_NOT_AVAILABLE" });
+
+        Response.Headers.CacheControl = "public, max-age=3600";
+        return Content(activity.SplitsJson, "application/json");
+    }
+
     [HttpPost("{id:guid}/reanalyze")]
     public async Task<IActionResult> Reanalyze(Guid id)
     {
@@ -190,6 +203,7 @@ public class ActivitiesController : ControllerBase
         activity.AiReportJson = null;
         activity.ProfileJson = null;
         activity.TrackGeoJson = null;
+        activity.SplitsJson = null;
         activity.Language = language;
         activity.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();

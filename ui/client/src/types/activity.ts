@@ -158,9 +158,16 @@ export interface IntegrationInfo {
 }
 
 export interface AppSettings {
+  athlete: AthleteSettings;
   analysis: AnalysisSettings;
   aiProvider: AiProviderSettings;
   integrations: IntegrationCredentials;
+}
+
+export interface AthleteSettings {
+  maxHeartRate?: number;
+  age?: number;
+  ftp?: number;
 }
 
 export interface AnalysisSettings {
@@ -194,6 +201,41 @@ export interface GarminCredentials {
   consumerKey: string;
   hasConsumerSecret: boolean;
   consumerSecret: string;
+}
+
+export interface SplitsData {
+  splits: SplitEntry[];
+  bestEfforts: BestEffort[];
+}
+
+export interface SplitEntry {
+  km: number;
+  distance: number;
+  paceSecondsPerKm: number;
+  elevationGain: number;
+  elevationLoss: number;
+  avgHeartRate?: number;
+  avgCadence?: number;
+  avgPower?: number;
+  avgSpeed?: number;
+}
+
+export interface BestEffort {
+  label: string;
+  distanceKm: number;
+  timeSeconds?: number;
+  paceSecondsPerKm?: number;
+}
+
+export interface ComputedZone {
+  name: string;
+  label: string;
+  minPercent: number;
+  maxPercent: number;
+  minValue: number;
+  maxValue: number;
+  durationSeconds: number;
+  color: string;
 }
 
 export const ACTIVITY_COLORS: Record<string, string> = {

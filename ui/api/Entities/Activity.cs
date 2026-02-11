@@ -16,6 +16,7 @@ public class Activity
     public string? AiReportJson { get; set; }
     public string? ProfileJson { get; set; }
     public string? TrackGeoJson { get; set; }
+    public string? SplitsJson { get; set; }
     public string Source { get; set; } = "upload";
     public string? ExternalId { get; set; }
     public ProcessingStatus Status { get; set; } = ProcessingStatus.Pending;

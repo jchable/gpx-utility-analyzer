@@ -55,6 +55,57 @@
     "gap": "GAP",
     "grade": "Grade",
     "time": "time",
-    "stops": "Stops"
+    "stops": "Stops",
+    "overlaySpeed": "Speed / GAP",
+    "overlayHR": "Heart Rate",
+    "overlayPower": "Power"
+  },
+  "hrZones": {
+    "title": "Heart Rate Zones",
+    "noData": "No heart rate data available for this activity.",
+    "usingUserMaxHR": "Using configured max HR: {{value}} bpm",
+    "usingAgeMaxHR": "Using age-based max HR: {{value}} bpm (220 − age)",
+    "usingObservedMaxHR": "Using observed max HR: {{value}} bpm",
+    "configureMaxHR": "Configure in Settings"
+  },
+  "powerZones": {
+    "title": "Power Zones",
+    "noData": "No power data available for this activity.",
+    "np": "NP",
+    "avgPower": "Avg Power",
+    "maxPower": "Max Power",
+    "if": "IF",
+    "tss": "TSS",
+    "vi": "VI",
+    "usingFtp": "Based on FTP: {{value}} W",
+    "configureFtp": "Edit in Settings"
+  },
+  "stopsTable": {
+    "title": "Stops",
+    "number": "#",
+    "startTime": "Time",
+    "duration": "Duration",
+    "location": "Location",
+    "totalStops": "Total stops",
+    "totalDuration": "Total stop time",
+    "avgDuration": "Avg",
+    "noStops": "No stops detected.",
+    "sortByTime": "By time",
+    "sortByDuration": "By duration",
+    "viewOnMap": "View on map"
+  },
+  "splits": {
+    "title": "Splits",
+    "km": "km",
+    "pace": "Pace",
+    "speed": "Speed",
+    "elevGain": "D+",
+    "elevLoss": "D−",
+    "avgHR": "HR",
+    "avgPower": "Power",
+    "bestEfforts": "Best Efforts",
+    "notAvailable": "N/A",
+    "fastest": "Fastest",
+    "slowest": "Slowest"
   }
 }

@@ -102,11 +102,12 @@ public class ActivityProcessingService
             // Compute profile and track GeoJSON from enriched GPX
             stepSw.Restart();
             var enrichedGpxPath = _storage.GetFullPath(activity.GpxFilePath);
-            var (profileJson, trackGeoJson) = _profileService.ComputeFromEnrichedGpx(enrichedGpxPath);
+            var (profileJson, trackGeoJson, splitsJson) = _profileService.ComputeFromEnrichedGpx(enrichedGpxPath);
             stepSw.Stop();
 
             activity.ProfileJson = profileJson;
             activity.TrackGeoJson = trackGeoJson;
+            activity.SplitsJson = splitsJson;
             _logger.LogInformation("[{Id}] Profile computed in {Elapsed:F1}s ({ProfileSize} profile, {TrackSize} track)",
                 activityId, stepSw.Elapsed.TotalSeconds,
                 profileJson?.Length.ToString("N0") ?? "null",

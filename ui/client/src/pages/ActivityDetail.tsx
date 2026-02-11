@@ -1,13 +1,18 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { useActivity, useProfile, useTrack } from '../hooks/useActivities';
+import { useActivity, useProfile, useTrack, useSplits, useSettings } from '../hooks/useActivities';
 import { api } from '../api/client';
 import { ACTIVITY_COLORS } from '../types/activity';
 import type { TrackReport } from '../types/activity';
 import TrackMap from '../components/map/TrackMap';
 import ElevationProfileChart from '../components/activity/ElevationProfileChart';
+import HRZonesSection from '../components/activity/HRZonesSection';
+import PowerZonesSection from '../components/activity/PowerZonesSection';
+import StopsTable from '../components/activity/StopsTable';
+import SplitsSection from '../components/activity/SplitsSection';
+import { getEffectiveMaxHR, computeHRZones, computePowerZones, computeTRIMP, computePowerMetrics } from '../utils/zones';
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; pulse?: boolean }> = {
   Pending: { color: 'text-slate-400', bg: 'bg-slate-400' },
@@ -196,10 +201,47 @@ export default function ActivityDetail() {
   const isCompleted = activity?.status === 'Completed';
   const { data: profileData } = useProfile(isCompleted ? id! : '');
   const { data: trackData, isLoading: trackLoading, error: trackError } = useTrack(isCompleted ? id! : '');
+  const { data: splitsData } = useSplits(isCompleted ? id! : '');
+  const { data: settings } = useSettings();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isReanalyzing, setIsReanalyzing] = useState(false);
+  const [focusedStop, setFocusedStop] = useState<{ lat: number; lon: number } | null>(null);
 
   const hasTimestamps = (profileData?.length ?? 0) > 0 && profileData![0].elapsedTime != null;
+
+  // Zone computations (client-side from profile data + user settings)
+  const effectiveMaxHR = useMemo(
+    () => getEffectiveMaxHR(settings?.athlete, activity?.stats?.heart_rate?.max_bpm),
+    [settings?.athlete, activity?.stats?.heart_rate?.max_bpm],
+  );
+
+  const hrMaxSource = useMemo((): 'user' | 'age' | 'observed' => {
+    if (settings?.athlete?.maxHeartRate && settings.athlete.maxHeartRate > 0) return 'user';
+    if (settings?.athlete?.age && settings.athlete.age > 0) return 'age';
+    return 'observed';
+  }, [settings?.athlete]);
+
+  const hrZones = useMemo(
+    () => (profileData && effectiveMaxHR ? computeHRZones(profileData, effectiveMaxHR) : null),
+    [profileData, effectiveMaxHR],
+  );
+
+  const trimp = useMemo(() => (hrZones ? computeTRIMP(hrZones) : 0), [hrZones]);
+
+  const ftp = settings?.athlete?.ftp;
+
+  const powerZones = useMemo(
+    () => (profileData && ftp ? computePowerZones(profileData, ftp) : null),
+    [profileData, ftp],
+  );
+
+  const powerMetrics = useMemo(
+    () =>
+      activity?.stats?.power && ftp
+        ? computePowerMetrics(activity.stats.power, ftp, activity.stats.moving_time.seconds)
+        : null,
+    [activity?.stats?.power, ftp, activity?.stats?.moving_time.seconds],
+  );
 
   const formatDate = (iso: string): string => {
     return new Date(iso).toLocaleDateString(i18n.language, {
@@ -337,7 +379,7 @@ export default function ActivityDetail() {
 
       {/* Track Map */}
       <div className="h-[300px] sm:h-[400px] lg:h-[500px] rounded-2xl overflow-hidden">
-        <TrackMap coordinates={trackData?.coordinates} loading={trackLoading} error={trackError?.message} />
+        <TrackMap coordinates={trackData?.coordinates} loading={trackLoading} error={trackError?.message} focusedPoint={focusedStop} />
       </div>
 
       {/* Elevation Profile */}
@@ -456,6 +498,47 @@ export default function ActivityDetail() {
             </div>
           )}
         </div>
+      )}
+
+      {/* HR Zones */}
+      {hrZones && effectiveMaxHR && activity.stats?.heart_rate && (
+        <HRZonesSection
+          zones={hrZones}
+          trimp={trimp}
+          maxHR={effectiveMaxHR}
+          source={hrMaxSource}
+        />
+      )}
+
+      {/* Power Zones */}
+      {powerZones && ftp && activity.stats?.power && powerMetrics && (
+        <PowerZonesSection
+          zones={powerZones}
+          ftp={ftp}
+          metrics={powerMetrics}
+          avgWatts={activity.stats.power.avg_watts}
+          maxWatts={activity.stats.power.max_watts}
+        />
+      )}
+
+      {/* Stops Table */}
+      {stats && stats.stops && stats.stops.length > 0 && (
+        <StopsTable
+          stops={stats.stops}
+          activityStartTime={stats.start_time}
+          totalStopTime={stats.total_stop_time}
+          avgStopDuration={stats.avg_stop_duration}
+          onStopClick={(lat, lon) => setFocusedStop({ lat, lon })}
+        />
+      )}
+
+      {/* Splits & Best Efforts */}
+      {splitsData && (
+        <SplitsSection
+          splits={splitsData.splits}
+          bestEfforts={splitsData.bestEfforts}
+          activityType={activity.activityType}
+        />
       )}
 
       {/* AI Report */}

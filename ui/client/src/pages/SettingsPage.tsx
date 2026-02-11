@@ -54,7 +54,7 @@ function TextInput({
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
-  type?: 'text' | 'password';
+  type?: 'text' | 'password' | 'number';
 }) {
   return (
     <input
@@ -148,6 +148,17 @@ export default function SettingsPage() {
     );
   };
 
+  const updateAthlete = (field: string, value: string) => {
+    setForm((f) =>
+      f
+        ? {
+            ...f,
+            athlete: { ...f.athlete, [field]: value === '' ? undefined : Number(value) },
+          }
+        : f,
+    );
+  };
+
   const providerOptions = (settings?.aiProvider.availableProviders ?? []).map((p) => ({
     value: p,
     label: p.charAt(0).toUpperCase() + p.slice(1),
@@ -177,6 +188,37 @@ export default function SettingsPage() {
       <h1 className="text-2xl font-bold text-white mb-6">{t('title')}</h1>
 
       <div className="space-y-6 max-w-2xl">
+        {/* Athlete Profile */}
+        <SectionCard title={t('athleteProfile')}>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <FieldGroup label={t('maxHeartRate')}>
+              <TextInput
+                value={form.athlete?.maxHeartRate?.toString() ?? ''}
+                onChange={(v) => updateAthlete('maxHeartRate', v)}
+                placeholder="185"
+                type="number"
+              />
+            </FieldGroup>
+            <FieldGroup label={t('age')}>
+              <TextInput
+                value={form.athlete?.age?.toString() ?? ''}
+                onChange={(v) => updateAthlete('age', v)}
+                placeholder="35"
+                type="number"
+              />
+            </FieldGroup>
+            <FieldGroup label={t('ftp')}>
+              <TextInput
+                value={form.athlete?.ftp?.toString() ?? ''}
+                onChange={(v) => updateAthlete('ftp', v)}
+                placeholder="250"
+                type="number"
+              />
+            </FieldGroup>
+          </div>
+          <p className="text-xs text-slate-500 mt-3">{t('athleteHint')}</p>
+        </SectionCard>
+
         {/* Integration Credentials */}
         <SectionCard title={t('integrationCredentials')}>
           <div className="space-y-5">

@@ -61,7 +61,8 @@
     "GPX_NOT_FOUND": "GPX file not found.",
     "UNKNOWN_PROVIDER": "Unknown provider.",
     "MISSING_OAUTH_PARAMS": "Missing OAuth callback parameters.",
-    "AI_PROVIDER_NOT_CONFIGURED": "AI provider not configured."
+    "AI_PROVIDER_NOT_CONFIGURED": "AI provider not configured.",
+    "SPLITS_NOT_AVAILABLE": "Splits data not available. Reanalyze to compute."
   },
   "format": {
     "durationHM": "{{h}}h {{m}}m",

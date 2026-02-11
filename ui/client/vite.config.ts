@@ -64,7 +64,7 @@ export default defineConfig({
             },
           },
           {
-            urlPattern: /^\/api\/activities\/[^/]+\/(track|profile)$/,
+            urlPattern: /^\/api\/activities\/[^/]+\/(track|profile|splits)$/,
             handler: 'CacheFirst',
             options: {
               cacheName: 'api-geodata-cache',

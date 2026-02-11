@@ -55,6 +55,57 @@
     "gap": "GAP",
     "grade": "Pente",
     "time": "temps",
-    "stops": "Arrêts"
+    "stops": "Arrêts",
+    "overlaySpeed": "Vitesse / GAP",
+    "overlayHR": "Fréquence cardiaque",
+    "overlayPower": "Puissance"
+  },
+  "hrZones": {
+    "title": "Zones de fréquence cardiaque",
+    "noData": "Aucune donnée de fréquence cardiaque pour cette activité.",
+    "usingUserMaxHR": "FC max configurée : {{value}} bpm",
+    "usingAgeMaxHR": "FC max estimée par l'âge : {{value}} bpm (220 − âge)",
+    "usingObservedMaxHR": "FC max observée : {{value}} bpm",
+    "configureMaxHR": "Configurer dans les Réglages"
+  },
+  "powerZones": {
+    "title": "Zones de puissance",
+    "noData": "Aucune donnée de puissance pour cette activité.",
+    "np": "PN",
+    "avgPower": "Puissance moy.",
+    "maxPower": "Puissance max",
+    "if": "FI",
+    "tss": "TSS",
+    "vi": "IV",
+    "usingFtp": "Basé sur FTP : {{value}} W",
+    "configureFtp": "Modifier dans les Réglages"
+  },
+  "stopsTable": {
+    "title": "Arrêts",
+    "number": "N°",
+    "startTime": "Heure",
+    "duration": "Durée",
+    "location": "Position",
+    "totalStops": "Total arrêts",
+    "totalDuration": "Durée totale d'arrêt",
+    "avgDuration": "Moy.",
+    "noStops": "Aucun arrêt détecté.",
+    "sortByTime": "Par heure",
+    "sortByDuration": "Par durée",
+    "viewOnMap": "Voir sur la carte"
+  },
+  "splits": {
+    "title": "Splits",
+    "km": "km",
+    "pace": "Allure",
+    "speed": "Vitesse",
+    "elevGain": "D+",
+    "elevLoss": "D−",
+    "avgHR": "FC",
+    "avgPower": "Puissance",
+    "bestEfforts": "Meilleurs efforts",
+    "notAvailable": "N/D",
+    "fastest": "Plus rapide",
+    "slowest": "Plus lent"
   }
 }

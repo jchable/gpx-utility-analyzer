@@ -1,5 +1,5 @@
 import i18n from '../i18n';
-import type { ActivityListItem, ActivityDetail, DashboardSummary, IntegrationInfo, AppSettings, ProfilePoint } from '../types/activity';
+import type { ActivityListItem, ActivityDetail, DashboardSummary, IntegrationInfo, AppSettings, ProfilePoint, SplitsData } from '../types/activity';
 
 const BASE = '/api';
 
@@ -68,6 +68,8 @@ export const api = {
   getProfile: (id: string) => fetchJson<ProfilePoint[]>(`/activities/${id}/profile`),
 
   getTrack: (id: string) => fetchJson<{ type: string; coordinates: number[][] }>(`/activities/${id}/track`),
+
+  getSplits: (id: string) => fetchJson<SplitsData>(`/activities/${id}/splits`),
 
   getGpxUrl: (id: string) => `${BASE}/activities/${id}/gpx`,
 

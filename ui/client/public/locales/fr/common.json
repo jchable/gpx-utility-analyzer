@@ -61,7 +61,8 @@
     "GPX_NOT_FOUND": "Fichier GPX introuvable.",
     "UNKNOWN_PROVIDER": "Fournisseur inconnu.",
     "MISSING_OAUTH_PARAMS": "Paramètres OAuth manquants.",
-    "AI_PROVIDER_NOT_CONFIGURED": "Fournisseur IA non configuré."
+    "AI_PROVIDER_NOT_CONFIGURED": "Fournisseur IA non configuré.",
+    "SPLITS_NOT_AVAILABLE": "Données de splits non disponibles. Relancez l'analyse."
   },
   "format": {
     "durationHM": "{{h}}h {{m}}min",
