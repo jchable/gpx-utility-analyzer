@@ -3,17 +3,23 @@ namespace GpxAnalyzer.Cli.Stats;
 public static class DistanceCalculator
 {
     private const double EarthRadius = 6371000; // meters
+    private const double DegToRad = Math.PI / 180.0;
 
     /// <summary>
     /// Computes great-circle distance in meters between two points (Haversine formula).
     /// </summary>
     public static double Haversine(double lat1, double lon1, double lat2, double lon2)
     {
-        double dLat = ToRad(lat2 - lat1);
-        double dLon = ToRad(lon2 - lon1);
-        double a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
-                   Math.Cos(ToRad(lat1)) * Math.Cos(ToRad(lat2)) *
-                   Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+        double lat1Rad = lat1 * DegToRad;
+        double lat2Rad = lat2 * DegToRad;
+        double dLat = (lat2 - lat1) * DegToRad;
+        double dLon = (lon2 - lon1) * DegToRad;
+
+        double sinDLat2 = Math.Sin(dLat * 0.5);
+        double sinDLon2 = Math.Sin(dLon * 0.5);
+        double a = sinDLat2 * sinDLat2 +
+                   Math.Cos(lat1Rad) * Math.Cos(lat2Rad) *
+                   sinDLon2 * sinDLon2;
         double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
         return EarthRadius * c;
     }
@@ -28,6 +34,4 @@ public static class DistanceCalculator
         double dEle = ele2 - ele1;
         return Math.Sqrt(d2d * d2d + dEle * dEle);
     }
-
-    private static double ToRad(double deg) => deg * Math.PI / 180;
 }

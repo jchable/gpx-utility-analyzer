@@ -110,10 +110,10 @@ public static class SpeedCalculator
     public static double MaxSpeedFromPoints(List<TrackPoint> points)
     {
         double max = 0;
-        foreach (var p in points)
+        for (int i = 0; i < points.Count; i++)
         {
-            if (p.CalcSpeed > max)
-                max = p.CalcSpeed;
+            if (points[i].CalcSpeed > max)
+                max = points[i].CalcSpeed;
         }
         return max;
     }

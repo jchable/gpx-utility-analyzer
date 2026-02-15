@@ -1,3 +1,4 @@
+using System.Buffers;
 using GpxAnalyzer.Cli.Gpx;
 
 namespace GpxAnalyzer.Cli.Elevation;
@@ -38,42 +39,81 @@ public static class ElevationSmoother
     }
 
     internal static double[] MedianFilter(double[] data, int windowSize)
+        => MedianFilterRange(data, 0, data.Length, windowSize);
+
+    internal static void MedianFilterRange(double[] data, int offset, int length,
+        int windowSize, double[] result)
     {
-        if (windowSize <= 1 || data.Length == 0)
+        if (windowSize <= 1 || length == 0)
+        {
+            Array.Copy(data, offset, result, offset, length);
+            return;
+        }
+
+        int half = windowSize / 2;
+        int maxWindow = windowSize + 1;
+        var window = ArrayPool<double>.Shared.Rent(maxWindow);
+        try
+        {
+            int end = offset + length;
+            for (int i = offset; i < end; i++)
+            {
+                int wStart = Math.Max(offset, i - half);
+                int wEnd = Math.Min(end - 1, i + half);
+                int wLen = wEnd - wStart + 1;
+                Array.Copy(data, wStart, window, 0, wLen);
+                Array.Sort(window, 0, wLen);
+                result[i] = window[wLen / 2];
+            }
+        }
+        finally
+        {
+            ArrayPool<double>.Shared.Return(window);
+        }
+    }
+
+    private static double[] MedianFilterRange(double[] data, int offset, int length, int windowSize)
+    {
+        if (windowSize <= 1 || length == 0)
             return data;
 
         var result = new double[data.Length];
-        int half = windowSize / 2;
-
-        for (int i = 0; i < data.Length; i++)
-        {
-            int start = Math.Max(0, i - half);
-            int end = Math.Min(data.Length - 1, i + half);
-            var window = new double[end - start + 1];
-            Array.Copy(data, start, window, 0, window.Length);
-            Array.Sort(window);
-            result[i] = window[window.Length / 2];
-        }
+        MedianFilterRange(data, offset, length, windowSize, result);
         return result;
     }
 
     internal static double[] MovingAverage(double[] data, int windowSize)
+        => MovingAverageRange(data, 0, data.Length, windowSize);
+
+    internal static void MovingAverageRange(double[] data, int offset, int length,
+        int windowSize, double[] result)
     {
-        if (windowSize <= 1 || data.Length == 0)
+        if (windowSize <= 1 || length == 0)
+        {
+            Array.Copy(data, offset, result, offset, length);
+            return;
+        }
+
+        int half = windowSize / 2;
+        int end = offset + length;
+        for (int i = offset; i < end; i++)
+        {
+            int wStart = Math.Max(offset, i - half);
+            int wEnd = Math.Min(end - 1, i + half);
+            double sum = 0;
+            for (int j = wStart; j <= wEnd; j++)
+                sum += data[j];
+            result[i] = sum / (wEnd - wStart + 1);
+        }
+    }
+
+    private static double[] MovingAverageRange(double[] data, int offset, int length, int windowSize)
+    {
+        if (windowSize <= 1 || length == 0)
             return data;
 
         var result = new double[data.Length];
-        int half = windowSize / 2;
-
-        for (int i = 0; i < data.Length; i++)
-        {
-            int start = Math.Max(0, i - half);
-            int end = Math.Min(data.Length - 1, i + half);
-            double sum = 0;
-            for (int j = start; j <= end; j++)
-                sum += data[j];
-            result[i] = sum / (end - start + 1);
-        }
+        MovingAverageRange(data, offset, length, windowSize, result);
         return result;
     }
 
@@ -121,14 +161,10 @@ public static class ElevationSmoother
         int start = 0;
         foreach (int brk in breaks)
         {
-            var segment = data[start..brk];
-            var smoothed = MovingAverage(segment, windowSize);
-            Array.Copy(smoothed, 0, result, start, smoothed.Length);
+            MovingAverageRange(data, start, brk - start, windowSize, result);
             start = brk;
         }
-        var last = data[start..];
-        var lastSmoothed = MovingAverage(last, windowSize);
-        Array.Copy(lastSmoothed, 0, result, start, lastSmoothed.Length);
+        MovingAverageRange(data, start, data.Length - start, windowSize, result);
         return result;
     }
 
@@ -143,14 +179,10 @@ public static class ElevationSmoother
         int start = 0;
         foreach (int brk in breaks)
         {
-            var segment = data[start..brk];
-            var filtered = MedianFilter(segment, windowSize);
-            Array.Copy(filtered, 0, result, start, filtered.Length);
+            MedianFilterRange(data, start, brk - start, windowSize, result);
             start = brk;
         }
-        var last = data[start..];
-        var lastFiltered = MedianFilter(last, windowSize);
-        Array.Copy(lastFiltered, 0, result, start, lastFiltered.Length);
+        MedianFilterRange(data, start, data.Length - start, windowSize, result);
         return result;
     }
 }

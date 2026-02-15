@@ -31,11 +31,17 @@ public sealed class HgtTile
     {
         int latInt = (int)Math.Floor(lat);
         int lonInt = (int)Math.Floor(lon);
-        string ns = latInt >= 0 ? "N" : "S";
-        string ew = lonInt >= 0 ? "E" : "W";
+        char ns = latInt >= 0 ? 'N' : 'S';
+        char ew = lonInt >= 0 ? 'E' : 'W';
         if (latInt < 0) latInt = -latInt;
         if (lonInt < 0) lonInt = -lonInt;
-        return $"{ns}{latInt:D2}{ew}{lonInt:D3}";
+        return string.Create(7, (ns, latInt, ew, lonInt), static (span, state) =>
+        {
+            span[0] = state.ns;
+            state.latInt.TryFormat(span[1..], out _, "D2");
+            span[3] = state.ew;
+            state.lonInt.TryFormat(span[4..], out _, "D3");
+        });
     }
 
     /// <summary>
@@ -54,8 +60,9 @@ public sealed class HgtTile
 
         byte[] rawBytes = File.ReadAllBytes(path);
         var data = new short[gridSize * gridSize];
+        ReadOnlySpan<byte> span = rawBytes;
         for (int i = 0; i < data.Length; i++)
-            data[i] = BinaryPrimitives.ReadInt16BigEndian(rawBytes.AsSpan(i * 2, 2));
+            data[i] = BinaryPrimitives.ReadInt16BigEndian(span.Slice(i * 2, 2));
 
         var (latOrigin, lonOrigin) = ParseFilename(Path.GetFileName(path));
 
@@ -105,14 +112,14 @@ public sealed class HgtTile
     /// </summary>
     public static (int Lat, int Lon) ParseFilename(string name)
     {
-        name = Path.GetFileNameWithoutExtension(name).ToUpperInvariant();
-        if (name.Length != 7)
+        ReadOnlySpan<char> stem = Path.GetFileNameWithoutExtension(name.AsSpan());
+        if (stem.Length != 7)
             throw new FormatException($"Invalid HGT filename: {name}");
 
-        char ns = name[0];
-        int lat = int.Parse(name[1..3]);
-        char ew = name[3];
-        int lon = int.Parse(name[4..7]);
+        char ns = char.ToUpperInvariant(stem[0]);
+        int lat = int.Parse(stem.Slice(1, 2));
+        char ew = char.ToUpperInvariant(stem[3]);
+        int lon = int.Parse(stem.Slice(4, 3));
 
         if (ns == 'S') lat = -lat;
         if (ew == 'W') lon = -lon;

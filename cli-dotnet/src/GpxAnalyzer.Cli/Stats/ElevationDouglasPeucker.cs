@@ -30,7 +30,8 @@ public static class ElevationDouglasPeucker
 
         // Build profile and simplify
         var profile = ProfileBuilder.Build(points);
-        var indices = DouglasPeuckerSimplify(profile, epsilon);
+        var indices = new List<int>();
+        DouglasPeuckerSimplify(profile, 0, profile.Length - 1, epsilon, indices);
 
         // D+/D- on simplified profile
         for (int i = 1; i < indices.Count; i++)
@@ -45,22 +46,27 @@ public static class ElevationDouglasPeucker
         return result;
     }
 
-    private static List<int> DouglasPeuckerSimplify(ProfilePoint[] profile, double epsilon)
+    private static void DouglasPeuckerSimplify(ProfilePoint[] profile,
+        int start, int end, double epsilon, List<int> result)
     {
-        if (profile.Length < 2)
+        if (end - start < 1)
         {
-            var all = new List<int>(profile.Length);
-            for (int i = 0; i < profile.Length; i++) all.Add(i);
-            return all;
+            // Single point or empty range — add all indices
+            for (int i = start; i <= end; i++)
+            {
+                if (result.Count == 0 || result[^1] != i)
+                    result.Add(i);
+            }
+            return;
         }
 
         // Find point with max perpendicular distance
         double maxDist = 0;
-        int maxIdx = 0;
-        var first = profile[0];
-        var last = profile[^1];
+        int maxIdx = start;
+        var first = profile[start];
+        var last = profile[end];
 
-        for (int i = 1; i < profile.Length - 1; i++)
+        for (int i = start + 1; i < end; i++)
         {
             double d = PerpendicularDistance(profile[i], first, last);
             if (d > maxDist)
@@ -72,23 +78,17 @@ public static class ElevationDouglasPeucker
 
         if (maxDist > epsilon)
         {
-            // Recursively simplify both halves
-            var leftProfile = profile[..(maxIdx + 1)];
-            var rightProfile = profile[maxIdx..];
-
-            var left = DouglasPeuckerSimplify(leftProfile, epsilon);
-            var right = DouglasPeuckerSimplify(rightProfile, epsilon);
-
-            // Combine, avoiding duplicate at split point
-            var result = new List<int>(left.Count + right.Count - 1);
-            result.AddRange(left);
-            for (int i = 1; i < right.Count; i++)
-                result.Add(right[i] + maxIdx);
-            return result;
+            // Recursively simplify both halves — no array allocation
+            DouglasPeuckerSimplify(profile, start, maxIdx, epsilon, result);
+            DouglasPeuckerSimplify(profile, maxIdx, end, epsilon, result);
         }
-
-        // All points within epsilon — keep only endpoints
-        return [0, profile.Length - 1];
+        else
+        {
+            // All points within epsilon — keep only endpoints
+            if (result.Count == 0 || result[^1] != start)
+                result.Add(start);
+            result.Add(end);
+        }
     }
 
     private static double PerpendicularDistance(ProfilePoint p, ProfilePoint a, ProfilePoint b)

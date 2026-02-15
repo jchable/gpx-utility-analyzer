@@ -68,10 +68,9 @@ public static class BiometricsCalculator
         int hrMax = 0;
         int hrMin = int.MaxValue;
 
-        foreach (var p in points)
+        for (int i = 0; i < points.Count; i++)
         {
-            if (p.HeartRate == null) continue;
-            int hr = p.HeartRate.Value;
+            if (points[i].HeartRate is not { } hr) continue;
             sum += hr;
             count++;
             if (hr > hrMax) hrMax = hr;
@@ -105,8 +104,8 @@ public static class BiometricsCalculator
         double maxF = maxHR;
         for (int i = 1; i < points.Count; i++)
         {
-            if (points[i].HeartRate == null) continue;
-            double hr = points[i].HeartRate.Value;
+            if (points[i].HeartRate is not { } hrVal) continue;
+            double hr = hrVal;
             double pct = (hr / maxF) * 100;
             var dt = points[i].Time - points[i - 1].Time;
             if (dt <= TimeSpan.Zero) continue;
@@ -138,10 +137,9 @@ public static class BiometricsCalculator
         int count = 0;
         int pMax = 0;
 
-        foreach (var p in points)
+        for (int i = 0; i < points.Count; i++)
         {
-            if (p.Power == null) continue;
-            int pw = p.Power.Value;
+            if (points[i].Power is not { } pw) continue;
             sum += pw;
             count++;
             if (pw > pMax) pMax = pw;
@@ -160,8 +158,9 @@ public static class BiometricsCalculator
     private static double ComputeNormalizedPower(List<TrackPoint> points)
     {
         var samples = new List<(DateTime T, double W)>();
-        foreach (var p in points)
+        for (int i = 0; i < points.Count; i++)
         {
+            var p = points[i];
             if (p.Power == null || p.Time == DateTime.MinValue) continue;
             samples.Add((p.Time, p.Power.Value));
         }
@@ -171,18 +170,18 @@ public static class BiometricsCalculator
         double fourthPowerSum = 0;
         int fourthPowerCount = 0;
 
+        // Sliding window O(n): left pointer advances monotonically
+        int left = 0;
+        double windowSum = 0;
         for (int i = 0; i < samples.Count; i++)
         {
-            double windowSum = 0;
-            int windowCount = 0;
-            for (int j = i; j >= 0; j--)
+            windowSum += samples[i].W;
+            while (samples[i].T - samples[left].T > window)
             {
-                if (samples[i].T - samples[j].T > window)
-                    break;
-                windowSum += samples[j].W;
-                windowCount++;
+                windowSum -= samples[left].W;
+                left++;
             }
-            if (windowCount == 0) continue;
+            int windowCount = i - left + 1;
             double avg = windowSum / windowCount;
             fourthPowerSum += Math.Pow(avg, 4);
             fourthPowerCount++;
@@ -197,10 +196,9 @@ public static class BiometricsCalculator
         double sum = 0;
         int count = 0, cMax = 0;
 
-        foreach (var p in points)
+        for (int i = 0; i < points.Count; i++)
         {
-            if (p.Cadence == null) continue;
-            int c = p.Cadence.Value;
+            if (points[i].Cadence is not { } c) continue;
             sum += c;
             count++;
             if (c > cMax) cMax = c;
@@ -217,10 +215,9 @@ public static class BiometricsCalculator
         double tMin = double.MaxValue;
         int count = 0;
 
-        foreach (var p in points)
+        for (int i = 0; i < points.Count; i++)
         {
-            if (p.Temperature == null) continue;
-            double temp = p.Temperature.Value;
+            if (points[i].Temperature is not { } temp) continue;
             sum += temp;
             count++;
             if (temp > tMax) tMax = temp;
