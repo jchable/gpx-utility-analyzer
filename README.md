@@ -18,6 +18,18 @@ gpx-analyzer analyze my-hike.gpx
 
 See [cli/README.md](cli/README.md) and [cli/docs/CLI_USAGE.md](cli/docs/CLI_USAGE.md) for complete documentation.
 
+### [cli-dotnet/](cli-dotnet/) — gpx-analyzer (.NET)
+
+.NET port of the Go CLI, producing identical output. Built as a Native AOT single-file executable with no runtime dependency. Same commands, flags and algorithms.
+
+```bash
+cd cli-dotnet
+dotnet build src/GpxAnalyzer.Cli/
+dotnet run --project src/GpxAnalyzer.Cli/ -- analyze my-hike.gpx
+```
+
+See [cli-dotnet/README.md](cli-dotnet/README.md) for build, publish and test instructions.
+
 ### [ai-analyzer/](ai-analyzer/) — gpx-ai-analyzer (.NET)
 
 .NET CLI tool using Microsoft.Extensions.AI to produce intelligent analysis reports (difficulty, key segments, recommendations) from GPX statistics. Supports multiple AI providers (Azure OpenAI, OpenAI, Anthropic, Mistral, Ollama, Gemini).
@@ -97,7 +109,8 @@ The API image is a 3-stage build: Go CLI binary → .NET publish → ASP.NET run
 
 | Layer | Technologies |
 |-------|-------------|
-| CLI | Go 1.25+, Cobra, SRTM/HGT |
+| CLI (Go) | Go 1.25+, Cobra, SRTM/HGT |
+| CLI (.NET) | .NET 9, Native AOT, System.CommandLine |
 | AI Analysis | .NET 9, Microsoft.Extensions.AI, multi-provider (Azure OpenAI, OpenAI, Anthropic, Mistral, Ollama, Gemini) |
 | API | ASP.NET Core 9, EF Core (SQLite/PostgreSQL), Background Services |
 | Frontend | React 19, TypeScript 5.9, Vite 7, TailwindCSS v4, MapLibre GL JS, Recharts, TanStack Query |
