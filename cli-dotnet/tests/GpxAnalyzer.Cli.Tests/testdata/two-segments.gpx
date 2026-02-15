@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.0" creator="test">
+  <trk>
+    <name>Two Segment Track</name>
+    <trkseg>
+      <trkpt lat="48.8566" lon="2.3522">
+        <ele>35.0</ele>
+        <time>2024-01-01T10:00:00Z</time>
+        <speed>1.5</speed>
+      </trkpt>
+      <trkpt lat="48.8580" lon="2.3540">
+        <ele>40.0</ele>
+        <time>2024-01-01T10:05:00Z</time>
+        <speed>1.5</speed>
+      </trkpt>
+    </trkseg>
+    <trkseg>
+      <trkpt lat="48.8600" lon="2.3560">
+        <ele>50.0</ele>
+        <time>2024-01-02T10:00:00Z</time>
+        <speed>1.4</speed>
+      </trkpt>
+      <trkpt lat="48.8620" lon="2.3580">
+        <ele>55.0</ele>
+        <time>2024-01-02T10:05:00Z</time>
+        <speed>1.5</speed>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>
