@@ -11,9 +11,9 @@ A toolkit for analyzing, processing and transforming GPX files.
 
 ## Tools
 
-### gpx-analyzer (CLI Go)
+### gpx-analyzer (.NET CLI)
 
-Command-line tool for analyzing GPX files: distance, elevation gain/loss,
+.NET CLI tool for analyzing GPX files: distance, elevation gain/loss,
 speed, stop detection, time-based splitting, file merging.
 Includes altitude correction using a digital elevation model (SRTM).
 
@@ -32,6 +32,6 @@ AI providers (Azure OpenAI, OpenAI, Anthropic, Ollama).
 The two tools work together:
 
 ```bash
-# Go statistics → .NET AI analysis
+# CLI statistics → AI analysis
 cli/gpx-analyzer analyze --format json track.gpx | ai-analyzer/gpx-ai-analyzer analyze --provider azure-openai
 ```

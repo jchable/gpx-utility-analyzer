@@ -5,7 +5,7 @@ const sidebars: SidebarsConfig = {
     'intro',
     {
       type: 'category',
-      label: 'gpx-analyzer (CLI Go)',
+      label: 'gpx-analyzer (.NET CLI)',
       collapsed: false,
       items: [
         'cli/index',

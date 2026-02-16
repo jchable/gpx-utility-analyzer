@@ -1,117 +1,72 @@
-# gpx-analyzer
+# gpx-analyzer (.NET)
 
-Go command-line tool for analyzing GPX files: distance, elevation gain/loss, speed, stop detection, biometrics (heart rate, power, cadence, temperature from GPX extensions), time-based splitting and file merging. Includes elevation smoothing and automatic correction using a digital elevation model (SRTM with auto-download of tiles).
+.NET CLI tool for analyzing GPX files: distance, elevation gain/loss, speed, stop detection, biometrics (heart rate, power, cadence, temperature from GPX extensions), time-based splitting, file merging. Includes altitude correction using a digital elevation model (SRTM). Built as a Native AOT single-file executable with no runtime dependency.
 
-## Installation
+## Prerequisites
 
-```bash
-go install github.com/jchable/gpx-utility-analyzer/cli@latest
-```
+- .NET 9.0 SDK or later
 
-Or from source:
+## Build
 
 ```bash
-git clone https://github.com/jchable/gpx-utility-analyzer.git
-cd gpx-utility-analyzer/cli
-go build -o gpx-analyzer .
+cd cli
+dotnet build src/GpxAnalyzer.Cli/
 ```
 
-## Quick Start
-
-**Analyze a GPX file:**
+## Run
 
 ```bash
-gpx-analyzer analyze my-hike.gpx
+dotnet run --project src/GpxAnalyzer.Cli/ -- analyze my-hike.gpx
+dotnet run --project src/GpxAnalyzer.Cli/ -- analyze my-hike.gpx --format json
+dotnet run --project src/GpxAnalyzer.Cli/ -- benchmark my-hike.gpx
 ```
 
-**Split a multi-day track into 24h segments:**
+## Publish (Native AOT single-file)
 
 ```bash
-gpx-analyzer split alps-traverse.gpx
+# Windows
+dotnet publish src/GpxAnalyzer.Cli/ -c Release -r win-x64
+
+# Linux
+dotnet publish src/GpxAnalyzer.Cli/ -c Release -r linux-x64
+
+# macOS
+dotnet publish src/GpxAnalyzer.Cli/ -c Release -r osx-arm64
 ```
 
-**Merge multiple files:**
+The output is a self-contained, single-file native executable (`gpx-analyzer` / `gpx-analyzer.exe`) with no .NET runtime dependency.
+
+## Tests
 
 ```bash
-gpx-analyzer merge day1.gpx day2.gpx day3.gpx -o full-hike.gpx
+dotnet test tests/GpxAnalyzer.Cli.Tests/
 ```
 
-**JSON output:**
+79 unit tests covering parsing, algorithms, formatting, mapping, and integration.
 
-```bash
-gpx-analyzer analyze my-hike.gpx --format json
+## Architecture
+
+```
+cli/
+├── src/GpxAnalyzer.Cli/           # CLI Exe (Native AOT, System.CommandLine)
+│   ├── Commands/                  # analyze, benchmark, split, merge
+│   └── Output/JsonContext.cs      # Source-generated JSON serialization (AOT)
+├── src/GpxAnalyzer.Cli.Core/     # Shared library (referenced by CLI Exe and API)
+│   ├── Gpx/                       # GPX parsing, model, extensions, writer
+│   ├── Stats/                     # Distance, elevation, speed, stops, biometrics
+│   ├── Elevation/                 # Elevation smoothing, track smoothing
+│   ├── Dem/                       # SRTM/HGT tile management, auto-download
+│   ├── Output/                    # JSON/text formatters, SummaryMapper
+│   ├── Benchmark/                 # Multi-configuration comparison
+│   ├── Split/                     # Time-based track splitting
+│   ├── Merge/                     # Multi-file GPX merging
+│   └── Input/                     # File resolution (glob support)
+└── tests/GpxAnalyzer.Cli.Tests/
+    └── testdata/                  # GPX test files
 ```
 
-**Heavy smoothing for noisy GPS:**
-
-```bash
-gpx-analyzer analyze trace.gpx --smoothing heavy
-```
-
-**Analyze a ride with biometrics and HR zones:**
-
-```bash
-gpx-analyzer analyze ride.gpx --max-hr 185 --preset cycling
-```
-
-**Constant-slope segment algorithm (best D+ with DEM):**
-
-```bash
-gpx-analyzer analyze pct.gpx --elevation-algo segments
-```
-
-**GPS track smoothing + Douglas-Peucker:**
-
-```bash
-gpx-analyzer analyze pct.gpx --track-smoothing medium --elevation-algo douglas-peucker
-```
-
-**Export GPX with corrected elevations:**
-
-```bash
-gpx-analyzer analyze my-hike.gpx --export ./processed/
-```
-
-**Export enriched GPX with computed metrics (speed, distance, grade, biometrics):**
-
-```bash
-gpx-analyzer analyze my-hike.gpx --export ./processed/ --enrich
-```
-
-**Benchmark a trace across multiple configurations:**
-
-```bash
-gpx-analyzer benchmark my-hike.gpx
-```
-
-**Full benchmark matrix with CSV export:**
-
-```bash
-gpx-analyzer benchmark my-hike.gpx --full -o results.csv -v
-```
-
-**Benchmark specific axes only:**
-
-```bash
-gpx-analyzer benchmark my-hike.gpx --vary preset,elev-algo
-```
-
-For complete command documentation, flags and advanced examples, see the individual command docs: [analyze](docs/analyze.md), [benchmark](docs/benchmark.md), [split](docs/split.md), [merge](docs/merge.md), [elevation](docs/elevation.md), [biometrics](docs/biometrics.md), [recipes](docs/recipes.md).
-
-## Development
-
-### Prerequisites
-
-- Go 1.22+
-
-### Build
-
-```bash
-go build -o gpx-analyzer .
-```
-
-### Tests
-
-```bash
-go test ./...
-```
+Key design choices:
+- **Native AOT compatible**: `System.Text.Json` source generators, no reflection
+- **Zero external dependencies** beyond `System.CommandLine`
+- **In-place mutation** of track points for performance
+- **Core library** shared with the Web API for in-process GPX analysis

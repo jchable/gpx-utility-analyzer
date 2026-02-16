@@ -15,7 +15,6 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - Database__Provider=sqlite
       - Database__ConnectionStrings__Sqlite=Data Source=/app/data/gpxanalyzer.db
-      - GpxCli__BinaryPath=/usr/local/bin/gpx-analyzer
       - Storage__GpxDirectory=/app/data/gpx
       # AI Provider — configure as needed
       - AiProvider__Name=openai

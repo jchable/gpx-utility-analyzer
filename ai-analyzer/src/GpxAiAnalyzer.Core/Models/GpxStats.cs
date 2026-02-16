@@ -3,8 +3,8 @@ namespace GpxAiAnalyzer.Core.Models;
 using System.Text.Json.Serialization;
 
 /// <summary>
-/// Deserialization model matching the Go CLI JSON output exactly.
-/// Contract defined in cli/internal/output/json.go (jsonSummary struct).
+/// Deserialization model matching the CLI JSON output exactly.
+/// Contract defined in cli/src/GpxAnalyzer.Cli.Core/Output/JsonModels.cs (JsonSummary class).
 /// </summary>
 public sealed class GpxStats
 {

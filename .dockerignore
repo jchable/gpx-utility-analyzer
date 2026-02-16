@@ -21,10 +21,6 @@ ui/client/dist
 **/bin
 **/obj
 
-# Go build artifacts
-cli/gpx-analyzer
-cli/gpx-analyzer.exe
-
 # Data
 ui/api/data
 

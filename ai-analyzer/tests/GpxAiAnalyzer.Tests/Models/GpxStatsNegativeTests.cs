@@ -196,7 +196,7 @@ public class GpxStatsNegativeTests
     [Fact]
     public void Deserialize_AllFieldsPresent_ContractVerification()
     {
-        // Verify the full JSON contract between Go CLI and .NET
+        // Verify the full JSON contract between CLI and .NET
         const string json = """
         {
             "filename": "test.gpx",

@@ -1,2 +1,0 @@
-Le plus proche des 96k de D+ (calcul 104 k D+) :
-gpx-analyzer analyze gpx/pct-karel-sabbe.gpx --elevation-algo segments --smoothing medium

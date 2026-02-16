@@ -21,7 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\ai-analyzer\src\GpxAiAnalyzer.Core\GpxAiAnalyzer.Core.csproj" />
-    <ProjectReference Include="..\..\cli-dotnet\src\GpxAnalyzer.Cli.Core\GpxAnalyzer.Cli.Core.csproj" />
+    <ProjectReference Include="..\..\cli\src\GpxAnalyzer.Cli.Core\GpxAnalyzer.Cli.Core.csproj" />
   </ItemGroup>
 
 </Project>

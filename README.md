@@ -6,36 +6,24 @@ A full-stack platform for analyzing, processing and visualizing GPX activity fil
 
 ## Projects
 
-### [cli/](cli/) — gpx-analyzer (Go)
+### [cli/](cli/) — gpx-analyzer (.NET)
 
-Go CLI tool for analyzing GPX files: distance, elevation gain/loss, speed, stop detection, biometrics (heart rate, power, cadence, temperature from GPX extensions), time-based splitting, file merging. Includes altitude correction using a digital elevation model (SRTM).
+.NET CLI tool for analyzing GPX files: distance, elevation gain/loss, speed, stop detection, biometrics (heart rate, power, cadence, temperature from GPX extensions), time-based splitting, file merging. Includes altitude correction using a digital elevation model (SRTM). Built as a Native AOT single-file executable with no runtime dependency.
 
 ```bash
 cd cli
-go build -o gpx-analyzer .
-gpx-analyzer analyze my-hike.gpx
-```
-
-See [cli/README.md](cli/README.md) and [cli/docs/CLI_USAGE.md](cli/docs/CLI_USAGE.md) for complete documentation.
-
-### [cli-dotnet/](cli-dotnet/) — gpx-analyzer (.NET)
-
-.NET port of the Go CLI, producing identical output. Built as a Native AOT single-file executable with no runtime dependency. Same commands, flags and algorithms.
-
-```bash
-cd cli-dotnet
 dotnet build src/GpxAnalyzer.Cli/
 dotnet run --project src/GpxAnalyzer.Cli/ -- analyze my-hike.gpx
 ```
 
-See [cli-dotnet/README.md](cli-dotnet/README.md) for build, publish and test instructions.
+See [cli/README.md](cli/README.md) for build, publish and test instructions.
 
 ### [ai-analyzer/](ai-analyzer/) — gpx-ai-analyzer (.NET)
 
 .NET CLI tool using Microsoft.Extensions.AI to produce intelligent analysis reports (difficulty, key segments, recommendations) from GPX statistics. Supports multiple AI providers (Azure OpenAI, OpenAI, Anthropic, Mistral, Ollama, Gemini).
 
 ```bash
-# Pipeline: Go statistics → .NET AI analysis
+# Pipeline: CLI statistics → .NET AI analysis
 cli/gpx-analyzer analyze --format json track.gpx | ai-analyzer/gpx-ai-analyzer analyze --provider azure-openai
 ```
 
@@ -47,11 +35,11 @@ Full-stack web application with a sport dashboard UI inspired by Garmin Connect.
 
 #### API — [ui/api/](ui/api/) (ASP.NET Core)
 
-REST API that orchestrates the Go CLI and AI analysis with background processing.
+REST API that orchestrates GPX analysis and AI reports with background processing.
 
 - **Activity management**: upload GPX, list/view/delete activities, download GPX files, re-analyze
 - **Dashboard**: aggregated statistics (total distance, elevation, time, activity breakdown)
-- **Background processing**: async pipeline via `Channel<Guid>` — Go CLI analysis then AI report generation
+- **Background processing**: async pipeline via `Channel<Guid>` — GPX analysis then AI report generation
 - **External integrations**: Strava / Garmin + webhook for automatic activity import
 - **Dual database**: SQLite (development) / PostgreSQL (production) via EF Core
 
@@ -103,14 +91,13 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
 # API on :5000, client on :80, PostgreSQL on :5432
 ```
 
-The API image is a 3-stage build: Go CLI binary → .NET publish → ASP.NET runtime.
+The API image is a 2-stage build: .NET publish → ASP.NET runtime.
 
 ## Tech Stack
 
 | Layer | Technologies |
 |-------|-------------|
-| CLI (Go) | Go 1.25+, Cobra, SRTM/HGT |
-| CLI (.NET) | .NET 9, Native AOT, System.CommandLine |
+| CLI | .NET 9, Native AOT, System.CommandLine, SRTM/HGT |
 | AI Analysis | .NET 9, Microsoft.Extensions.AI, multi-provider (Azure OpenAI, OpenAI, Anthropic, Mistral, Ollama, Gemini) |
 | API | ASP.NET Core 9, EF Core (SQLite/PostgreSQL), Background Services |
 | Frontend | React 19, TypeScript 5.9, Vite 7, TailwindCSS v4, MapLibre GL JS, Recharts, TanStack Query |

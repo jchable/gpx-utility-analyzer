@@ -1,6 +1,6 @@
 # gpx-ai-analyzer
 
-.NET CLI tool for AI-powered intelligent analysis of GPX tracks. Consumes JSON output from `gpx-analyzer` (Go CLI) and produces structured reports: difficulty, key segments, recommendations, effort estimation.
+.NET CLI tool for AI-powered intelligent analysis of GPX tracks. Consumes JSON output from `gpx-analyzer` (.NET CLI) and produces structured reports: difficulty, key segments, recommendations, effort estimation.
 
 ## Prerequisites
 
@@ -21,7 +21,7 @@ dotnet test tests/GpxAiAnalyzer.Tests/
 
 ## Usage
 
-### Pipeline with the Go CLI
+### Pipeline with the CLI
 
 ```bash
 gpx-analyzer analyze --format json my-hike.gpx | gpx-ai-analyzer analyze --provider openai
