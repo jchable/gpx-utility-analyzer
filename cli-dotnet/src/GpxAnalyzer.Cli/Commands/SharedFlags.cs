@@ -1,8 +1,8 @@
 using System.CommandLine;
 using System.CommandLine.Invocation;
-using GpxAnalyzer.Cli.Dem;
-using GpxAnalyzer.Cli.Elevation;
-using GpxAnalyzer.Cli.Stats;
+using GpxAnalyzer.Cli.Core.Dem;
+using GpxAnalyzer.Cli.Core.Elevation;
+using GpxAnalyzer.Cli.Core.Stats;
 
 namespace GpxAnalyzer.Cli.Commands;
 
@@ -72,7 +72,7 @@ internal static class SharedFlags
         if (!ElevationAlgo.IsValid(elevAlgo))
         {
             Console.Error.WriteLine($"Warning: unknown elevation algo '{elevAlgo}', using threshold");
-            elevAlgo = Stats.ElevationAlgo.Threshold;
+            elevAlgo = ElevationAlgo.Threshold;
         }
 
         if (!TrackSmoother.IsValidLevel(trackSmooth))

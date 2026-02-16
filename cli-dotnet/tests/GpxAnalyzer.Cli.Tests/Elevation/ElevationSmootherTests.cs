@@ -1,5 +1,5 @@
-using GpxAnalyzer.Cli.Elevation;
-using GpxAnalyzer.Cli.Gpx;
+using GpxAnalyzer.Cli.Core.Elevation;
+using GpxAnalyzer.Cli.Core.Gpx;
 
 namespace GpxAnalyzer.Cli.Tests.Elevation;
 

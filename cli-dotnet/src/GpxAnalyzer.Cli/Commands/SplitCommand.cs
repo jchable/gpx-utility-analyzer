@@ -1,9 +1,9 @@
 using System.CommandLine;
 using System.CommandLine.Invocation;
-using GpxAnalyzer.Cli.Gpx;
-using GpxAnalyzer.Cli.Output;
-using GpxAnalyzer.Cli.Split;
-using GpxAnalyzer.Cli.Stats;
+using GpxAnalyzer.Cli.Core.Gpx;
+using GpxAnalyzer.Cli.Core.Output;
+using GpxAnalyzer.Cli.Core.Split;
+using GpxAnalyzer.Cli.Core.Stats;
 
 namespace GpxAnalyzer.Cli.Commands;
 

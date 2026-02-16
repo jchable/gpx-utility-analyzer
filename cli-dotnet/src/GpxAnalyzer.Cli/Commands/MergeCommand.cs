@@ -1,10 +1,10 @@
 using System.CommandLine;
 using System.CommandLine.Invocation;
-using GpxAnalyzer.Cli.Gpx;
-using GpxAnalyzer.Cli.Input;
-using GpxAnalyzer.Cli.Merge;
-using GpxAnalyzer.Cli.Output;
-using GpxAnalyzer.Cli.Stats;
+using GpxAnalyzer.Cli.Core.Gpx;
+using GpxAnalyzer.Cli.Core.Input;
+using GpxAnalyzer.Cli.Core.Merge;
+using GpxAnalyzer.Cli.Core.Output;
+using GpxAnalyzer.Cli.Core.Stats;
 
 namespace GpxAnalyzer.Cli.Commands;
 

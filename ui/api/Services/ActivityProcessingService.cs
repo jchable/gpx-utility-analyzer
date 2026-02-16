@@ -8,7 +8,7 @@ using GpxAnalyzer.Api.Entities;
 public class ActivityProcessingService
 {
     private readonly GpxStorageService _storage;
-    private readonly GpxCliService _cliService;
+    private readonly GpxAnalysisService _analysisService;
     private readonly AiAnalysisService _aiService;
     private readonly ProfileComputationService _profileService;
     private readonly IServiceScopeFactory _scopeFactory;
@@ -16,14 +16,14 @@ public class ActivityProcessingService
 
     public ActivityProcessingService(
         GpxStorageService storage,
-        GpxCliService cliService,
+        GpxAnalysisService analysisService,
         AiAnalysisService aiService,
         ProfileComputationService profileService,
         IServiceScopeFactory scopeFactory,
         ILogger<ActivityProcessingService> logger)
     {
         _storage = storage;
-        _cliService = cliService;
+        _analysisService = analysisService;
         _aiService = aiService;
         _profileService = profileService;
         _scopeFactory = scopeFactory;
@@ -49,7 +49,7 @@ public class ActivityProcessingService
 
         try
         {
-            // Step 1: Run Go CLI analysis
+            // Step 1: Run GPX analysis
             activity.Status = ProcessingStatus.Analyzing;
             activity.UpdatedAt = DateTime.UtcNow;
             await db.SaveChangesAsync(ct);
@@ -69,17 +69,17 @@ public class ActivityProcessingService
                 gpxToAnalyze = _storage.GetFullPath(activity.GpxFilePath);
             }
 
-            _logger.LogInformation("[{Id}] Step 1/2: Running Go CLI analysis on {Path}", activityId, activity.GpxFilePath);
+            _logger.LogInformation("[{Id}] Step 1/2: Running GPX analysis on {Path}", activityId, activity.GpxFilePath);
 
             // Create temp export directory for the processed GPX
             var exportDir = Path.Combine(Path.GetTempPath(), $"gpx-export-{Guid.NewGuid()}");
             Directory.CreateDirectory(exportDir);
 
             var stepSw = Stopwatch.StartNew();
-            var stats = await _cliService.AnalyzeAsync(gpxToAnalyze, exportDir, ct);
+            var stats = await _analysisService.AnalyzeAsync(gpxToAnalyze, exportDir, ct);
             stepSw.Stop();
 
-            _logger.LogInformation("[{Id}] Go CLI completed in {Elapsed:F1}s — {Distance:F1} km, D+{Gain:F0}m, D-{Loss:F0}m, moving {MovingTime}",
+            _logger.LogInformation("[{Id}] GPX analysis completed in {Elapsed:F1}s — {Distance:F1} km, D+{Gain:F0}m, D-{Loss:F0}m, moving {MovingTime}",
                 activityId, stepSw.Elapsed.TotalSeconds,
                 stats.TotalDistanceKm, stats.ElevationGainM, stats.ElevationLossM,
                 TimeSpan.FromSeconds(stats.MovingTime.Seconds).ToString(@"hh\:mm\:ss"));

@@ -1,4 +1,4 @@
-using GpxAnalyzer.Cli.Output;
+using GpxAnalyzer.Cli.Core.Output;
 
 namespace GpxAnalyzer.Cli.Tests.Output;
 

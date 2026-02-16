@@ -1,5 +1,5 @@
-using GpxAnalyzer.Cli.Gpx;
-using GpxAnalyzer.Cli.Stats;
+using GpxAnalyzer.Cli.Core.Gpx;
+using GpxAnalyzer.Cli.Core.Stats;
 
 namespace GpxAnalyzer.Cli.Tests.Stats;
 

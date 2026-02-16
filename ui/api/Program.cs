@@ -49,7 +49,7 @@ builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = Compre
 
 // Services
 builder.Services.AddSingleton<GpxStorageService>();
-builder.Services.AddSingleton<GpxCliService>();
+builder.Services.AddSingleton<GpxAnalysisService>();
 builder.Services.AddSingleton<AiAnalysisService>();
 builder.Services.AddSingleton<ProfileComputationService>();
 builder.Services.AddSingleton<ActivityProcessingService>();

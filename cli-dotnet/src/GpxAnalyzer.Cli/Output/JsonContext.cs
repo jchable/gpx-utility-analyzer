@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using GpxAnalyzer.Cli.Core.Output;
 
 namespace GpxAnalyzer.Cli.Output;
 
