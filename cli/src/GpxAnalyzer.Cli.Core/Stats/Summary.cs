@@ -37,4 +37,7 @@ public sealed class Summary
 
     // Biometrics
     public BiometricsResult Biometrics { get; set; } = new();
+
+    // Effort metrics
+    public EffortMetrics Effort { get; set; } = new();
 }

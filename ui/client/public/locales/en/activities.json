@@ -36,7 +36,9 @@
     "aiProcessing": "AI is processing your activity...",
     "autoRefresh": "This page will refresh automatically.",
     "movingRatio": "Moving %",
-    "elevationChange": "Elevation"
+    "elevationChange": "Elevation",
+    "elevationGain": "Elevation D+",
+    "elevationLoss": "Elevation D−"
   },
   "aiReport": {
     "title": "AI Analysis Report",
@@ -114,5 +116,31 @@
     "notAvailable": "N/A",
     "fastest": "Fastest",
     "slowest": "Slowest"
+  },
+  "effort": {
+    "title": "Effort & Comparison",
+    "ke": "Kilomètre-Effort",
+    "itraPoints": "ITRA Points",
+    "efd": "Equivalent Flat Dist.",
+    "terrainDifficulty": "Terrain Difficulty",
+    "timeEstimates": "Estimated Times",
+    "performanceRatios": "Performance Ratios",
+    "vsNaismith": "vs Naismith",
+    "vsTobler": "vs Tobler",
+    "ratioHelp": "< 1.0 = faster than model, 1.0 = matching, > 1.0 = slower",
+    "terrainDetails": "Terrain Details",
+    "avgGrade": "Avg Grade",
+    "maxGrade": "Max Grade",
+    "steepRatio": "Steep Sections",
+    "elevPerKm": "D+ / km"
+  },
+  "predict": {
+    "title": "Route Planner",
+    "description": "Upload a GPX route to get effort estimates without creating an activity.",
+    "dropZone": "Drop a GPX file here or click to browse",
+    "dropActive": "Drop the file!",
+    "hint": "GPX files with or without timestamps are supported.",
+    "analyzing": "Analyzing route...",
+    "results": "Analysis Results"
   }
 }

@@ -16,12 +16,21 @@ public class ActivitiesController : ControllerBase
     private readonly AppDbContext _db;
     private readonly GpxStorageService _storage;
     private readonly Channel<Guid> _processingChannel;
+    private readonly GpxAnalysisService _analysisService;
+    private readonly ProfileComputationService _profileService;
 
-    public ActivitiesController(AppDbContext db, GpxStorageService storage, Channel<Guid> processingChannel)
+    public ActivitiesController(
+        AppDbContext db,
+        GpxStorageService storage,
+        Channel<Guid> processingChannel,
+        GpxAnalysisService analysisService,
+        ProfileComputationService profileService)
     {
         _db = db;
         _storage = storage;
         _processingChannel = processingChannel;
+        _analysisService = analysisService;
+        _profileService = profileService;
     }
 
     [HttpGet]
@@ -211,5 +220,61 @@ public class ActivitiesController : ControllerBase
         await _processingChannel.Writer.WriteAsync(id);
 
         return Accepted();
+    }
+
+    /// <summary>
+    /// Ephemeral route prediction — analyzes a GPX file without storing it.
+    /// Returns stats, effort metrics, profile, and track GeoJSON.
+    /// </summary>
+    [HttpPost("predict")]
+    public async Task<IActionResult> PredictRoute(IFormFile file)
+    {
+        if (file is null || file.Length == 0)
+            return BadRequest(new { code = "NO_FILE_PROVIDED" });
+
+        if (!file.FileName.EndsWith(".gpx", StringComparison.OrdinalIgnoreCase))
+            return BadRequest(new { code = "INVALID_FILE_TYPE" });
+
+        // Save to temp file
+        var tempDir = Path.Combine(Path.GetTempPath(), "gpx-predict");
+        Directory.CreateDirectory(tempDir);
+        var tempFile = Path.Combine(tempDir, $"{Guid.NewGuid()}.gpx");
+        var exportDir = Path.Combine(tempDir, "export");
+
+        try
+        {
+            using (var stream = System.IO.File.Create(tempFile))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            // Analyze with enriched export
+            var stats = await _analysisService.AnalyzeAsync(tempFile, exportDir);
+
+            // Compute profile from enriched GPX
+            var enrichedFile = Directory.GetFiles(exportDir, "*_processed.gpx").FirstOrDefault();
+            string? profileJson = null;
+            string? trackGeoJson = null;
+
+            if (enrichedFile != null)
+            {
+                var (pJson, tJson, _) = _profileService.ComputeFromEnrichedGpx(enrichedFile);
+                profileJson = pJson;
+                trackGeoJson = tJson;
+            }
+
+            return Ok(new
+            {
+                stats,
+                profile = profileJson != null ? JsonSerializer.Deserialize<object>(profileJson) : null,
+                track = trackGeoJson != null ? JsonSerializer.Deserialize<object>(trackGeoJson) : null,
+            });
+        }
+        finally
+        {
+            // Cleanup temp files
+            if (System.IO.File.Exists(tempFile)) System.IO.File.Delete(tempFile);
+            if (Directory.Exists(exportDir)) Directory.Delete(exportDir, true);
+        }
     }
 }

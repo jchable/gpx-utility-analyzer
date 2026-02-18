@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Xml.Linq;
+using GpxAnalyzer.Cli.Core.Stats;
 
 public class ProfileComputationService
 {
@@ -15,7 +16,7 @@ public class ProfileComputationService
     private static readonly XNamespace GpxtpxNsV2 = "http://www.garmin.com/xmlschemas/TrackPointExtension/v2";
 
     // Minetti (2002) metabolic cost at zero grade = 3.6 J/kg/m
-    private static readonly double CFlat = MinettiCost(0);
+    private static readonly double CFlat = MinettiModel.CostFlat;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -127,12 +128,15 @@ public class ProfileComputationService
 
         // Compute GAP then smooth
         var rawGap = new double[n];
+        var rawTobler = new double[n];
         for (var i = 0; i < n; i++)
         {
-            var cost = MinettiCost(smoothGrade[i]);
+            var cost = MinettiModel.Cost(smoothGrade[i]);
             rawGap[i] = smoothSpeed[i] * (cost / CFlat);
+            rawTobler[i] = EffortCalculator.ToblerSpeed(smoothGrade[i]); // km/h
         }
         var smoothGap = RollingAverage(rawGap, effectiveWindow);
+        var smoothTobler = RollingAverage(rawTobler, effectiveWindow);
 
         // Elapsed time
         var startTime = points[0].Time;
@@ -156,6 +160,7 @@ public class ProfileComputationService
                 HeartRate = points[i].HeartRate,
                 Cadence = points[i].Cadence,
                 Power = points[i].Power,
+                ToblerSpeed = Math.Round(smoothTobler[i], 1),
             };
         }
 
@@ -179,24 +184,6 @@ public class ProfileComputationService
         };
 
         return JsonSerializer.Serialize(geoJson);
-    }
-
-    // ── Minetti (2002) metabolic cost model ──
-
-    /// <summary>
-    /// Metabolic cost C(i) in J/kg/m, where i is grade as a fraction.
-    /// Minetti et al. (2002) polynomial.
-    /// </summary>
-    private static double MinettiCost(double i)
-    {
-        var g = Math.Clamp(i, -0.45, 0.45);
-        var cost = 155.4 * Math.Pow(g, 5)
-                 - 30.4 * Math.Pow(g, 4)
-                 - 43.3 * Math.Pow(g, 3)
-                 + 46.3 * Math.Pow(g, 2)
-                 + 19.5 * g
-                 + 3.6;
-        return Math.Max(cost, 0.1);
     }
 
     // ── Smoothing & downsampling ──
@@ -431,6 +418,7 @@ public class ProfilePoint
     public int? HeartRate { get; set; }
     public int? Cadence { get; set; }
     public int? Power { get; set; }
+    public double? ToblerSpeed { get; set; }
 }
 
 public class SplitsData

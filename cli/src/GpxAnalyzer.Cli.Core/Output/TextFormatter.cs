@@ -13,6 +13,7 @@ public sealed class TextFormatter : IFormatter
         PrintGeneralTable(w, s);
         PrintDistanceTable(w, s);
         PrintElevationTable(w, s);
+        PrintEffortTable(w, s);
         PrintStopTable(w, s, cfg);
         PrintBiometricsTable(w, s);
     }
@@ -64,6 +65,26 @@ public sealed class TextFormatter : IFormatter
             new[] { "Max Elevation", FormatHelpers.FormatElevation(s.Elevation.Max) },
             new[] { "Min Elevation", FormatHelpers.FormatElevation(s.Elevation.Min) },
         });
+    }
+
+    private static void PrintEffortTable(TextWriter w, Summary s)
+    {
+        var e = s.Effort;
+        w.WriteLine();
+        w.WriteLine("Effort Metrics");
+        var rows = new List<string[]>
+        {
+            new[] { "Kilometre-Effort (KE)", e.KilometreEffort.ToString("F1", CultureInfo.InvariantCulture) + " KE" },
+            new[] { "ITRA Points", $"{e.ItraPoints.ToString("F1", CultureInfo.InvariantCulture)} ({e.ItraCategory})" },
+            new[] { "Equivalent Flat Distance", e.EquivalentFlatDistanceKm.ToString("F1", CultureInfo.InvariantCulture) + " km" },
+            new[] { "Naismith Time", FormatHelpers.FormatDuration(e.NaismithTime) },
+            new[] { "Tobler Time", FormatHelpers.FormatDuration(e.ToblerTime) },
+            new[] { "Munter Time", FormatHelpers.FormatDuration(e.MunterTime) },
+            new[] { "Performance vs Naismith", e.PerformanceRatioNaismith.ToString("F2", CultureInfo.InvariantCulture) + "x" },
+            new[] { "Performance vs Tobler", e.PerformanceRatioTobler.ToString("F2", CultureInfo.InvariantCulture) + "x" },
+            new[] { "Terrain Difficulty", $"{e.TerrainDifficulty.Score.ToString("F1", CultureInfo.InvariantCulture)}/10 ({e.TerrainDifficulty.Grade})" },
+        };
+        RenderTable(w, rows);
     }
 
     private static void PrintStopTable(TextWriter w, Summary s, StopConfig cfg)

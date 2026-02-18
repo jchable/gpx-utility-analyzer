@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Activity,
   Upload,
+  Map,
   Link,
   Settings,
   ChevronLeft,
@@ -16,6 +17,7 @@ const navItems = [
   { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard },
   { to: '/activities', labelKey: 'nav.activities', icon: Activity },
   { to: '/upload', labelKey: 'nav.upload', icon: Upload },
+  { to: '/predict', labelKey: 'nav.predict', icon: Map },
   { to: '/integrations', labelKey: 'nav.integrations', icon: Link },
   { to: '/settings', labelKey: 'nav.settings', icon: Settings },
 ];

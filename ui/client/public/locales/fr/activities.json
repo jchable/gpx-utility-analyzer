@@ -36,7 +36,9 @@
     "aiProcessing": "L'IA analyse votre activité...",
     "autoRefresh": "Cette page se rafraîchira automatiquement.",
     "movingRatio": "% en mouvement",
-    "elevationChange": "Dénivelé"
+    "elevationChange": "Dénivelé",
+    "elevationGain": "Dénivelé D+",
+    "elevationLoss": "Dénivelé D−"
   },
   "aiReport": {
     "title": "Rapport d'analyse IA",
@@ -114,5 +116,31 @@
     "notAvailable": "N/D",
     "fastest": "Plus rapide",
     "slowest": "Plus lent"
+  },
+  "effort": {
+    "title": "Effort & Comparaison",
+    "ke": "Kilomètre-Effort",
+    "itraPoints": "Points ITRA",
+    "efd": "Distance équivalente plate",
+    "terrainDifficulty": "Difficulté terrain",
+    "timeEstimates": "Temps estimés",
+    "performanceRatios": "Ratios de performance",
+    "vsNaismith": "vs Naismith",
+    "vsTobler": "vs Tobler",
+    "ratioHelp": "< 1.0 = plus rapide que le modèle, 1.0 = conforme, > 1.0 = plus lent",
+    "terrainDetails": "Détails du terrain",
+    "avgGrade": "Pente moy.",
+    "maxGrade": "Pente max",
+    "steepRatio": "Sections raides",
+    "elevPerKm": "D+ / km"
+  },
+  "predict": {
+    "title": "Planificateur de parcours",
+    "description": "Importez une trace GPX pour obtenir des estimations d'effort sans créer d'activité.",
+    "dropZone": "Déposez un fichier GPX ici ou cliquez pour parcourir",
+    "dropActive": "Déposez le fichier !",
+    "hint": "Fichiers GPX avec ou sans horodatage acceptés.",
+    "analyzing": "Analyse du parcours...",
+    "results": "Résultats de l'analyse"
   }
 }

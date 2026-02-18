@@ -97,6 +97,9 @@ public static class ComputePipeline
         // Step 14: Biometrics
         s.Biometrics = BiometricsCalculator.Compute(points, cfg.BiometricsCfg);
 
+        // Step 15: Effort metrics
+        s.Effort = EffortCalculator.ComputeAll(points, s);
+
         return (s, points);
     }
 }

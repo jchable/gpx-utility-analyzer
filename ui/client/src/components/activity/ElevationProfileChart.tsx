@@ -29,6 +29,7 @@ const COLORS = {
   gap: '#00ff88',
   hr: '#ef4444',
   power: '#eab308',
+  tobler: '#9333ea',
   text: '#a0a0b0',
   grid: 'rgba(255,255,255,0.05)',
   axisLine: 'rgba(255,255,255,0.08)',
@@ -59,6 +60,7 @@ export default function ElevationProfileChart({
   const { t: tc } = useTranslation();
   const [showSpeed, setShowSpeed] = useState(true);
   const [showGap, setShowGap] = useState(true);
+  const [showTobler, setShowTobler] = useState(false);
   const [xMode, setXMode] = useState<'distance' | 'time'>('distance');
   const [overlayMode, setOverlayMode] = useState<OverlayMode>('speed');
 
@@ -67,6 +69,7 @@ export default function ElevationProfileChart({
   const hasSpeed = useMemo(() => data.some((d) => d.speed > 0), [data]);
   const hasHR = useMemo(() => data.some((d) => d.heartRate != null && d.heartRate > 0), [data]);
   const hasPower = useMemo(() => data.some((d) => d.power != null && d.power > 0), [data]);
+  const hasTobler = useMemo(() => data.some((d) => d.toblerSpeed != null && d.toblerSpeed > 0), [data]);
 
   const elevDomain = useMemo(() => {
     if (data.length === 0) return [0, 100];
@@ -79,9 +82,11 @@ export default function ElevationProfileChart({
 
   const speedDomain = useMemo(() => {
     if (data.length === 0 || !hasSpeed) return [0, 20];
-    const maxVal = Math.max(...data.map((d) => d.speed), ...data.map((d) => d.gap));
+    const vals = [...data.map((d) => d.speed), ...data.map((d) => d.gap)];
+    if (hasTobler) vals.push(...data.filter((d) => d.toblerSpeed != null).map((d) => d.toblerSpeed!));
+    const maxVal = Math.max(...vals);
     return [0, Math.ceil(maxVal * 1.1)];
-  }, [data, hasSpeed]);
+  }, [data, hasSpeed, hasTobler]);
 
   const hrDomain = useMemo(() => {
     if (data.length === 0 || !hasHR) return [60, 200];
@@ -239,6 +244,15 @@ export default function ElevationProfileChart({
                 dashed={true}
                 onClick={() => setShowGap((v) => !v)}
               />
+              {hasTobler && (
+                <LegendItem
+                  label="Tobler"
+                  color={COLORS.tobler}
+                  active={showTobler}
+                  dashed={true}
+                  onClick={() => setShowTobler((v) => !v)}
+                />
+              )}
             </>
           )}
           {overlayMode === 'hr' && hasHR && (
@@ -335,6 +349,7 @@ export default function ElevationProfileChart({
                 grade: [`${value}%`, t('elevation.grade')],
                 heartRate: [`${value} bpm`, t('elevation.overlayHR')],
                 power: [`${value} W`, t('elevation.overlayPower')],
+                toblerSpeed: [`${value} km/h`, 'Tobler'],
               };
               return labels[name as string] ?? [`${value}`, name];
             }}
@@ -379,6 +394,22 @@ export default function ElevationProfileChart({
               activeDot={false}
               isAnimationActive={false}
               name="gap"
+            />
+          )}
+
+          {overlayMode === 'speed' && hasTobler && showTobler && (
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="toblerSpeed"
+              stroke={COLORS.tobler}
+              strokeWidth={1.5}
+              strokeDasharray="6 3"
+              dot={false}
+              activeDot={false}
+              isAnimationActive={false}
+              name="toblerSpeed"
+              connectNulls
             />
           )}
 

@@ -60,6 +60,7 @@ export interface GpxStats {
   power?: PowerStats;
   cadence?: CadenceStats;
   temperature?: TemperatureStats;
+  effort?: EffortStats;
 }
 
 export interface DurationValue {
@@ -127,6 +128,35 @@ export interface TrackReport {
   };
 }
 
+export interface EffortStats {
+  naismith_time: DurationValue;
+  tobler_time: DurationValue;
+  munter_time: DurationValue;
+  performance_ratio_naismith: number;
+  performance_ratio_tobler: number;
+  kilometre_effort: number;
+  itra_points: number;
+  itra_category: string;
+  equivalent_flat_distance_km: number;
+  terrain_difficulty: TerrainDifficulty;
+}
+
+export interface TerrainDifficulty {
+  score: number;
+  grade: string;
+  avg_grade_percent: number;
+  max_grade_percent: number;
+  grade_variance: number;
+  steep_section_ratio: number;
+  elevation_per_km: number;
+}
+
+export interface PredictResult {
+  stats: GpxStats;
+  profile: ProfilePoint[] | null;
+  track: { type: string; coordinates: number[][] } | null;
+}
+
 export interface ProfilePoint {
   distance: number;     // km cumulative
   elevation: number;    // metres
@@ -137,6 +167,7 @@ export interface ProfilePoint {
   heartRate?: number;   // bpm
   cadence?: number;     // rpm
   power?: number;       // watts
+  toblerSpeed?: number; // km/h theoretical Tobler speed
 }
 
 export interface DashboardSummary {

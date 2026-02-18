@@ -42,6 +42,7 @@ public static class SummaryMapper
             Power = MapPower(s.Biometrics.Power),
             Cadence = MapCadence(s.Biometrics.Cadence),
             Temperature = MapTemperature(s.Biometrics.Temperature),
+            Effort = MapEffort(s.Effort),
         };
     }
 
@@ -100,4 +101,27 @@ public static class SummaryMapper
         if (temp == null) return null;
         return new TemperatureStats { AvgCelsius = temp.Avg, MinCelsius = temp.Min, MaxCelsius = temp.Max };
     }
+
+    private static EffortStatsModel MapEffort(EffortMetrics e) => new()
+    {
+        NaismithTime = ToDuration(e.NaismithTime),
+        ToblerTime = ToDuration(e.ToblerTime),
+        MunterTime = ToDuration(e.MunterTime),
+        PerformanceRatioNaismith = e.PerformanceRatioNaismith,
+        PerformanceRatioTobler = e.PerformanceRatioTobler,
+        KilometreEffort = e.KilometreEffort,
+        ItraPoints = e.ItraPoints,
+        ItraCategory = e.ItraCategory,
+        EquivalentFlatDistanceKm = e.EquivalentFlatDistanceKm,
+        TerrainDifficulty = new TerrainDifficultyModel
+        {
+            Score = e.TerrainDifficulty.Score,
+            Grade = e.TerrainDifficulty.Grade,
+            AvgGradePercent = e.TerrainDifficulty.AvgGradePercent,
+            MaxGradePercent = e.TerrainDifficulty.MaxGradePercent,
+            GradeVariance = e.TerrainDifficulty.GradeVariance,
+            SteepSectionRatio = e.TerrainDifficulty.SteepSectionRatio,
+            ElevationPerKm = e.TerrainDifficulty.ElevationPerKm,
+        },
+    };
 }

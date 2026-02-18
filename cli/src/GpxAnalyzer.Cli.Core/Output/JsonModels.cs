@@ -103,6 +103,10 @@ public sealed class JsonSummary
     [JsonPropertyName("temperature")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public JsonTemperature? Temperature { get; init; }
+
+    [JsonPropertyName("effort")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public JsonEffortMetrics? Effort { get; init; }
 }
 
 public sealed class JsonDuration
@@ -194,4 +198,61 @@ public sealed class JsonTemperature
 
     [JsonPropertyName("max_celsius")]
     public double MaxCelsius { get; init; }
+}
+
+public sealed class JsonEffortMetrics
+{
+    [JsonPropertyName("naismith_time")]
+    public JsonDuration NaismithTime { get; init; } = new();
+
+    [JsonPropertyName("tobler_time")]
+    public JsonDuration ToblerTime { get; init; } = new();
+
+    [JsonPropertyName("munter_time")]
+    public JsonDuration MunterTime { get; init; } = new();
+
+    [JsonPropertyName("performance_ratio_naismith")]
+    public double PerformanceRatioNaismith { get; init; }
+
+    [JsonPropertyName("performance_ratio_tobler")]
+    public double PerformanceRatioTobler { get; init; }
+
+    [JsonPropertyName("kilometre_effort")]
+    public double KilometreEffort { get; init; }
+
+    [JsonPropertyName("itra_points")]
+    public double ItraPoints { get; init; }
+
+    [JsonPropertyName("itra_category")]
+    public string ItraCategory { get; init; } = "";
+
+    [JsonPropertyName("equivalent_flat_distance_km")]
+    public double EquivalentFlatDistanceKm { get; init; }
+
+    [JsonPropertyName("terrain_difficulty")]
+    public JsonTerrainDifficulty TerrainDifficulty { get; init; } = new();
+}
+
+public sealed class JsonTerrainDifficulty
+{
+    [JsonPropertyName("score")]
+    public double Score { get; init; }
+
+    [JsonPropertyName("grade")]
+    public string Grade { get; init; } = "";
+
+    [JsonPropertyName("avg_grade_percent")]
+    public double AvgGradePercent { get; init; }
+
+    [JsonPropertyName("max_grade_percent")]
+    public double MaxGradePercent { get; init; }
+
+    [JsonPropertyName("grade_variance")]
+    public double GradeVariance { get; init; }
+
+    [JsonPropertyName("steep_section_ratio")]
+    public double SteepSectionRatio { get; init; }
+
+    [JsonPropertyName("elevation_per_km")]
+    public double ElevationPerKm { get; init; }
 }

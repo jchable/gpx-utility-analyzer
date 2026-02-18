@@ -1,5 +1,5 @@
 import i18n from '../i18n';
-import type { ActivityListItem, ActivityDetail, DashboardSummary, IntegrationInfo, AppSettings, ProfilePoint, SplitsData } from '../types/activity';
+import type { ActivityListItem, ActivityDetail, DashboardSummary, IntegrationInfo, AppSettings, ProfilePoint, SplitsData, PredictResult } from '../types/activity';
 
 const BASE = '/api';
 
@@ -72,6 +72,26 @@ export const api = {
   getSplits: (id: string) => fetchJson<SplitsData>(`/activities/${id}/splits`),
 
   getGpxUrl: (id: string) => `${BASE}/activities/${id}/gpx`,
+
+  predictRoute: async (file: File): Promise<PredictResult> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`${BASE}/activities/predict`, {
+      method: 'POST',
+      headers: langHeaders(),
+      body: formData,
+    });
+    if (!res.ok) {
+      let code = '';
+      try {
+        const json = await res.json();
+        code = json.code || '';
+      } catch { /* not JSON */ }
+      if (code) throw new Error(code);
+      throw new Error(`Predict failed: ${res.status}`);
+    }
+    return res.json();
+  },
 
   // Integrations
   getIntegrations: () => fetchJson<IntegrationInfo[]>('/integrations'),

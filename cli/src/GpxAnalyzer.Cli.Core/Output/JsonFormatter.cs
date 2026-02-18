@@ -40,6 +40,7 @@ public sealed class JsonFormatter : IFormatter
             Power = MapPower(s.Biometrics.Power),
             Cadence = MapCadence(s.Biometrics.Cadence),
             Temperature = MapTemperature(s.Biometrics.Temperature),
+            Effort = MapEffort(s.Effort),
         };
 
         string json = JsonSerializer.Serialize(js, new JsonSerializerOptions { WriteIndented = true });
@@ -101,4 +102,27 @@ public sealed class JsonFormatter : IFormatter
         if (temp == null) return null;
         return new JsonTemperature { AvgCelsius = temp.Avg, MinCelsius = temp.Min, MaxCelsius = temp.Max };
     }
+
+    private static JsonEffortMetrics MapEffort(EffortMetrics e) => new()
+    {
+        NaismithTime = ToDur(e.NaismithTime),
+        ToblerTime = ToDur(e.ToblerTime),
+        MunterTime = ToDur(e.MunterTime),
+        PerformanceRatioNaismith = e.PerformanceRatioNaismith,
+        PerformanceRatioTobler = e.PerformanceRatioTobler,
+        KilometreEffort = e.KilometreEffort,
+        ItraPoints = e.ItraPoints,
+        ItraCategory = e.ItraCategory,
+        EquivalentFlatDistanceKm = e.EquivalentFlatDistanceKm,
+        TerrainDifficulty = new JsonTerrainDifficulty
+        {
+            Score = e.TerrainDifficulty.Score,
+            Grade = e.TerrainDifficulty.Grade,
+            AvgGradePercent = e.TerrainDifficulty.AvgGradePercent,
+            MaxGradePercent = e.TerrainDifficulty.MaxGradePercent,
+            GradeVariance = e.TerrainDifficulty.GradeVariance,
+            SteepSectionRatio = e.TerrainDifficulty.SteepSectionRatio,
+            ElevationPerKm = e.TerrainDifficulty.ElevationPerKm,
+        },
+    };
 }

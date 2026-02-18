@@ -12,6 +12,7 @@ import HRZonesSection from '../components/activity/HRZonesSection';
 import PowerZonesSection from '../components/activity/PowerZonesSection';
 import StopsTable from '../components/activity/StopsTable';
 import SplitsSection from '../components/activity/SplitsSection';
+import EffortComparisonSection from '../components/activity/EffortComparisonSection';
 import { getEffectiveMaxHR, computeHRZones, computePowerZones, computeTRIMP, computePowerMetrics } from '../utils/zones';
 import { formatDuration } from '../utils/format';
 
@@ -526,6 +527,9 @@ export default function ActivityDetail() {
           )}
         </div>
       )}
+
+      {/* Effort Comparison */}
+      {stats?.effort && <EffortComparisonSection effort={stats.effort} />}
 
       {/* HR Zones */}
       {hrZones && effectiveMaxHR && activity.stats?.heart_rate && (
