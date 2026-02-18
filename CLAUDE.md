@@ -115,7 +115,7 @@ Requires .NET 9.0+.
 Two projects with a shared library pattern:
 
 **GpxAiAnalyzer.Core** (class library, namespace `GpxAiAnalyzer.Core.*`) — shared by both the CLI and the Web API:
-- `Models/` — `GpxStats` (Go JSON deserialization), `TrackReport` (structured AI output)
+- `Models/` — `GpxStats` (CLI JSON contract), `TrackReport` (structured AI output)
 - `Analysis/` — `TrackAnalyzer` (agent orchestration via `Microsoft.Extensions.AI`), `PromptBuilder`, `AnalysisTools` (pure function tools)
 - `Providers/` — `IChatClientProvider` interface + `ProviderRegistry` for dynamic multi-provider selection
 - `Output/` — `ReportFormatter` (text/JSON)
@@ -227,7 +227,7 @@ React 19 + TypeScript 5.9 + Vite 7 + TailwindCSS v4 + MapLibre GL JS.
 - `api/client.ts` — typed API client (fetch-based, all endpoints, sends `Accept-Language` header). Includes `getProfile()` and `getTrack()` for precomputed data
 - `hooks/useActivities.ts` — TanStack React Query hooks including `useProfile(id)` and `useTrack(id)` with 1h staleTime (immutable data)
 - `hooks/useOnlineStatus.ts` — online/offline detection hook (navigator events)
-- `types/activity.ts` — TypeScript types mirroring API DTOs, Go JSON contract, and `ProfilePoint` for chart data
+- `types/activity.ts` — TypeScript types mirroring API DTOs, CLI JSON contract, and `ProfilePoint` for chart data
 - `i18n.ts` — i18next initialization (react-i18next, HTTP backend, browser language detection)
 
 **Activity types**: `run`, `trail`, `hike`, `cycle`, `walk`, `swim`, `other` (with associated colors in `ACTIVITY_COLORS`). Labels are i18n-driven via `t('activityType.xxx')`.
@@ -390,7 +390,7 @@ Run `npm run e2e` after significant UI modifications to catch regressions. If a 
 
 ## Environment
 
-- Go 1.25.7+, .NET 9.0, Node 22+, React 19, Vite 7, TypeScript 5.9
+- .NET 9.0, Node 22+, React 19, Vite 7, TypeScript 5.9
 - For local scripts and system operations, use **PowerShell** (Python is not installed)
 - After a modification or an addition on the source code, rebuild and test the modified component.
 - After a modification in the backend, use ef core migrations for database changes, and apply it to the current compose deployment once the feature finished

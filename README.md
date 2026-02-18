@@ -1,6 +1,6 @@
 # GPX Utility Analyzer
 
-A full-stack platform for analyzing, processing and visualizing GPX activity files. Combines a Go CLI for track statistics, a .NET AI analyzer for intelligent reports, and a web application with an interactive sport dashboard.
+A full-stack platform for analyzing, processing and visualizing GPX activity files. Combines a .NET CLI for track statistics, AI-powered analysis for intelligent reports, and a web application with an interactive sport dashboard.
 
 **Published online documentation**: [https://jchable.github.io/gpx-utility-analyzer/](https://jchable.github.io/gpx-utility-analyzer/)
 

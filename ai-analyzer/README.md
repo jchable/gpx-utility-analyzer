@@ -73,7 +73,7 @@ Each provider reads its parameters from CLI arguments, then falls back to enviro
 src/GpxAiAnalyzer/
 ├── Program.cs              # Entry point, provider registration
 ├── Commands/               # CLI commands (System.CommandLine)
-├── Models/                 # GpxStats (Go JSON contract), TrackReport (AI report)
+├── Models/                 # GpxStats (CLI JSON contract), TrackReport (AI report)
 ├── Providers/              # IChatClientProvider + 4 implementations
 ├── Analysis/               # TrackAnalyzer, PromptBuilder, AnalysisTools
 └── Output/                 # ReportFormatter (text/JSON)
