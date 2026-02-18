@@ -146,6 +146,28 @@ export default function RoutePlannerPage() {
             </div>
           </div>
 
+          {/* Terrain details */}
+          {stats.effort && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
+                <p className="text-xs text-slate-500 mb-1">{t('effort.avgGrade')}</p>
+                <p className="text-lg font-bold text-white">{stats.effort.terrain_difficulty.avg_grade_percent.toFixed(1)}%</p>
+              </div>
+              <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
+                <p className="text-xs text-slate-500 mb-1">{t('effort.maxGrade')}</p>
+                <p className="text-lg font-bold text-white">{stats.effort.terrain_difficulty.max_grade_percent.toFixed(1)}%</p>
+              </div>
+              <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
+                <p className="text-xs text-slate-500 mb-1">{t('effort.steepRatio')}</p>
+                <p className="text-lg font-bold text-white">{(stats.effort.terrain_difficulty.steep_section_ratio * 100).toFixed(1)}%</p>
+              </div>
+              <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
+                <p className="text-xs text-slate-500 mb-1">{t('effort.elevPerKm')}</p>
+                <p className="text-lg font-bold text-white">{stats.effort.terrain_difficulty.elevation_per_km.toFixed(0)} {tc('unit.m')}/{tc('unit.km')}</p>
+              </div>
+            </div>
+          )}
+
           {/* Effort Comparison */}
           {stats.effort && <EffortComparisonSection effort={stats.effort} />}
         </div>
