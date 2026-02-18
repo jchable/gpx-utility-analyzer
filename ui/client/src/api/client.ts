@@ -9,7 +9,7 @@ function langHeaders(): Record<string, string> {
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const headers = { ...langHeaders(), ...init?.headers };
-  const res = await fetch(`${BASE}${url}`, { ...init, headers });
+  const res = await fetch(`${BASE}${url}`, { cache: 'no-cache', ...init, headers });
   if (!res.ok) {
     let code = '';
     try {

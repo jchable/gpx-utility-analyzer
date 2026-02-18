@@ -31,7 +31,7 @@ services:
       dockerfile: ui/client/Dockerfile
     container_name: gpx-client
     ports:
-      - "8080:80"
+      - "8081:80"
     depends_on:
       - api
     restart: unless-stopped
