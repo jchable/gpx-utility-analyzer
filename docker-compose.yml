@@ -23,6 +23,15 @@ services:
       # Integrations — configure as needed
       - Integrations__Strava__ClientId=${STRAVA_CLIENT_ID:-}
       - Integrations__Strava__ClientSecret=${STRAVA_CLIENT_SECRET:-}
+      # DEM elevation data directory
+      - Storage__DemDirectory=/app/data/dem
+      # Routing — uncomment and configure for route editing
+      # - Routing__Provider=ors
+      # - Routing__Ors__ApiKey=${ORS_API_KEY:-}
+      # - Routing__Ors__BaseUrl=https://api.openrouteservice.org
+      # For self-hosted OSRM, uncomment the osrm service below and use:
+      # - Routing__Provider=osrm
+      # - Routing__Osrm__BaseUrl=http://osrm:5000
     restart: unless-stopped
 
   client:
@@ -36,5 +45,22 @@ services:
       - api
     restart: unless-stopped
 
+  # --- OSRM routing service (optional, uncomment to enable) ---
+  # To use OSRM, download an OSM extract and preprocess it:
+  #   docker run -t -v osrm-data:/data ghcr.io/project-osrm/osrm-backend osrm-extract -p /opt/foot.lua /data/region.osm.pbf
+  #   docker run -t -v osrm-data:/data ghcr.io/project-osrm/osrm-backend osrm-partition /data/region.osrm
+  #   docker run -t -v osrm-data:/data ghcr.io/project-osrm/osrm-backend osrm-customize /data/region.osrm
+  # Then uncomment the service below:
+  # osrm:
+  #   image: ghcr.io/project-osrm/osrm-backend
+  #   container_name: gpx-osrm
+  #   command: osrm-routed --algorithm mld /data/region.osrm
+  #   volumes:
+  #     - osrm-data:/data
+  #   ports:
+  #     - "5001:5000"
+  #   restart: unless-stopped
+
 volumes:
   api-data:
+  # osrm-data:

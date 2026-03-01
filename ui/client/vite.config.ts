@@ -85,6 +85,28 @@ export default defineConfig({
               },
             },
           },
+          {
+            urlPattern: /^\/api\/routes(\?.*)?$/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-routes-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24,
+              },
+            },
+          },
+          {
+            urlPattern: /^\/api\/routes\/[^/]+$/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-route-detail-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24,
+              },
+            },
+          },
         ],
       },
     }),

@@ -5,6 +5,7 @@
     "activities": "Activities",
     "upload": "Upload",
     "predict": "Route Planner",
+    "routes": "My Routes",
     "integrations": "Integrations",
     "settings": "Settings"
   },
@@ -63,7 +64,8 @@
     "UNKNOWN_PROVIDER": "Unknown provider.",
     "MISSING_OAUTH_PARAMS": "Missing OAuth callback parameters.",
     "AI_PROVIDER_NOT_CONFIGURED": "AI provider not configured.",
-    "SPLITS_NOT_AVAILABLE": "Splits data not available. Reanalyze to compute."
+    "SPLITS_NOT_AVAILABLE": "Splits data not available. Reanalyze to compute.",
+    "EMPTY_GPX_FILE": "The GPX file is empty or contains no track points."
   },
   "duration": {
     "d": "d",

@@ -1,0 +1,44 @@
+[
+  {
+    "id": "route-1",
+    "name": "Col du Galibier",
+    "activityType": "trail",
+    "routeCategory": "out-and-back",
+    "status": "draft",
+    "distanceKm": 18.5,
+    "elevationGainM": 1200,
+    "elevationLossM": 1200,
+    "estimatedTimeSeconds": 14400,
+    "tags": "alps,mountain",
+    "createdAt": "2025-06-01T10:00:00Z",
+    "updatedAt": "2025-06-01T12:30:00Z"
+  },
+  {
+    "id": "route-2",
+    "name": "Tour du Mont Blanc - Étape 1",
+    "activityType": "hike",
+    "routeCategory": "traverse",
+    "status": "published",
+    "distanceKm": 24.0,
+    "elevationGainM": 1600,
+    "elevationLossM": 1500,
+    "estimatedTimeSeconds": 28800,
+    "tags": "tmb,alps",
+    "createdAt": "2025-05-20T08:00:00Z",
+    "updatedAt": "2025-05-25T18:00:00Z"
+  },
+  {
+    "id": "route-3",
+    "name": "Boucle VTT Forêt",
+    "activityType": "cycle",
+    "routeCategory": "loop",
+    "status": "draft",
+    "distanceKm": 35.0,
+    "elevationGainM": 800,
+    "elevationLossM": 800,
+    "estimatedTimeSeconds": 7200,
+    "tags": "mtb,forest",
+    "createdAt": "2025-06-10T14:00:00Z",
+    "updatedAt": "2025-06-10T15:00:00Z"
+  }
+]

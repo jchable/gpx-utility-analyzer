@@ -1,0 +1,36 @@
+{
+  "id": "route-1",
+  "name": "Col du Galibier",
+  "description": "A beautiful trail run up to the Col du Galibier",
+  "activityType": "trail",
+  "routeCategory": "out-and-back",
+  "status": "draft",
+  "distanceKm": 18.5,
+  "elevationGainM": 1200,
+  "elevationLossM": 1200,
+  "maxElevationM": 2642,
+  "minElevationM": 1450,
+  "estimatedTimeSeconds": 14400,
+  "tags": "alps,mountain",
+  "routingProfile": "manual",
+  "points": [
+    [6.4, 45.06, 1450],
+    [6.41, 45.065, 1550],
+    [6.42, 45.07, 1700],
+    [6.43, 45.075, 1900],
+    [6.44, 45.08, 2100],
+    [6.45, 45.085, 2300],
+    [6.46, 45.064, 2642]
+  ],
+  "waypoints": [
+    { "id": "wp-1", "lat": 45.06, "lon": 6.4, "order": 0 },
+    { "id": "wp-2", "lat": 45.07, "lon": 6.42, "order": 1 },
+    { "id": "wp-3", "lat": 45.064, "lon": 6.46, "order": 2 }
+  ],
+  "pois": [
+    { "id": "poi-1", "type": "water", "name": "Fontaine", "lat": 45.065, "lon": 6.41 },
+    { "id": "poi-2", "type": "summit", "name": "Col du Galibier", "lat": 45.064, "lon": 6.46 }
+  ],
+  "createdAt": "2025-06-01T10:00:00Z",
+  "updatedAt": "2025-06-01T12:30:00Z"
+}

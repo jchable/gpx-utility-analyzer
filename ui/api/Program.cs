@@ -53,6 +53,21 @@ builder.Services.AddSingleton<GpxAnalysisService>();
 builder.Services.AddSingleton<AiAnalysisService>();
 builder.Services.AddSingleton<ProfileComputationService>();
 builder.Services.AddSingleton<ActivityProcessingService>();
+builder.Services.AddSingleton<RouteService>();
+builder.Services.AddSingleton<RouteElevationService>();
+
+// Routing service (ORS or OSRM based on config)
+var routingProvider = builder.Configuration["Routing:Provider"]?.ToLowerInvariant();
+if (routingProvider == "ors")
+{
+    builder.Services.AddSingleton<GpxAnalyzer.Api.Services.Routing.IRoutingService,
+        GpxAnalyzer.Api.Services.Routing.OrsRoutingService>();
+}
+else if (routingProvider == "osrm")
+{
+    builder.Services.AddSingleton<GpxAnalyzer.Api.Services.Routing.IRoutingService,
+        GpxAnalyzer.Api.Services.Routing.OsrmRoutingService>();
+}
 
 // Processing channel
 builder.Services.AddSingleton(Channel.CreateUnbounded<Guid>());

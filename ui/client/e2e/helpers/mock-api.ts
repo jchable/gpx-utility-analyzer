@@ -19,6 +19,8 @@ const track = loadFixture('track.json');
 const integrations = loadFixture('integrations.json');
 const settings = loadFixture('settings.json');
 const providers = loadFixture('providers.json');
+const routes = loadFixture('routes.json');
+const routeDetail = loadFixture('route-detail.json');
 
 export async function mockAllApi(page: Page) {
   // Dashboard
@@ -95,6 +97,87 @@ export async function mockAllApi(page: Page) {
       route.fulfill({ status: 200 });
     } else {
       // Fall through to other handlers
+      route.fallback();
+    }
+  });
+
+  // --- Routes endpoints ---
+
+  // Routes list
+  await page.route('**/api/routes?*', (route) =>
+    route.fulfill({ json: routes }),
+  );
+
+  // Route tags
+  await page.route('**/api/routes/tags', (route) =>
+    route.fulfill({ json: ['alps', 'mountain', 'tmb', 'forest', 'mtb'] }),
+  );
+
+  // Route detail
+  await page.route('**/api/routes/route-1', (route) => {
+    if (route.request().method() === 'DELETE') {
+      route.fulfill({ status: 204 });
+    } else if (route.request().method() === 'PUT') {
+      route.fulfill({ json: routeDetail });
+    } else {
+      route.fulfill({ json: routeDetail });
+    }
+  });
+
+  // Autosave
+  await page.route('**/api/routes/*/autosave', (route) =>
+    route.fulfill({ status: 204 }),
+  );
+
+  // Create route
+  await page.route('**/api/routes', (route) => {
+    if (route.request().method() === 'POST') {
+      route.fulfill({ json: routeDetail });
+    } else {
+      route.fallback();
+    }
+  });
+
+  // Create from activity
+  await page.route('**/api/routes/from-activity/*', (route) =>
+    route.fulfill({ json: routeDetail }),
+  );
+
+  // Import GPX
+  await page.route('**/api/routes/import', (route) =>
+    route.fulfill({ json: routeDetail }),
+  );
+
+  // Export endpoints
+  await page.route('**/api/routes/*/export/*', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/octet-stream',
+      body: '<gpx></gpx>',
+    }),
+  );
+
+  // Routing preview
+  await page.route('**/api/routes/routing/preview', (route) =>
+    route.fulfill({
+      json: {
+        coordinates: [[6.4, 45.06, 1450], [6.42, 45.07, 1700], [6.46, 45.064, 2642]],
+        distanceMeters: 18500,
+        durationSeconds: 14400,
+      },
+    }),
+  );
+
+  // Elevation enrichment
+  await page.route('**/api/routes/*/elevation', (route) =>
+    route.fulfill({ json: routeDetail }),
+  );
+
+  // Route deletion
+  await page.route('**/api/routes/*', (route) => {
+    if (route.request().method() === 'DELETE') {
+      route.fulfill({ status: 204 });
+    } else {
       route.fallback();
     }
   });

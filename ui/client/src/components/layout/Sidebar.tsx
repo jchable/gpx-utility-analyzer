@@ -5,6 +5,7 @@ import {
   Activity,
   Upload,
   Map,
+  Route,
   Link,
   Settings,
   ChevronLeft,
@@ -18,6 +19,7 @@ const navItems = [
   { to: '/activities', labelKey: 'nav.activities', icon: Activity },
   { to: '/upload', labelKey: 'nav.upload', icon: Upload },
   { to: '/predict', labelKey: 'nav.predict', icon: Map },
+  { to: '/routes', labelKey: 'nav.routes', icon: Route },
   { to: '/integrations', labelKey: 'nav.integrations', icon: Link },
   { to: '/settings', labelKey: 'nav.settings', icon: Settings },
 ];

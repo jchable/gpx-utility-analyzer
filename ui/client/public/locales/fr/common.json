@@ -5,6 +5,7 @@
     "activities": "Activités",
     "upload": "Import",
     "predict": "Planificateur",
+    "routes": "Mes Tracés",
     "integrations": "Intégrations",
     "settings": "Paramètres"
   },
@@ -63,7 +64,8 @@
     "UNKNOWN_PROVIDER": "Fournisseur inconnu.",
     "MISSING_OAUTH_PARAMS": "Paramètres OAuth manquants.",
     "AI_PROVIDER_NOT_CONFIGURED": "Fournisseur IA non configuré.",
-    "SPLITS_NOT_AVAILABLE": "Données de splits non disponibles. Relancez l'analyse."
+    "SPLITS_NOT_AVAILABLE": "Données de splits non disponibles. Relancez l'analyse.",
+    "EMPTY_GPX_FILE": "Le fichier GPX est vide ou ne contient aucun point."
   },
   "duration": {
     "d": "j",

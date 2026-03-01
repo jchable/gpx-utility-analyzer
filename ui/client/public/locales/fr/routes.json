@@ -1,0 +1,92 @@
+{
+  "title": "Mes Tracés",
+  "subtitle": "Créer, éditer et gérer vos tracés",
+  "newRoute": "Nouveau Tracé",
+  "importGpx": "Importer GPX",
+  "allTypes": "Tous les types",
+  "empty": "Aucun tracé. Créez votre premier tracé !",
+  "confirmDelete": "Supprimer ce tracé ? Cette action est irréversible.",
+  "editor": {
+    "title": "Éditeur de tracé",
+    "newRouteHint": "Placez des points sur la carte pour créer votre tracé",
+    "toolbar": {
+      "select": "Sélectionner",
+      "addPoint": "Ajouter un point",
+      "freehand": "Dessin libre",
+      "split": "Scinder",
+      "crop": "Recadrer",
+      "reverse": "Inverser",
+      "addPoi": "Ajouter un POI"
+    },
+    "routing": {
+      "manual": "Manuel",
+      "hiking": "Randonnée",
+      "trail": "Trail",
+      "cycling": "Cyclisme",
+      "road": "Route"
+    },
+    "save": "Enregistrer le tracé",
+    "export": "Exporter",
+    "discard": "Abandonner les modifications",
+    "autoSaved": "Enregistré {{time}}",
+    "saving": "Enregistrement...",
+    "unsavedChanges": "Vous avez des modifications non enregistrées",
+    "undo": "Annuler",
+    "redo": "Rétablir",
+    "enrichElevation": "Enrichir l'altitude (DEM)",
+    "enrichingElevation": "Enrichissement...",
+    "cropApply": "Appliquer le recadrage",
+    "cropCancel": "Annuler le recadrage",
+    "cropHint": "Déplacez les poignées sur le profil d'élévation pour sélectionner la portion à garder"
+  },
+  "split": {
+    "title": "Scinder le tracé",
+    "keepFirst": "Garder le segment 1",
+    "keepSecond": "Garder le segment 2",
+    "keepBoth": "Garder les deux (créer un 2e tracé)",
+    "point": "Point {{index}} / {{total}}"
+  },
+  "poi": {
+    "water": "Point d'eau",
+    "parking": "Parking",
+    "refuge": "Refuge",
+    "summit": "Sommet",
+    "viewpoint": "Point de vue",
+    "danger": "Danger",
+    "food": "Ravitaillement",
+    "camping": "Camping",
+    "custom": "Personnalisé"
+  },
+  "category": {
+    "loop": "Boucle",
+    "outAndBack": "Aller-retour",
+    "traverse": "Traversée",
+    "pointToPoint": "Point à point"
+  },
+  "status": {
+    "draft": "Brouillon",
+    "published": "Publié"
+  },
+  "stats": {
+    "distance": "Distance",
+    "elevationGain": "Dénivelé +",
+    "elevationLoss": "Dénivelé -",
+    "estimatedTime": "Temps estimé",
+    "maxElevation": "Altitude max",
+    "minElevation": "Altitude min"
+  },
+  "export": {
+    "title": "Exporter le tracé",
+    "gpx": "GPX",
+    "geojson": "GeoJSON",
+    "kml": "KML"
+  },
+  "metadata": {
+    "name": "Nom du tracé",
+    "description": "Description",
+    "activityType": "Type d'activité",
+    "category": "Catégorie",
+    "tags": "Tags"
+  },
+  "editAsRoute": "Éditer comme tracé"
+}

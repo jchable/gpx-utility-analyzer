@@ -9,6 +9,8 @@ const UploadPage = lazy(() => import('./pages/UploadPage'));
 const Integrations = lazy(() => import('./pages/Integrations'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const RoutePlannerPage = lazy(() => import('./pages/RoutePlannerPage'));
+const RoutesPage = lazy(() => import('./pages/RoutesPage'));
+const EditorPage = lazy(() => import('./pages/EditorPage'));
 
 function PageLoader() {
   return (
@@ -28,9 +30,13 @@ export default function App() {
           <Route path="/activities/:id" element={<ActivityDetail />} />
           <Route path="/upload" element={<UploadPage />} />
           <Route path="/predict" element={<RoutePlannerPage />} />
+          <Route path="/routes" element={<RoutesPage />} />
           <Route path="/integrations" element={<Integrations />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Route>
+        {/* Editor pages — full-screen, no Layout wrapper */}
+        <Route path="/editor" element={<EditorPage />} />
+        <Route path="/editor/:id" element={<EditorPage />} />
       </Routes>
     </Suspense>
   );

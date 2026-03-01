@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useActivity, useProfile, useTrack, useSplits, useSettings } from '../hooks/useActivities';
 import { api } from '../api/client';
+import { routesApi } from '../api/routes-client';
 import { ACTIVITY_COLORS } from '../types/activity';
 import type { TrackReport } from '../types/activity';
 import TrackMap from '../components/map/TrackMap';
@@ -243,8 +244,10 @@ export default function ActivityDetail() {
   const { data: trackData, isLoading: trackLoading, error: trackError } = useTrack(isCompleted ? id! : '');
   const { data: splitsData } = useSplits(isCompleted ? id! : '');
   const { data: settings } = useSettings();
+  const { t: tRoutes } = useTranslation('routes');
   const [isDeleting, setIsDeleting] = useState(false);
   const [isReanalyzing, setIsReanalyzing] = useState(false);
+  const [isCreatingRoute, setIsCreatingRoute] = useState(false);
   const [focusedStop, setFocusedStop] = useState<{ lat: number; lon: number } | null>(null);
 
   const hasTimestamps = (profileData?.length ?? 0) > 0 && profileData![0].elapsedTime != null;
@@ -340,6 +343,19 @@ export default function ActivityDetail() {
     }
   };
 
+  const handleEditAsRoute = async () => {
+    setIsCreatingRoute(true);
+    try {
+      const route = await routesApi.createFromActivity(activity.id);
+      if (route?.id) {
+        navigate(`/editor/${route.id}`);
+      }
+    } catch (err) {
+      console.error('Failed to create route from activity:', err);
+      setIsCreatingRoute(false);
+    }
+  };
+
   // Gauge: moving time as percentage of total time
   const movingPct = stats && stats.total_time.seconds > 0
     ? Math.round((stats.moving_time.seconds / stats.total_time.seconds) * 100)
@@ -392,6 +408,16 @@ export default function ActivityDetail() {
             </svg>
             {t('detail.gpx')}
           </a>
+          <button
+            onClick={handleEditAsRoute}
+            disabled={isCreatingRoute || activity.status !== 'Completed'}
+            className="px-3 py-2 rounded-lg bg-[#16213e] border border-cyan-700 text-cyan-400 text-sm hover:bg-cyan-900/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            {isCreatingRoute ? '...' : tRoutes('editAsRoute')}
+          </button>
           <button
             onClick={handleReanalyze}
             disabled={isReanalyzing || activity.status === 'Analyzing' || activity.status === 'AiProcessing'}
