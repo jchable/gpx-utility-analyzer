@@ -215,7 +215,7 @@ export default function SettingsPage() {
     <div>
       <h1 className="text-2xl font-bold text-white mb-6">{t('title')}</h1>
 
-      <div className="space-y-6 max-w-2xl">
+      <div className="space-y-6">
         {/* Athlete Profile */}
         <SectionCard title={t('athleteProfile')} id="athlete-profile">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

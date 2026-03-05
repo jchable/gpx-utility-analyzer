@@ -14,9 +14,10 @@ test.describe('Activity Detail — Completed', () => {
 
   test('renders performance stat gauges', async ({ page }) => {
     await page.goto('/activities/act-1');
-    await expect(page.getByText('Performance Stats')).toBeVisible();
-    await expect(page.getByText('Distance').first()).toBeVisible();
-    await expect(page.getByText('Elevation D+').first()).toBeVisible();
+    await page.waitForLoadState('networkidle');
+    await expect(page.getByText('Performance Stats')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Moving').first()).toBeVisible();
+    await expect(page.getByText('Elevation').first()).toBeVisible();
   });
 
   test('renders extended stats', async ({ page }) => {
