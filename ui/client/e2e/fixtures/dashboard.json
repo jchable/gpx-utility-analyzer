@@ -5,6 +5,8 @@
   "totalMovingTimeSeconds": 86400,
   "activitiesThisMonth": 3,
   "distanceThisMonthKm": 42.5,
+  "elevationGainThisMonthM": 1190,
+  "movingTimeThisMonthSeconds": 16200,
   "recentActivities": [
     {
       "id": "act-1",

@@ -65,7 +65,7 @@ export default function Dashboard() {
     },
     {
       label: t('elevationThisMonth'),
-      value: `${Math.round(data.totalElevationGainM)} ${tc('unit.m')}`,
+      value: `${Math.round(data.elevationGainThisMonthM)} ${tc('unit.m')}`,
       icon: (
         <svg className="w-8 h-8 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
@@ -75,7 +75,7 @@ export default function Dashboard() {
     },
     {
       label: t('timeThisMonth'),
-      value: formatDuration(data.totalMovingTimeSeconds),
+      value: formatDuration(data.movingTimeThisMonthSeconds),
       icon: (
         <svg className="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />

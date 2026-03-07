@@ -48,6 +48,8 @@ public class DashboardSummaryDto
     public double TotalMovingTimeSeconds { get; set; }
     public int ActivitiesThisMonth { get; set; }
     public double DistanceThisMonthKm { get; set; }
+    public double ElevationGainThisMonthM { get; set; }
+    public double MovingTimeThisMonthSeconds { get; set; }
     public List<ActivityListDto> RecentActivities { get; set; } = [];
     public Dictionary<string, int> ActivityTypeBreakdown { get; set; } = [];
 }

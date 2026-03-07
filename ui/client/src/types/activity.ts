@@ -177,6 +177,8 @@ export interface DashboardSummary {
   totalMovingTimeSeconds: number;
   activitiesThisMonth: number;
   distanceThisMonthKm: number;
+  elevationGainThisMonthM: number;
+  movingTimeThisMonthSeconds: number;
   recentActivities: ActivityListItem[];
   activityTypeBreakdown: Record<string, number>;
 }

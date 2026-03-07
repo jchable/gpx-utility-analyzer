@@ -35,6 +35,8 @@ public class DashboardController : ControllerBase
 
         var activitiesThisMonth = await thisMonth.CountAsync();
         var distanceThisMonthKm = await thisMonth.Select(a => (double?)a.DistanceKm).SumAsync() ?? 0;
+        var elevationGainThisMonthM = await thisMonth.Select(a => (double?)a.ElevationGainM).SumAsync() ?? 0;
+        var movingTimeThisMonthSeconds = await thisMonth.Select(a => (double?)a.MovingTimeSeconds).SumAsync() ?? 0;
 
         // Activity type breakdown: materialize only the type column
         var typeBreakdown = await completed
@@ -55,6 +57,8 @@ public class DashboardController : ControllerBase
             TotalMovingTimeSeconds = totalMovingTimeSeconds,
             ActivitiesThisMonth = activitiesThisMonth,
             DistanceThisMonthKm = distanceThisMonthKm,
+            ElevationGainThisMonthM = elevationGainThisMonthM,
+            MovingTimeThisMonthSeconds = movingTimeThisMonthSeconds,
             RecentActivities = recentActivities.Select(a => new ActivityListDto
             {
                 Id = a.Id,
