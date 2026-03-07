@@ -134,6 +134,16 @@
     "steepRatio": "Sections raides",
     "elevPerKm": "D+ / km"
   },
+  "anomaly": {
+    "title": "Qualité des données",
+    "qualityScore": "Qualité des données",
+    "critical": "critique(s)",
+    "warning": "avertissement(s)",
+    "info": "info",
+    "distanceImpact": "Impact distance",
+    "timeImpact": "Impact temps",
+    "corrected": "Corrigé"
+  },
   "predict": {
     "title": "Planificateur de parcours",
     "description": "Importez une trace GPX pour obtenir des estimations d'effort sans créer d'activité.",

@@ -108,6 +108,10 @@ public sealed class GpxStats
     // Effort metrics
     [JsonPropertyName("effort")]
     public EffortStatsModel? Effort { get; init; }
+
+    // Anomaly detection
+    [JsonPropertyName("anomalies")]
+    public AnomalyReportModel? Anomalies { get; init; }
 }
 
 public sealed class HeartRateStats
@@ -255,4 +259,70 @@ public sealed class TerrainDifficultyModel
 
     [JsonPropertyName("elevation_per_km")]
     public double ElevationPerKm { get; init; }
+}
+
+public sealed class AnomalyReportModel
+{
+    [JsonPropertyName("quality_score")]
+    public int QualityScore { get; init; }
+
+    [JsonPropertyName("total_count")]
+    public int TotalCount { get; init; }
+
+    [JsonPropertyName("info_count")]
+    public int InfoCount { get; init; }
+
+    [JsonPropertyName("warning_count")]
+    public int WarningCount { get; init; }
+
+    [JsonPropertyName("critical_count")]
+    public int CriticalCount { get; init; }
+
+    [JsonPropertyName("distance_impact_m")]
+    public double DistanceImpactM { get; init; }
+
+    [JsonPropertyName("time_impact_s")]
+    public double TimeImpactS { get; init; }
+
+    [JsonPropertyName("correction_applied")]
+    public bool CorrectionApplied { get; init; }
+
+    [JsonPropertyName("anomalies")]
+    public List<AnomalyItem>? Anomalies { get; init; }
+}
+
+public sealed class AnomalyItem
+{
+    [JsonPropertyName("type")]
+    public string Type { get; init; } = "";
+
+    [JsonPropertyName("category")]
+    public string Category { get; init; } = "";
+
+    [JsonPropertyName("severity")]
+    public string Severity { get; init; } = "";
+
+    [JsonPropertyName("start_index")]
+    public int StartIndex { get; init; }
+
+    [JsonPropertyName("end_index")]
+    public int EndIndex { get; init; }
+
+    [JsonPropertyName("start_time")]
+    public string? StartTime { get; init; }
+
+    [JsonPropertyName("end_time")]
+    public string? EndTime { get; init; }
+
+    [JsonPropertyName("distance_impact_m")]
+    public double DistanceImpactM { get; init; }
+
+    [JsonPropertyName("time_impact_s")]
+    public double TimeImpactS { get; init; }
+
+    [JsonPropertyName("description")]
+    public string Description { get; init; } = "";
+
+    [JsonPropertyName("was_corrected")]
+    public bool WasCorrected { get; init; }
 }

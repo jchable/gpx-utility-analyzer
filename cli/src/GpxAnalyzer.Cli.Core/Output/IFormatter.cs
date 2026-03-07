@@ -1,3 +1,4 @@
+using System.Text.Json;
 using GpxAnalyzer.Cli.Core.Stats;
 
 namespace GpxAnalyzer.Cli.Core.Output;
@@ -9,10 +10,10 @@ public interface IFormatter
 
 public static class FormatterFactory
 {
-    public static IFormatter Create(string format) => format switch
+    public static IFormatter Create(string format, JsonSerializerOptions? jsonOptions = null) => format switch
     {
         "text" => new TextFormatter(),
-        "json" => new JsonFormatter(),
+        "json" => new JsonFormatter(jsonOptions),
         _ => throw new ArgumentException($"Unknown format '{format}', expected 'text' or 'json'")
     };
 }

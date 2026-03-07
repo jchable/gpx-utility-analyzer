@@ -39,9 +39,13 @@ public static class EffortCalculator
             var speedKmh = ToblerSpeed(grade);
             var speedMs = speedKmh / 3.6;
 
-            if (speedMs > 0)
+            if (speedMs > 0.01) // guard against near-zero speeds on extreme grades
                 totalSeconds += dist / speedMs;
         }
+
+        // Guard against overflow for extreme tracks
+        if (totalSeconds > 3_155_760_000) // ~100 years
+            totalSeconds = 3_155_760_000;
 
         return TimeSpan.FromSeconds(totalSeconds);
     }

@@ -134,6 +134,16 @@
     "steepRatio": "Steep Sections",
     "elevPerKm": "D+ / km"
   },
+  "anomaly": {
+    "title": "Data Quality",
+    "qualityScore": "Data Quality",
+    "critical": "critical",
+    "warning": "warnings",
+    "info": "info",
+    "distanceImpact": "Distance impact",
+    "timeImpact": "Time impact",
+    "corrected": "Corrected"
+  },
   "predict": {
     "title": "Route Planner",
     "description": "Upload a GPX route to get effort estimates without creating an activity.",

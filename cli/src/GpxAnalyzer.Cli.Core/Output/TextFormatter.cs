@@ -1,4 +1,5 @@
 using System.Globalization;
+using GpxAnalyzer.Cli.Core.Anomaly;
 using GpxAnalyzer.Cli.Core.Stats;
 
 namespace GpxAnalyzer.Cli.Core.Output;
@@ -16,6 +17,7 @@ public sealed class TextFormatter : IFormatter
         PrintEffortTable(w, s);
         PrintStopTable(w, s, cfg);
         PrintBiometricsTable(w, s);
+        PrintAnomalyTable(w, s);
     }
 
     private static void PrintGeneralTable(TextWriter w, Summary s)
@@ -150,6 +152,49 @@ public sealed class TextFormatter : IFormatter
         }
 
         RenderTable(w, rows);
+    }
+
+    private static void PrintAnomalyTable(TextWriter w, Summary s)
+    {
+        var report = s.AnomalyReport;
+        if (report == null || report.IsClean)
+            return;
+
+        w.WriteLine();
+        w.WriteLine($"Data Quality (Score: {report.QualityScore}/100)");
+        var rows = new List<string[]>
+        {
+            new[] { "Total Anomalies", report.TotalCount.ToString() },
+            new[] { "Critical", report.CriticalCount.ToString() },
+            new[] { "Warnings", report.WarningCount.ToString() },
+            new[] { "Info", report.InfoCount.ToString() },
+        };
+        if (Math.Abs(report.TotalDistanceImpactM) >= 1)
+            rows.Add(new[] { "Distance Impact", $"{report.TotalDistanceImpactM:F0} m" });
+        if (Math.Abs(report.TotalTimeImpactS) >= 1)
+            rows.Add(new[] { "Time Impact", FormatHelpers.FormatDuration(TimeSpan.FromSeconds(Math.Abs(report.TotalTimeImpactS))) });
+        rows.Add(new[] { "Corrections Applied", report.CorrectionApplied ? "Yes" : "No" });
+        RenderTable(w, rows);
+
+        foreach (var a in report.Anomalies)
+        {
+            string severity = a.Severity switch
+            {
+                AnomalySeverity.Critical => "CRITICAL",
+                AnomalySeverity.Warning => "WARNING",
+                _ => "INFO"
+            };
+            string timeRange = a.StartTime.HasValue
+                ? $"{a.StartTime:HH:mm:ss} - {a.EndTime:HH:mm:ss}"
+                : $"points {a.StartIndex}-{a.EndIndex}";
+            w.WriteLine();
+            w.WriteLine($"  [{severity}] {a.Type} ({timeRange})");
+            w.WriteLine($"    {a.Description}");
+            if (Math.Abs(a.DistanceImpactM) >= 1)
+                w.WriteLine($"    Impact: {a.DistanceImpactM:F0} m distance");
+            if (a.WasCorrected)
+                w.WriteLine("    [CORRECTED]");
+        }
     }
 
     /// <summary>

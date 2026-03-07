@@ -61,6 +61,7 @@ export interface GpxStats {
   cadence?: CadenceStats;
   temperature?: TemperatureStats;
   effort?: EffortStats;
+  anomalies?: AnomalyReport;
 }
 
 export interface DurationValue {
@@ -149,6 +150,32 @@ export interface TerrainDifficulty {
   grade_variance: number;
   steep_section_ratio: number;
   elevation_per_km: number;
+}
+
+export interface AnomalyReport {
+  quality_score: number;
+  total_count: number;
+  info_count: number;
+  warning_count: number;
+  critical_count: number;
+  distance_impact_m: number;
+  time_impact_s: number;
+  correction_applied: boolean;
+  anomalies?: AnomalyItem[];
+}
+
+export interface AnomalyItem {
+  type: string;
+  category: string;
+  severity: string;
+  start_index: number;
+  end_index: number;
+  start_time?: string;
+  end_time?: string;
+  distance_impact_m: number;
+  time_impact_s: number;
+  description: string;
+  was_corrected: boolean;
 }
 
 export interface PredictResult {

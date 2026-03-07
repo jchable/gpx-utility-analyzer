@@ -11,6 +11,7 @@ import TrackMap from '../components/map/TrackMap';
 import ElevationProfileChart from '../components/activity/ElevationProfileChart';
 import HRZonesSection from '../components/activity/HRZonesSection';
 import PowerZonesSection from '../components/activity/PowerZonesSection';
+import AnomalyBanner from '../components/activity/AnomalyBanner';
 import StopsTable from '../components/activity/StopsTable';
 import SplitsSection from '../components/activity/SplitsSection';
 import EffortComparisonSection from '../components/activity/EffortComparisonSection';
@@ -440,6 +441,11 @@ export default function ActivityDetail() {
           </button>
         </div>
       </div>
+
+      {/* Anomaly Banner */}
+      {stats?.anomalies && stats.anomalies.total_count > 0 && (
+        <AnomalyBanner report={stats.anomalies} />
+      )}
 
       {/* Track Map */}
       <div className="h-[300px] sm:h-[400px] lg:h-[500px] rounded-2xl overflow-hidden">

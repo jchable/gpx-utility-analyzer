@@ -1,3 +1,4 @@
+using GpxAnalyzer.Cli.Core.Anomaly;
 using GpxAnalyzer.Cli.Core.Dem;
 
 namespace GpxAnalyzer.Cli.Core.Stats;
@@ -15,6 +16,12 @@ public sealed class ComputeConfig
     public string TrackSmoothing { get; init; } = "none";
     public BiometricsConfig BiometricsCfg { get; init; } = new();
     public double MaxReasonableSpeed { get; init; }
+
+    /// <summary>If non-null, anomaly detection is enabled with these thresholds.</summary>
+    public AnomalyConfig? AnomalyConfig { get; init; }
+
+    /// <summary>If true (and AnomalyConfig is set), apply automatic anomaly corrections.</summary>
+    public bool FixAnomalies { get; init; }
 
     public static ComputeConfig Default() => new();
 }

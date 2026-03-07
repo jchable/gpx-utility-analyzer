@@ -70,6 +70,35 @@ public static class PromptBuilder
             sb.AppendLine(ci, $"- Temperature: {stats.Temperature.AvgCelsius:F1}C avg, {stats.Temperature.MinCelsius:F1}C min, {stats.Temperature.MaxCelsius:F1}C max");
         }
 
+        // Data quality / anomalies
+        if (stats.Anomalies is { TotalCount: > 0 } anomalies)
+        {
+            sb.AppendLine();
+            sb.AppendLine("## Data Quality");
+            sb.AppendLine(ci, $"- Quality Score: {anomalies.QualityScore}/100");
+            sb.AppendLine(ci, $"- Anomalies: {anomalies.CriticalCount} critical, {anomalies.WarningCount} warnings, {anomalies.InfoCount} info");
+            if (Math.Abs(anomalies.DistanceImpactM) >= 1)
+                sb.AppendLine(ci, $"- Estimated distance impact: {anomalies.DistanceImpactM:F0} m");
+            if (Math.Abs(anomalies.TimeImpactS) >= 1)
+                sb.AppendLine(ci, $"- Estimated time impact: {anomalies.TimeImpactS:F0} s");
+            if (anomalies.CorrectionApplied)
+                sb.AppendLine("- Corrections have been applied");
+
+            // Show top 5 warning/critical anomalies
+            if (anomalies.Anomalies is { Count: > 0 })
+            {
+                var significant = anomalies.Anomalies
+                    .Where(a => a.Severity is "critical" or "warning")
+                    .Take(5)
+                    .ToList();
+                foreach (var a in significant)
+                {
+                    string timeRange = !string.IsNullOrEmpty(a.StartTime) ? $"{a.StartTime} - {a.EndTime}" : $"points {a.StartIndex}-{a.EndIndex}";
+                    sb.AppendLine(ci, $"  - [{a.Severity.ToUpperInvariant()}] {a.Type} ({timeRange}): {a.Description}");
+                }
+            }
+        }
+
         sb.AppendLine();
         sb.AppendLine("## Required Analysis");
         sb.AppendLine("Use the available tools (EstimateDifficulty, ClassifyActivity, GetSteepnessRatio, GetStopFrequency, and biometric tools if data is available) to compute derived metrics, then provide a structured JSON report with:");

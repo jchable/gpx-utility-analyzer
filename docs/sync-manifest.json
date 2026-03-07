@@ -21,77 +21,8 @@
             "](docs/merge.md)": "](/gpx-utility-analyzer/docs/cli/merge)",
             "](docs/elevation.md)": "](/gpx-utility-analyzer/docs/cli/elevation)",
             "](docs/biometrics.md)": "](/gpx-utility-analyzer/docs/cli/biometrics)",
+            "](docs/anomalies.md)": "](/gpx-utility-analyzer/docs/cli/anomalies)",
             "](docs/recipes.md)": "](/gpx-utility-analyzer/docs/cli/recipes)"
-          }
-        },
-        {
-          "src": "../cli/docs/analyze.md",
-          "dest": "content/cli/analyze.md",
-          "frontmatter": {
-            "title": "analyze — Analyze GPX files",
-            "sidebar_label": "analyze",
-            "sidebar_position": 2,
-            "slug": "/cli/analyze"
-          }
-        },
-        {
-          "src": "../cli/docs/benchmark.md",
-          "dest": "content/cli/benchmark.md",
-          "frontmatter": {
-            "title": "benchmark — Compare configurations",
-            "sidebar_label": "benchmark",
-            "sidebar_position": 3,
-            "slug": "/cli/benchmark"
-          }
-        },
-        {
-          "src": "../cli/docs/split.md",
-          "dest": "content/cli/split.md",
-          "frontmatter": {
-            "title": "split — Split by time intervals",
-            "sidebar_label": "split",
-            "sidebar_position": 4,
-            "slug": "/cli/split"
-          }
-        },
-        {
-          "src": "../cli/docs/merge.md",
-          "dest": "content/cli/merge.md",
-          "frontmatter": {
-            "title": "merge — Merge GPX files",
-            "sidebar_label": "merge",
-            "sidebar_position": 5,
-            "slug": "/cli/merge"
-          }
-        },
-        {
-          "src": "../cli/docs/elevation.md",
-          "dest": "content/cli/elevation.md",
-          "frontmatter": {
-            "title": "Elevation & Statistics",
-            "sidebar_label": "Elevation & Stats",
-            "sidebar_position": 6,
-            "slug": "/cli/elevation"
-          }
-        },
-        {
-          "src": "../cli/docs/biometrics.md",
-          "dest": "content/cli/biometrics.md",
-          "frontmatter": {
-            "title": "Biometrics",
-            "sidebar_label": "Biometrics",
-            "sidebar_position": 7,
-            "slug": "/cli/biometrics"
-          }
-        },
-        {
-          "src": "../cli/docs/recipes.md",
-          "dest": "content/cli/recipes.md",
-          "frontmatter": {
-            "title": "Recipes & Performance",
-            "sidebar_label": "Recipes & Perf",
-            "sidebar_position": 8,
-            "slug": "/cli/recipes"
           }
         }
       ]

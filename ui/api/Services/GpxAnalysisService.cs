@@ -4,6 +4,7 @@ using GpxAnalyzer.Cli.Core.Dem;
 using GpxAnalyzer.Cli.Core.Elevation;
 using GpxAnalyzer.Cli.Core.Gpx;
 using GpxAnalyzer.Cli.Core.Output;
+using GpxAnalyzer.Cli.Core.Anomaly;
 using GpxAnalyzer.Cli.Core.Stats;
 using GpxAiAnalyzer.Core.Models;
 
@@ -83,6 +84,7 @@ public class GpxAnalysisService
             },
             TrackSmoothing = trackSmoothing,
             MaxReasonableSpeed = maxReasonable,
+            AnomalyConfig = AnomalyConfig.Default(),
         };
     }
 }

@@ -1,5 +1,6 @@
 using System.CommandLine;
 using System.CommandLine.Invocation;
+using GpxAnalyzer.Cli.Core.Anomaly;
 using GpxAnalyzer.Cli.Core.Dem;
 using GpxAnalyzer.Cli.Core.Elevation;
 using GpxAnalyzer.Cli.Core.Stats;
@@ -15,7 +16,7 @@ internal static class SharedFlags
         Option<int> demMaxMemOpt, Option<bool> demSkipValOpt,
         Option<string> elevAlgoOpt, Option<string> trackSmoothOpt,
         Option<double> dpEpsOpt, Option<double> segMinLenOpt, Option<double> segMaxDevOpt,
-        Option<int> maxHrOpt, Option<double> maxSpeedOpt)
+        Option<int> maxHrOpt, Option<double> maxSpeedOpt, Option<bool>? fixAnomaliesOpt = null)
     {
         return BuildConfig(
             ctx.ParseResult.GetValueForOption(presetOpt) ?? "hiking",
@@ -34,14 +35,15 @@ internal static class SharedFlags
             ctx.ParseResult.GetValueForOption(segMinLenOpt),
             ctx.ParseResult.GetValueForOption(segMaxDevOpt),
             ctx.ParseResult.GetValueForOption(maxHrOpt),
-            ctx.ParseResult.GetValueForOption(maxSpeedOpt));
+            ctx.ParseResult.GetValueForOption(maxSpeedOpt),
+            fixAnomaliesOpt != null && ctx.ParseResult.GetValueForOption(fixAnomaliesOpt));
     }
 
     public static ComputeConfig BuildConfig(string preset, double stopSpeed, double stopDuration,
         double elevThreshold, string smoothing, string demDir, string demCache,
         bool demAuto, int demMaxMem, bool demSkipVal, string elevAlgo,
         string trackSmooth, double dpEps, double segMinLen, double segMaxDev,
-        int maxHr, double maxSpeed)
+        int maxHr, double maxSpeed, bool fixAnomalies = false)
     {
         if (!StopDetector.Presets.TryGetValue(preset, out var stopCfg))
         {
@@ -102,6 +104,8 @@ internal static class SharedFlags
             TrackSmoothing = trackSmooth,
             BiometricsCfg = new BiometricsConfig { MaxHR = maxHr },
             MaxReasonableSpeed = maxReasonable,
+            AnomalyConfig = AnomalyConfig.Default(),
+            FixAnomalies = fixAnomalies,
         };
     }
 }

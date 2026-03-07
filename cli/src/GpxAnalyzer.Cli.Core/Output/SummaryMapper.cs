@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+using GpxAnalyzer.Cli.Core.Anomaly;
 using GpxAnalyzer.Cli.Core.Stats;
 using GpxAiAnalyzer.Core.Models;
 
@@ -43,6 +45,7 @@ public static class SummaryMapper
             Cadence = MapCadence(s.Biometrics.Cadence),
             Temperature = MapTemperature(s.Biometrics.Temperature),
             Effort = MapEffort(s.Effort),
+            Anomalies = MapAnomalyReport(s.AnomalyReport),
         };
     }
 
@@ -124,4 +127,37 @@ public static class SummaryMapper
             ElevationPerKm = e.TerrainDifficulty.ElevationPerKm,
         },
     };
+
+    private static AnomalyReportModel? MapAnomalyReport(AnomalyReport? r)
+    {
+        if (r == null || r.IsClean) return null;
+        return new AnomalyReportModel
+        {
+            QualityScore = r.QualityScore,
+            TotalCount = r.TotalCount,
+            InfoCount = r.InfoCount,
+            WarningCount = r.WarningCount,
+            CriticalCount = r.CriticalCount,
+            DistanceImpactM = r.TotalDistanceImpactM,
+            TimeImpactS = r.TotalTimeImpactS,
+            CorrectionApplied = r.CorrectionApplied,
+            Anomalies = r.Anomalies.Select(a => new AnomalyItem
+            {
+                Type = ToSnakeCase(a.Type.ToString()),
+                Category = ToSnakeCase(a.Category.ToString()),
+                Severity = ToSnakeCase(a.Severity.ToString()),
+                StartIndex = a.StartIndex,
+                EndIndex = a.EndIndex,
+                StartTime = a.StartTime?.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                EndTime = a.EndTime?.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                DistanceImpactM = a.DistanceImpactM,
+                TimeImpactS = a.TimeImpactS,
+                Description = a.Description,
+                WasCorrected = a.WasCorrected,
+            }).ToList(),
+        };
+    }
+
+    private static string ToSnakeCase(string name) =>
+        Regex.Replace(name, "(?<!^)([A-Z])", "_$1").ToLowerInvariant();
 }

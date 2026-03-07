@@ -22,6 +22,7 @@ const sidebars: SidebarsConfig = {
         },
         'cli/elevation',
         'cli/biometrics',
+        'cli/anomalies',
         'cli/recipes',
       ],
     },

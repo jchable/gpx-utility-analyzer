@@ -34,13 +34,14 @@ public static class AnalyzeCommand
         var enrichOpt = new Option<bool>("--enrich", () => false, "Include computed metrics in export");
         var maxHrOpt = new Option<int>("--max-hr", () => 0, "Max HR for zone calculation");
         var maxSpeedOpt = new Option<double>("--max-speed", () => 0, "GPS outlier removal threshold (m/s)");
+        var fixAnomaliesOpt = new Option<bool>("--fix-anomalies", () => false, "Apply automatic anomaly corrections");
 
         var cmd = new Command("analyze", "Analyze GPX files: distance, elevation, speed, pace, stops")
         {
             filesArg, presetOpt, stopSpeedOpt, stopDurationOpt, elevThresholdOpt,
             smoothingOpt, demDirOpt, demCacheOpt, demAutoOpt, demMaxMemOpt,
             demSkipValOpt, elevAlgoOpt, trackSmoothOpt, dpEpsOpt, segMinLenOpt,
-            segMaxDevOpt, exportOpt, enrichOpt, maxHrOpt, maxSpeedOpt
+            segMaxDevOpt, exportOpt, enrichOpt, maxHrOpt, maxSpeedOpt, fixAnomaliesOpt
         };
 
         cmd.SetHandler((InvocationContext ctx) =>
@@ -50,12 +51,12 @@ public static class AnalyzeCommand
             var export = ctx.ParseResult.GetValueForOption(exportOpt) ?? "";
             var enrich = ctx.ParseResult.GetValueForOption(enrichOpt);
 
-            var formatter = FormatterFactory.Create(format);
+            var formatter = FormatterFactory.Create(format, GpxAnalyzer.Cli.Output.JsonContext.Default.Options);
             var resolvedFiles = FileResolver.ResolveFiles(files);
             var cfg = SharedFlags.BuildConfigFromContext(ctx, presetOpt, stopSpeedOpt, stopDurationOpt,
                 elevThresholdOpt, smoothingOpt, demDirOpt, demCacheOpt, demAutoOpt, demMaxMemOpt,
                 demSkipValOpt, elevAlgoOpt, trackSmoothOpt, dpEpsOpt, segMinLenOpt, segMaxDevOpt,
-                maxHrOpt, maxSpeedOpt);
+                maxHrOpt, maxSpeedOpt, fixAnomaliesOpt);
 
             foreach (var path in resolvedFiles)
             {
