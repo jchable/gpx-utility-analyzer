@@ -140,7 +140,7 @@ export default function SettingsPage() {
     setTimeout(() => setSaved(false), 3000);
   };
 
-  const updateAnalysis = (field: string, value: string) => {
+  const updateAnalysis = (field: string, value: string | boolean) => {
     setForm((f) => f ? { ...f, analysis: { ...f.analysis, [field]: value } } : f);
   };
 
@@ -341,6 +341,23 @@ export default function SettingsPage() {
                 options={elevationAlgorithmOptions}
               />
             </FieldGroup>
+            <div className="col-span-full flex items-start gap-3 pt-2">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={form.analysis.fixAnomalies}
+                onClick={() => updateAnalysis('fixAnomalies', !form.analysis.fixAnomalies)}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#16213e] ${form.analysis.fixAnomalies ? 'bg-blue-600' : 'bg-slate-600'}`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${form.analysis.fixAnomalies ? 'translate-x-5' : 'translate-x-0'}`}
+                />
+              </button>
+              <div>
+                <span className="text-sm font-medium text-[#a0a0b0]">{t('fixAnomalies')}</span>
+                <p className="text-xs text-slate-500 mt-0.5">{t('fixAnomaliesHint')}</p>
+              </div>
+            </div>
           </div>
         </SectionCard>
 

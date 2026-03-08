@@ -35,6 +35,7 @@ public class SettingsController : ControllerBase
                 Smoothing = await _settings.GetAsync("GpxCli:DefaultSmoothing", "medium") ?? "medium",
                 TrackSmoothing = await _settings.GetAsync("GpxCli:DefaultTrackSmoothing", "medium") ?? "medium",
                 ElevationAlgorithm = await _settings.GetAsync("GpxCli:ElevationAlgorithm", "threshold") ?? "threshold",
+                FixAnomalies = bool.TryParse(await _settings.GetAsync("GpxCli:FixAnomalies"), out var fix) && fix,
             },
             AiProvider = new AiProviderSettingsDto
             {
@@ -80,6 +81,7 @@ public class SettingsController : ControllerBase
         updates["GpxCli:DefaultSmoothing"] = dto.Analysis.Smoothing;
         updates["GpxCli:DefaultTrackSmoothing"] = dto.Analysis.TrackSmoothing;
         updates["GpxCli:ElevationAlgorithm"] = dto.Analysis.ElevationAlgorithm;
+        updates["GpxCli:FixAnomalies"] = dto.Analysis.FixAnomalies.ToString().ToLowerInvariant();
 
         // AI Provider
         if (!string.IsNullOrEmpty(dto.AiProvider.Name))

@@ -21,6 +21,7 @@ public class AnalysisSettingsDto
     public string Smoothing { get; set; } = "medium";
     public string TrackSmoothing { get; set; } = "medium";
     public string ElevationAlgorithm { get; set; } = "threshold";
+    public bool FixAnomalies { get; set; }
 }
 
 public class AiProviderSettingsDto

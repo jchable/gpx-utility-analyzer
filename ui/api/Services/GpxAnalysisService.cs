@@ -24,6 +24,7 @@ public class GpxAnalysisService
         var preset = await _settings.GetAsync("GpxCli:DefaultPreset", "trail") ?? "trail";
         var smoothing = await _settings.GetAsync("GpxCli:DefaultSmoothing", "medium") ?? "medium";
         var trackSmoothing = await _settings.GetAsync("GpxCli:DefaultTrackSmoothing", "medium") ?? "medium";
+        var fixAnomalies = bool.TryParse(await _settings.GetAsync("GpxCli:FixAnomalies"), out var fa) && fa;
 
         _logger.LogInformation("Analyzing {File} (preset={Preset}, smoothing={Smoothing}, trackSmoothing={TrackSmoothing})",
             gpxFilePath, preset, smoothing, trackSmoothing);
@@ -33,7 +34,7 @@ public class GpxAnalysisService
         var points = doc.AllPoints();
 
         // 2. Build ComputeConfig
-        var cfg = BuildConfig(preset, smoothing, trackSmoothing);
+        var cfg = BuildConfig(preset, smoothing, trackSmoothing, fixAnomalies);
 
         // 3. Run pipeline
         var (summary, processed) = ComputePipeline.Compute(points, doc.SegmentCount(), cfg);
@@ -55,7 +56,7 @@ public class GpxAnalysisService
         return SummaryMapper.ToGpxStats(gpxFilePath, summary);
     }
 
-    private static ComputeConfig BuildConfig(string preset, string smoothing, string trackSmoothing)
+    private static ComputeConfig BuildConfig(string preset, string smoothing, string trackSmoothing, bool fixAnomalies = false)
     {
         if (!StopDetector.Presets.TryGetValue(preset, out var stopCfg))
             stopCfg = StopDetector.Presets[StopDetector.PresetTrail];
@@ -85,6 +86,7 @@ public class GpxAnalysisService
             TrackSmoothing = trackSmoothing,
             MaxReasonableSpeed = maxReasonable,
             AnomalyConfig = AnomalyConfig.Default(),
+            FixAnomalies = fixAnomalies,
         };
     }
 }

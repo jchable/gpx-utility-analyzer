@@ -45,6 +45,8 @@
     "douglas-peucker": "Douglas-Peucker",
     "segments": "Segments"
   },
+  "fixAnomalies": "Corriger les anomalies",
+  "fixAnomaliesHint": "Corriger automatiquement les positions GPS gelées, la dérive en arrêt et autres anomalies du tracé lors de l'analyse.",
   "aiProvider": "Fournisseur IA",
   "provider": "Fournisseur",
   "model": "Modèle",

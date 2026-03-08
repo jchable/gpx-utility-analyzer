@@ -235,6 +235,7 @@ export interface AnalysisSettings {
   smoothing: string;
   trackSmoothing: string;
   elevationAlgorithm: string;
+  fixAnomalies: boolean;
 }
 
 export interface AiProviderSettings {

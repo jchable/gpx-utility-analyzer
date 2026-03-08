@@ -45,6 +45,8 @@
     "douglas-peucker": "Douglas-Peucker",
     "segments": "Segments"
   },
+  "fixAnomalies": "Fix Anomalies",
+  "fixAnomaliesHint": "Automatically correct GPS frozen positions, drift during stops, and other track anomalies during analysis.",
   "aiProvider": "AI Provider",
   "provider": "Provider",
   "model": "Model",
