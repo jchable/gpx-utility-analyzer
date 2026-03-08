@@ -44,9 +44,23 @@ public class DashboardController : ControllerBase
             .Select(g => new { Type = g.Key, Count = g.Count() })
             .ToListAsync();
 
+        // Project only the columns needed for the list — avoids loading
+        // ProfileJson, TrackGeoJson, StatsJson, AiReportJson, SplitsJson blobs.
         var recentActivities = await completed
             .OrderByDescending(a => a.StartTime)
             .Take(10)
+            .Select(a => new ActivityListDto
+            {
+                Id = a.Id,
+                Name = a.Name,
+                ActivityType = a.ActivityType,
+                StartTime = a.StartTime,
+                DistanceKm = a.DistanceKm,
+                ElevationGainM = a.ElevationGainM,
+                MovingTimeSeconds = a.MovingTimeSeconds,
+                Source = a.Source,
+                Status = a.Status.ToString(),
+            })
             .ToListAsync();
 
         return new DashboardSummaryDto
@@ -59,18 +73,7 @@ public class DashboardController : ControllerBase
             DistanceThisMonthKm = distanceThisMonthKm,
             ElevationGainThisMonthM = elevationGainThisMonthM,
             MovingTimeThisMonthSeconds = movingTimeThisMonthSeconds,
-            RecentActivities = recentActivities.Select(a => new ActivityListDto
-            {
-                Id = a.Id,
-                Name = a.Name,
-                ActivityType = a.ActivityType,
-                StartTime = a.StartTime,
-                DistanceKm = a.DistanceKm,
-                ElevationGainM = a.ElevationGainM,
-                MovingTimeSeconds = a.MovingTimeSeconds,
-                Source = a.Source,
-                Status = a.Status.ToString(),
-            }).ToList(),
+            RecentActivities = recentActivities,
             ActivityTypeBreakdown = typeBreakdown.ToDictionary(g => g.Type, g => g.Count),
         };
     }

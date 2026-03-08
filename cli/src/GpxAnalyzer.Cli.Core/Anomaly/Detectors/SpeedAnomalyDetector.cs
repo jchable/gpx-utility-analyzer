@@ -46,10 +46,11 @@ public static class SpeedAnomalyDetector
                     {
                         double nextDt = i + 1 < points.Count
                             ? (points[i + 1].Time - points[i].Time).TotalSeconds : 999;
+                        i++; // always advance before checking gap
                         if (nextDt > 10) break;
-                        i++;
                     }
 
+                    int clusterSize = i - clusterStart;
                     anomalies.Add(new TrackAnomaly
                     {
                         Type = AnomalyType.SpeedSpike,
@@ -61,7 +62,7 @@ public static class SpeedAnomalyDetector
                         EndTime = points[i - 1].Time,
                         DistanceImpactM = 0,
                         TimeImpactS = 0,
-                        Description = $"Speed spike: {i - clusterStart} points exceeded {maxReasonableSpeed * 3.6:F1} km/h threshold",
+                        Description = $"Speed spike: {clusterSize} points exceeded {maxReasonableSpeed * 3.6:F1} km/h threshold",
                     });
                     continue;
                 }
