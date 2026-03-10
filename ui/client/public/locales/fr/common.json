@@ -37,6 +37,7 @@
     "bpm": "bpm",
     "watts": "W",
     "rpm": "rpm",
+    "spm": "pas/min",
     "kcal": "kcal",
     "minPerKm": "min/km",
     "kb": "Ko"

@@ -447,6 +447,36 @@ export default function ActivityDetail() {
         <AnomalyBanner report={stats.anomalies} />
       )}
 
+      {/* Key Stats */}
+      {stats && (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
+            <p className="text-xs text-slate-500 mb-1">{t('distance')}</p>
+            <p className="text-lg font-bold text-cyan-400">{stats.total_distance_km.toFixed(1)} {tc('unit.km')}</p>
+          </div>
+          <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
+            <p className="text-xs text-slate-500 mb-1">{t('detail.movingTime')}</p>
+            <p className="text-lg font-bold text-white">{stats.moving_time.display}</p>
+          </div>
+          <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
+            <p className="text-xs text-slate-500 mb-1">{t('detail.avgSpeed')}</p>
+            <p className="text-lg font-bold text-white">{stats.avg_moving_speed_kmh.toFixed(1)} {tc('unit.kmh')}</p>
+          </div>
+          <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
+            <p className="text-xs text-slate-500 mb-1">{t('detail.elevationGain')}</p>
+            <p className="text-lg font-bold text-[#00ff88]">+{Math.round(stats.elevation_gain_m)} {tc('unit.m')}</p>
+          </div>
+          <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
+            <p className="text-xs text-slate-500 mb-1">{t('detail.totalTime')}</p>
+            <p className="text-lg font-bold text-white">{formatDuration(stats.total_time.seconds, tc)}</p>
+          </div>
+          <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
+            <p className="text-xs text-slate-500 mb-1">{t('detail.avgPace')}</p>
+            <p className="text-lg font-bold text-white">{stats.avg_moving_pace}</p>
+          </div>
+        </div>
+      )}
+
       {/* Track Map */}
       <div className="h-[300px] sm:h-[400px] lg:h-[500px] rounded-2xl overflow-hidden">
         <TrackMap coordinates={trackData?.coordinates} loading={trackLoading} error={trackError?.message} focusedPoint={focusedStop} />
@@ -488,22 +518,6 @@ export default function ActivityDetail() {
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-            <p className="text-xs text-slate-500 mb-1">{t('distance')}</p>
-            <p className="text-lg font-bold text-cyan-400">{stats.total_distance_km.toFixed(1)} {tc('unit.km')}</p>
-          </div>
-          <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-            <p className="text-xs text-slate-500 mb-1">{t('detail.avgSpeed')}</p>
-            <p className="text-lg font-bold text-white">{stats.avg_moving_speed_kmh.toFixed(1)} {tc('unit.kmh')}</p>
-          </div>
-          <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-            <p className="text-xs text-slate-500 mb-1">{t('detail.movingTime')}</p>
-            <p className="text-lg font-bold text-white">{stats.moving_time.display}</p>
-          </div>
-          <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-            <p className="text-xs text-slate-500 mb-1">{t('detail.avgPace')}</p>
-            <p className="text-lg font-bold text-white">{stats.avg_moving_pace}</p>
-          </div>
-          <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
             <p className="text-xs text-slate-500 mb-1">{t('detail.maxSpeed')}</p>
             <p className="text-lg font-bold text-white">{stats.max_speed_kmh.toFixed(1)} {tc('unit.kmh')}</p>
           </div>
@@ -514,10 +528,6 @@ export default function ActivityDetail() {
           <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
             <p className="text-xs text-slate-500 mb-1">{t('detail.minElevation')}</p>
             <p className="text-lg font-bold text-white">{Math.round(stats.min_elevation_m)} {tc('unit.m')}</p>
-          </div>
-          <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-            <p className="text-xs text-slate-500 mb-1">{t('detail.totalTime')}</p>
-            <p className="text-lg font-bold text-white">{formatDuration(stats.total_time.seconds, tc)}</p>
           </div>
           <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
             <p className="text-xs text-slate-500 mb-1">{t('detail.stoppedTime')}</p>
@@ -531,32 +541,23 @@ export default function ActivityDetail() {
             <p className="text-xs text-slate-500 mb-1">{t('detail.pointsPerKm')}</p>
             <p className="text-lg font-bold text-white">{Math.round(stats.points_per_km)}</p>
           </div>
-
-          {/* Optional sensor stats */}
-          {stats.heart_rate && (
-            <>
-              <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-                <p className="text-xs text-slate-500 mb-1">{t('detail.avgHR')}</p>
-                <p className="text-lg font-bold text-red-400">{Math.round(stats.heart_rate.avg_bpm)} {tc('unit.bpm')}</p>
-              </div>
-              <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-                <p className="text-xs text-slate-500 mb-1">{t('detail.maxHR')}</p>
-                <p className="text-lg font-bold text-red-400">{stats.heart_rate.max_bpm} {tc('unit.bpm')}</p>
-              </div>
-            </>
-          )}
           {stats.power && (
             <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
               <p className="text-xs text-slate-500 mb-1">{t('detail.avgPower')}</p>
               <p className="text-lg font-bold text-yellow-400">{Math.round(stats.power.avg_watts)} {tc('unit.watts')}</p>
             </div>
           )}
-          {stats.cadence && (
-            <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-              <p className="text-xs text-slate-500 mb-1">{t('detail.avgCadence')}</p>
-              <p className="text-lg font-bold text-blue-400">{Math.round(stats.cadence.avg_rpm)} {tc('unit.rpm')}</p>
-            </div>
-          )}
+          {stats.cadence && (() => {
+            const isFootActivity = ['run', 'trail', 'hike', 'walk'].includes(activity.activityType);
+            const cadenceValue = isFootActivity ? stats.cadence!.avg_rpm * 2 : stats.cadence!.avg_rpm;
+            const cadenceUnit = isFootActivity ? tc('unit.spm') : tc('unit.rpm');
+            return (
+              <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
+                <p className="text-xs text-slate-500 mb-1">{t('detail.avgCadence')}</p>
+                <p className="text-lg font-bold text-blue-400">{Math.round(cadenceValue)} {cadenceUnit}</p>
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -570,6 +571,8 @@ export default function ActivityDetail() {
           trimp={trimp}
           maxHR={effectiveMaxHR}
           source={hrMaxSource}
+          avgBpm={activity.stats?.heart_rate?.avg_bpm}
+          maxBpm={activity.stats?.heart_rate?.max_bpm}
         />
       )}
 

@@ -17,9 +17,11 @@ interface Props {
   trimp: number;
   maxHR: number;
   source: 'user' | 'age' | 'observed';
+  avgBpm?: number;
+  maxBpm?: number;
 }
 
-export default function HRZonesSection({ zones, trimp, maxHR, source }: Props) {
+export default function HRZonesSection({ zones, trimp, maxHR, source, avgBpm, maxBpm }: Props) {
   const { t } = useTranslation('activities');
   const { t: tc } = useTranslation();
 
@@ -52,6 +54,24 @@ export default function HRZonesSection({ zones, trimp, maxHR, source }: Props) {
           </div>
         )}
       </div>
+
+      {/* HR summary stats */}
+      {(avgBpm || maxBpm) && (
+        <div className="grid grid-cols-2 gap-4">
+          {avgBpm != null && (
+            <div className="bg-slate-800/50 rounded-xl p-4">
+              <p className="text-xs text-slate-500 mb-1">{t('detail.avgHR')}</p>
+              <p className="text-lg font-bold text-red-400">{Math.round(avgBpm)} {tc('unit.bpm')}</p>
+            </div>
+          )}
+          {maxBpm != null && (
+            <div className="bg-slate-800/50 rounded-xl p-4">
+              <p className="text-xs text-slate-500 mb-1">{t('detail.maxHR')}</p>
+              <p className="text-lg font-bold text-red-400">{maxBpm} {tc('unit.bpm')}</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {hasData ? (
         <>
