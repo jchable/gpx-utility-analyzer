@@ -51,6 +51,64 @@ public static class AnomalyCorrector
         // Re-enrich speeds and distances
         SpeedCalculator.EnrichPoints(points);
 
+        // Override DistFromPrev for corrected GPS frozen sections:
+        // Linear lat/lon interpolation doesn't recover loop-course distance,
+        // so estimate using post-correction average moving speed.
+        if (s.AnomalyReport != null)
+        {
+            // Collect frozen section index ranges
+            var frozenRanges = new List<(int Start, int End, double Duration)>();
+            foreach (var a in s.AnomalyReport.Anomalies)
+            {
+                if (a.Type == AnomalyType.GpsFrozen && a.WasCorrected && a.TimeImpactS > 0)
+                    frozenRanges.Add((a.StartIndex, a.EndIndex, a.TimeImpactS));
+            }
+
+            if (frozenRanges.Count > 0)
+            {
+                // Build a set of frozen point indices for fast lookup
+                var frozenIndices = new HashSet<int>();
+                foreach (var (start, end, _) in frozenRanges)
+                    for (int i = start; i <= end; i++)
+                        frozenIndices.Add(i);
+
+                // Sum post-enrichment distance for non-frozen points only
+                // (drift sections are already collapsed to centroid by ApplyCorrections,
+                //  so EnrichPoints produces ~0 DistFromPrev for them)
+                double healthyDist = 0;
+                for (int i = 1; i < points.Count; i++)
+                {
+                    if (!frozenIndices.Contains(i))
+                        healthyDist += points[i].DistFromPrev;
+                }
+
+                // Compute effective non-frozen moving time
+                double totalFrozenDuration = frozenRanges.Sum(r => r.Duration);
+                double nonFrozenMovingS = Math.Max(0,
+                    s.MovingTime.TotalSeconds - totalFrozenDuration);
+
+                // If frozen sections were detected as stops, MovingTime already excludes them.
+                // Compute both variants and pick the lower speed to avoid over-estimation.
+                double avgSpeed1 = s.MovingTime.TotalSeconds > 0
+                    ? healthyDist / s.MovingTime.TotalSeconds : 0;
+                double avgSpeed2 = nonFrozenMovingS > 0
+                    ? healthyDist / nonFrozenMovingS : 0;
+                double avgMovingSpeed = Math.Min(avgSpeed1, avgSpeed2);
+
+                // Apply to frozen sections
+                foreach (var (start, end, duration) in frozenRanges)
+                {
+                    double estimatedDist = avgMovingSpeed * duration;
+                    int count = end - start + 1;
+                    double distPerPoint = estimatedDist / count;
+                    for (int i = start; i <= end && i < points.Count; i++)
+                    {
+                        points[i].DistFromPrev = distPerPoint;
+                    }
+                }
+            }
+        }
+
         // Re-sum distances
         s.TotalDistance = 0;
         s.TotalDistance3D = 0;
