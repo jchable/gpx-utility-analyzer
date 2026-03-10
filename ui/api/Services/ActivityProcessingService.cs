@@ -76,7 +76,7 @@ public class ActivityProcessingService
             Directory.CreateDirectory(exportDir);
 
             var stepSw = Stopwatch.StartNew();
-            var stats = await _analysisService.AnalyzeAsync(gpxToAnalyze, exportDir, ct);
+            var stats = await _analysisService.AnalyzeAsync(gpxToAnalyze, activity.ActivityType, exportDir, ct);
             stepSw.Stop();
 
             _logger.LogInformation("[{Id}] GPX analysis completed in {Elapsed:F1}s — {Distance:F1} km, D+{Gain:F0}m, D-{Loss:F0}m, moving {MovingTime}",

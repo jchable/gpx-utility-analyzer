@@ -52,7 +52,8 @@
     "next": "Suivant",
     "view": "Voir",
     "connect": "Connecter",
-    "disconnect": "Déconnecter"
+    "disconnect": "Déconnecter",
+    "confirm": "Confirmer"
   },
   "error": {
     "loadFailed": "Échec du chargement : {{message}}",

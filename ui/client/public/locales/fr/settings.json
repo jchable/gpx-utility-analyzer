@@ -32,7 +32,10 @@
   "preset": {
     "trail": "Trail",
     "hiking": "Randonnée",
-    "cycling": "Cyclisme"
+    "cycling": "Cyclisme",
+    "running": "Course à pied",
+    "walking": "Marche",
+    "swimming": "Natation"
   },
   "smoothingLevel": {
     "none": "Aucun",

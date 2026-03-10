@@ -198,6 +198,23 @@ public class ActivitiesController : ControllerBase
         return Content(activity.SplitsJson, "application/json");
     }
 
+    [HttpPatch("{id:guid}")]
+    public async Task<IActionResult> UpdateActivity(Guid id, [FromBody] UpdateActivityDto dto)
+    {
+        var activity = await _db.Activities.FindAsync(id);
+        if (activity is null) return NotFound();
+
+        if (!string.IsNullOrEmpty(dto.ActivityType))
+            activity.ActivityType = dto.ActivityType;
+        if (!string.IsNullOrEmpty(dto.Name))
+            activity.Name = dto.Name;
+
+        activity.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        return Ok(new { activity.Id, activity.ActivityType, activity.Name });
+    }
+
     [HttpPost("{id:guid}/reanalyze")]
     public async Task<IActionResult> Reanalyze(Guid id)
     {

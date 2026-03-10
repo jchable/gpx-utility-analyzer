@@ -19,9 +19,22 @@ public class GpxAnalysisService
         _logger = logger;
     }
 
-    public async Task<GpxStats> AnalyzeAsync(string gpxFilePath, string? exportDir = null, CancellationToken ct = default)
+    private static readonly Dictionary<string, string> ActivityTypeToPreset = new()
     {
-        var preset = await _settings.GetAsync("GpxCli:DefaultPreset", "trail") ?? "trail";
+        ["run"] = StopDetector.PresetRunning,
+        ["walk"] = StopDetector.PresetWalking,
+        ["trail"] = StopDetector.PresetTrail,
+        ["hike"] = StopDetector.PresetHiking,
+        ["cycle"] = StopDetector.PresetCycling,
+        ["swim"] = StopDetector.PresetSwimming,
+    };
+
+    public async Task<GpxStats> AnalyzeAsync(string gpxFilePath, string? activityType = null, string? exportDir = null, CancellationToken ct = default)
+    {
+        var defaultPreset = await _settings.GetAsync("GpxCli:DefaultPreset", "trail") ?? "trail";
+        var preset = activityType != null && ActivityTypeToPreset.TryGetValue(activityType, out var mapped)
+            ? mapped
+            : defaultPreset;
         var smoothing = await _settings.GetAsync("GpxCli:DefaultSmoothing", "medium") ?? "medium";
         var trackSmoothing = await _settings.GetAsync("GpxCli:DefaultTrackSmoothing", "medium") ?? "medium";
         var fixAnomalies = bool.TryParse(await _settings.GetAsync("GpxCli:FixAnomalies"), out var fa) && fa;

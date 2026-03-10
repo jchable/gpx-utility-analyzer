@@ -196,6 +196,9 @@ export default function SettingsPage() {
     { value: 'trail', label: t('preset.trail') },
     { value: 'hiking', label: t('preset.hiking') },
     { value: 'cycling', label: t('preset.cycling') },
+    { value: 'running', label: t('preset.running') },
+    { value: 'walking', label: t('preset.walking') },
+    { value: 'swimming', label: t('preset.swimming') },
   ];
 
   const smoothingOptions = [

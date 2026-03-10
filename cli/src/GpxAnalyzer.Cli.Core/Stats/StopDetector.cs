@@ -29,12 +29,18 @@ public static class StopDetector
     public const string PresetHiking = "hiking";
     public const string PresetTrail = "trail";
     public const string PresetCycling = "cycling";
+    public const string PresetRunning = "running";
+    public const string PresetSwimming = "swimming";
+    public const string PresetWalking = "walking";
 
     public static readonly Dictionary<string, StopConfig> Presets = new()
     {
         [PresetHiking] = new() { MaxSpeed = 0.2, MinDuration = TimeSpan.FromMinutes(3), MaxDistance = 30 },
         [PresetTrail] = new() { MaxSpeed = 0.3, MinDuration = TimeSpan.FromMinutes(2), MaxDistance = 50 },
         [PresetCycling] = new() { MaxSpeed = 1.0, MinDuration = TimeSpan.FromSeconds(30), MaxDistance = 100 },
+        [PresetRunning] = new() { MaxSpeed = 0.3, MinDuration = TimeSpan.FromMinutes(5), MaxDistance = 150 },
+        [PresetSwimming] = new() { MaxSpeed = 0.15, MinDuration = TimeSpan.FromMinutes(2), MaxDistance = 100 },
+        [PresetWalking] = new() { MaxSpeed = 0.2, MinDuration = TimeSpan.FromMinutes(3), MaxDistance = 30 },
     };
 
     public static string DefaultPreset() => PresetHiking;

@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useActivity, useProfile, useTrack, useSplits, useSettings } from '../hooks/useActivities';
 import { api } from '../api/client';
 import { routesApi } from '../api/routes-client';
-import { ACTIVITY_COLORS } from '../types/activity';
+import { ACTIVITY_COLORS, ACTIVITY_TYPES } from '../types/activity';
 import type { TrackReport } from '../types/activity';
 import TrackMap from '../components/map/TrackMap';
 import ElevationProfileChart from '../components/activity/ElevationProfileChart';
@@ -250,6 +250,9 @@ export default function ActivityDetail() {
   const [isReanalyzing, setIsReanalyzing] = useState(false);
   const [isCreatingRoute, setIsCreatingRoute] = useState(false);
   const [focusedStop, setFocusedStop] = useState<{ lat: number; lon: number } | null>(null);
+  const [editingType, setEditingType] = useState(false);
+  const [pendingType, setPendingType] = useState<string | null>(null);
+  const [isChangingType, setIsChangingType] = useState(false);
 
   const hasTimestamps = (profileData?.length ?? 0) > 0 && profileData![0].elapsedTime != null;
 
@@ -378,12 +381,42 @@ export default function ActivityDetail() {
           </button>
           <h1 className="text-3xl font-bold text-white tracking-tight">{activity.name}</h1>
           <div className="flex items-center gap-3 mt-2">
-            <span
-              className="text-xs font-bold px-2.5 py-1 rounded-full"
-              style={{ backgroundColor: color + '22', color }}
-            >
-              {tc(`activityType.${activity.activityType}`)}
-            </span>
+            {editingType ? (
+              <div className="flex items-center gap-1 flex-wrap">
+                {ACTIVITY_TYPES.map((t) => {
+                  const c = ACTIVITY_COLORS[t] || ACTIVITY_COLORS.other;
+                  const isActive = t === activity.activityType;
+                  return (
+                    <button
+                      key={t}
+                      onClick={() => {
+                        if (t !== activity.activityType) {
+                          setPendingType(t);
+                        }
+                        setEditingType(false);
+                      }}
+                      className="text-xs font-bold px-2.5 py-1 rounded-full border transition-colors"
+                      style={{
+                        backgroundColor: isActive ? c + '33' : 'transparent',
+                        color: isActive ? c : '#94a3b8',
+                        borderColor: isActive ? c + '55' : '#334155',
+                      }}
+                    >
+                      {tc(`activityType.${t}`)}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <button
+                onClick={() => setEditingType(true)}
+                className="text-xs font-bold px-2.5 py-1 rounded-full cursor-pointer hover:ring-2 hover:ring-white/20 transition-all"
+                style={{ backgroundColor: color + '22', color }}
+                title={tc('button.edit') ?? 'Edit'}
+              >
+                {tc(`activityType.${activity.activityType}`)}
+              </button>
+            )}
             <div className="flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${statusCfg.bg} ${statusCfg.pulse ? 'animate-pulse' : ''}`} />
               <span className={`text-sm ${statusCfg.color}`}>{tc(`status.${activity.status}`)}</span>
@@ -618,6 +651,45 @@ export default function ActivityDetail() {
             {activity.status === 'Analyzing' ? t('detail.analyzingGpx') : t('detail.aiProcessing')}
           </p>
           <p className="text-slate-500 text-sm mt-1">{t('detail.autoRefresh')}</p>
+        </div>
+      )}
+
+      {/* Change type confirmation dialog */}
+      {pendingType && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => !isChangingType && setPendingType(null)}>
+          <div className="bg-[#16213e] border border-slate-700/50 rounded-xl p-6 max-w-sm mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-white mb-3">{t('detail.changeTypeTitle')}</h3>
+            <p className="text-sm text-slate-300 mb-5">
+              {t('detail.changeTypeConfirm', { type: tc(`activityType.${pendingType}`) })}
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setPendingType(null)}
+                disabled={isChangingType}
+                className="px-4 py-2 text-sm text-slate-300 hover:text-white transition-colors rounded-lg disabled:opacity-50"
+              >
+                {tc('button.cancel')}
+              </button>
+              <button
+                onClick={async () => {
+                  setIsChangingType(true);
+                  try {
+                    await api.updateActivity(activity.id, { activityType: pendingType });
+                    await api.reanalyzeActivity(activity.id);
+                    queryClient.invalidateQueries({ queryKey: ['activity', id] });
+                  } finally {
+                    setIsChangingType(false);
+                    setPendingType(null);
+                  }
+                }}
+                disabled={isChangingType}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 rounded-lg transition-colors flex items-center gap-2"
+              >
+                {isChangingType && <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent" />}
+                {tc('button.confirm')}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

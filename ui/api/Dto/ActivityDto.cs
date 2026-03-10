@@ -40,6 +40,12 @@ public class ActivityDetailDto
     public DateTime UpdatedAt { get; set; }
 }
 
+public class UpdateActivityDto
+{
+    public string? ActivityType { get; set; }
+    public string? Name { get; set; }
+}
+
 public class DashboardSummaryDto
 {
     public int TotalActivities { get; set; }

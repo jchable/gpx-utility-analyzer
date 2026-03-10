@@ -58,5 +58,30 @@ public class SpeedCalculatorTests
         Assert.True(SpeedCalculator.PresetMaxSpeed.ContainsKey("hiking"));
         Assert.True(SpeedCalculator.PresetMaxSpeed.ContainsKey("trail"));
         Assert.True(SpeedCalculator.PresetMaxSpeed.ContainsKey("cycling"));
+        Assert.True(SpeedCalculator.PresetMaxSpeed.ContainsKey("running"));
+        Assert.True(SpeedCalculator.PresetMaxSpeed.ContainsKey("swimming"));
+        Assert.True(SpeedCalculator.PresetMaxSpeed.ContainsKey("walking"));
+    }
+
+    [Theory]
+    [InlineData("hiking", 4.0)]
+    [InlineData("trail", 7.0)]
+    [InlineData("cycling", 25.0)]
+    [InlineData("running", 7.0)]
+    [InlineData("swimming", 3.0)]
+    [InlineData("walking", 4.0)]
+    public void PresetMaxSpeed_HasExpectedValues(string preset, double expected)
+    {
+        Assert.Equal(expected, SpeedCalculator.PresetMaxSpeed[preset]);
+    }
+
+    [Fact]
+    public void PresetMaxSpeed_MatchesStopDetectorPresets()
+    {
+        foreach (var preset in StopDetector.Presets.Keys)
+        {
+            Assert.True(SpeedCalculator.PresetMaxSpeed.ContainsKey(preset),
+                $"SpeedCalculator.PresetMaxSpeed missing preset '{preset}'");
+        }
     }
 }

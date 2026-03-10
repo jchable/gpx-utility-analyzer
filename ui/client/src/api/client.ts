@@ -65,6 +65,13 @@ export const api = {
     await fetch(`${BASE}/activities/${id}/reanalyze`, { method: 'POST', headers: langHeaders() });
   },
 
+  updateActivity: (id: string, data: { activityType?: string; name?: string }) =>
+    fetchJson<{ id: string; activityType: string; name: string }>(`/activities/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }),
+
   getProfile: (id: string) => fetchJson<ProfilePoint[]>(`/activities/${id}/profile`),
 
   getTrack: (id: string) => fetchJson<{ type: string; coordinates: number[][] }>(`/activities/${id}/track`),

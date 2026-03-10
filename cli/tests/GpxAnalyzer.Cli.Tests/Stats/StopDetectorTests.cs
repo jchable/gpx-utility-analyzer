@@ -73,11 +73,52 @@ public class StopDetectorTests
     }
 
     [Fact]
-    public void Presets_ContainAllThree()
+    public void Presets_ContainAllSix()
     {
         Assert.True(StopDetector.Presets.ContainsKey("hiking"));
         Assert.True(StopDetector.Presets.ContainsKey("trail"));
         Assert.True(StopDetector.Presets.ContainsKey("cycling"));
+        Assert.True(StopDetector.Presets.ContainsKey("running"));
+        Assert.True(StopDetector.Presets.ContainsKey("swimming"));
+        Assert.True(StopDetector.Presets.ContainsKey("walking"));
+    }
+
+    [Theory]
+    [InlineData("hiking", 0.2, 180, 30)]
+    [InlineData("trail", 0.3, 120, 50)]
+    [InlineData("cycling", 1.0, 30, 100)]
+    [InlineData("running", 0.3, 300, 150)]
+    [InlineData("swimming", 0.15, 120, 100)]
+    [InlineData("walking", 0.2, 180, 30)]
+    public void Presets_HaveExpectedValues(string preset, double maxSpeed, double minDurationSec, double maxDistance)
+    {
+        var cfg = StopDetector.Presets[preset];
+        Assert.Equal(maxSpeed, cfg.MaxSpeed);
+        Assert.Equal(TimeSpan.FromSeconds(minDurationSec), cfg.MinDuration);
+        Assert.Equal(maxDistance, cfg.MaxDistance);
+    }
+
+    [Fact]
+    public void DetectStops_RunningPreset_IgnoresShortPauses()
+    {
+        var points = new List<TrackPoint>();
+        var baseTime = new DateTime(2024, 1, 1, 10, 0, 0, DateTimeKind.Utc);
+
+        // Moving
+        for (int i = 0; i < 5; i++)
+            points.Add(new TrackPoint { Lat = 48.0 + i * 0.001, Lon = 2.0, CalcSpeed = 3.0, Time = baseTime.AddMinutes(i) });
+
+        // Short pause (3 min) — should NOT be detected with running preset (MinDuration=5min)
+        for (int i = 0; i < 4; i++)
+            points.Add(new TrackPoint { Lat = 48.004, Lon = 2.0, CalcSpeed = 0.05, Time = baseTime.AddMinutes(5 + i) });
+
+        // Resume
+        for (int i = 0; i < 3; i++)
+            points.Add(new TrackPoint { Lat = 48.004 + (i + 1) * 0.001, Lon = 2.0, CalcSpeed = 3.0, Time = baseTime.AddMinutes(9 + i) });
+
+        var cfg = StopDetector.Presets["running"];
+        var stops = StopDetector.DetectStops(points, cfg);
+        Assert.Empty(stops); // 3 min pause is below running's 5 min threshold
     }
 
     [Fact]
