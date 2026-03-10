@@ -126,6 +126,10 @@ Two projects with a shared library pattern:
 
 Key packages: `Microsoft.Extensions.AI` (chat client abstraction), `Anthropic.SDK`, `Mistral.SDK`, `OllamaSharp`, `Azure.AI.OpenAI`.
 
+### After changes
+
+- Redeploy on compose for user to test
+
 ## Web App — ui/
 
 ### API Build & Run
