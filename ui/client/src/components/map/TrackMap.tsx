@@ -68,6 +68,48 @@ function getStyleUrl(view: MapView, key: string): string | maplibregl.StyleSpeci
 
 const TRACK_SOURCE_ID = 'gpx-track';
 const TRACK_LAYER_ID = 'gpx-track-line';
+const MARKERS_SOURCE_ID = 'track-markers';
+const START_BORDER_LAYER = 'start-marker-border';
+const START_LAYER = 'start-marker';
+const FINISH_LAYER = 'finish-marker';
+const FINISH_IMAGE_ID = 'finish-checkered';
+
+function createCheckeredImage(size: number): ImageData {
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+  const center = size / 2;
+  const outerR = size / 2;
+  const innerR = outerR - 3; // white border width
+
+  // White border circle
+  ctx.beginPath();
+  ctx.arc(center, center, outerR, 0, Math.PI * 2);
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
+
+  // Clip to inner circle for checkered pattern
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(center, center, innerR, 0, Math.PI * 2);
+  ctx.clip();
+
+  // Draw checkered grid
+  const cells = 4;
+  const cellSize = (innerR * 2) / cells;
+  const startX = center - innerR;
+  const startY = center - innerR;
+  for (let row = 0; row < cells; row++) {
+    for (let col = 0; col < cells; col++) {
+      ctx.fillStyle = (row + col) % 2 === 0 ? '#000000' : '#ffffff';
+      ctx.fillRect(startX + col * cellSize, startY + row * cellSize, cellSize, cellSize);
+    }
+  }
+  ctx.restore();
+
+  return ctx.getImageData(0, 0, size, size);
+}
 
 export default function TrackMap({
   coordinates,
@@ -84,11 +126,12 @@ export default function TrackMap({
   const [view, setView] = useState<MapView>(key ? '3d-terrain' : '2d-topo');
 
   const addTrackLayer = useCallback((map: maplibregl.Map, coords: number[][]) => {
-    if (map.getLayer(TRACK_LAYER_ID)) {
-      map.removeLayer(TRACK_LAYER_ID);
+    // Clean up existing layers
+    for (const layerId of [FINISH_LAYER, START_LAYER, START_BORDER_LAYER, TRACK_LAYER_ID]) {
+      if (map.getLayer(layerId)) map.removeLayer(layerId);
     }
-    if (map.getSource(TRACK_SOURCE_ID)) {
-      map.removeSource(TRACK_SOURCE_ID);
+    for (const sourceId of [MARKERS_SOURCE_ID, TRACK_SOURCE_ID]) {
+      if (map.getSource(sourceId)) map.removeSource(sourceId);
     }
 
     map.addSource(TRACK_SOURCE_ID, {
@@ -116,6 +159,72 @@ export default function TrackMap({
         'line-width': 3,
       },
     });
+
+    // Add start & finish markers
+    if (coords.length >= 2) {
+      const startCoord = coords[0];
+      const endCoord = coords[coords.length - 1];
+
+      map.addSource(MARKERS_SOURCE_ID, {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: [
+            {
+              type: 'Feature',
+              properties: { marker: 'start' },
+              geometry: { type: 'Point', coordinates: startCoord.slice(0, 2) },
+            },
+            {
+              type: 'Feature',
+              properties: { marker: 'finish' },
+              geometry: { type: 'Point', coordinates: endCoord.slice(0, 2) },
+            },
+          ],
+        },
+      });
+
+      // Start marker: white border circle
+      map.addLayer({
+        id: START_BORDER_LAYER,
+        type: 'circle',
+        source: MARKERS_SOURCE_ID,
+        filter: ['==', ['get', 'marker'], 'start'],
+        paint: {
+          'circle-radius': 9,
+          'circle-color': '#ffffff',
+        },
+      });
+
+      // Start marker: green inner circle
+      map.addLayer({
+        id: START_LAYER,
+        type: 'circle',
+        source: MARKERS_SOURCE_ID,
+        filter: ['==', ['get', 'marker'], 'start'],
+        paint: {
+          'circle-radius': 6,
+          'circle-color': '#22c55e',
+        },
+      });
+
+      // Finish marker: checkered image
+      if (!map.hasImage(FINISH_IMAGE_ID)) {
+        const canvas = createCheckeredImage(28);
+        map.addImage(FINISH_IMAGE_ID, canvas, { pixelRatio: 1.5 });
+      }
+
+      map.addLayer({
+        id: FINISH_LAYER,
+        type: 'symbol',
+        source: MARKERS_SOURCE_ID,
+        filter: ['==', ['get', 'marker'], 'finish'],
+        layout: {
+          'icon-image': FINISH_IMAGE_ID,
+          'icon-allow-overlap': true,
+        },
+      });
+    }
 
     if (coords.length > 0) {
       const bounds = computeBounds(coords);
