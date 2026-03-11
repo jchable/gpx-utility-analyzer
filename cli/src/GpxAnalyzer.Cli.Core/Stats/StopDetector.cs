@@ -22,6 +22,10 @@ public sealed class StopConfig
     public double MaxSpeed { get; init; }       // m/s
     public TimeSpan MinDuration { get; init; }
     public double MaxDistance { get; init; }     // meters, 0 = no check
+    /// <summary>Tolerate fast spikes shorter than this without breaking the stop.</summary>
+    public TimeSpan GracePeriod { get; init; } = TimeSpan.FromSeconds(30);
+    /// <summary>Merge stops separated by a gap shorter than this.</summary>
+    public TimeSpan MergeGap { get; init; } = TimeSpan.FromSeconds(90);
 }
 
 public static class StopDetector
@@ -38,7 +42,7 @@ public static class StopDetector
         [PresetHiking] = new() { MaxSpeed = 0.2, MinDuration = TimeSpan.FromMinutes(3), MaxDistance = 30 },
         [PresetTrail] = new() { MaxSpeed = 0.3, MinDuration = TimeSpan.FromMinutes(2), MaxDistance = 50 },
         [PresetCycling] = new() { MaxSpeed = 1.0, MinDuration = TimeSpan.FromSeconds(30), MaxDistance = 100 },
-        [PresetRunning] = new() { MaxSpeed = 0.3, MinDuration = TimeSpan.FromMinutes(5), MaxDistance = 150 },
+        [PresetRunning] = new() { MaxSpeed = 0.5, MinDuration = TimeSpan.FromMinutes(5), MaxDistance = 150 },
         [PresetSwimming] = new() { MaxSpeed = 0.15, MinDuration = TimeSpan.FromMinutes(2), MaxDistance = 100 },
         [PresetWalking] = new() { MaxSpeed = 0.2, MinDuration = TimeSpan.FromMinutes(3), MaxDistance = 30 },
     };
@@ -47,6 +51,8 @@ public static class StopDetector
 
     /// <summary>
     /// Identifies stop periods in enriched trackpoints (CalcSpeed must be populated).
+    /// Uses a grace period to tolerate brief GPS speed spikes within a stop,
+    /// and merges nearby stops separated by short gaps.
     /// </summary>
     public static List<Stop> DetectStops(List<TrackPoint> points, StopConfig cfg)
     {
@@ -56,6 +62,7 @@ public static class StopDetector
         var stops = new List<Stop>();
         bool inStop = false;
         int stopStart = 0;
+        int lastSlowIdx = 0; // last index where speed was slow
 
         for (int i = 1; i < points.Count; i++)
         {
@@ -63,25 +70,99 @@ public static class StopDetector
 
             if (isSlow && !inStop)
             {
+                // Entering a stop
                 inStop = true;
                 stopStart = i - 1;
+                lastSlowIdx = i;
+            }
+            else if (isSlow && inStop)
+            {
+                // Still in a stop (or back from grace)
+                lastSlowIdx = i;
             }
             else if (!isSlow && inStop)
             {
-                var stop = BuildStop(points, stopStart, i, cfg);
-                if (stop != null) stops.Add(stop);
-                inStop = false;
+                // Fast point during a stop — check grace period
+                var elapsed = points[i].Time - points[lastSlowIdx].Time;
+                if (elapsed > cfg.GracePeriod)
+                {
+                    // Grace expired: end stop at the last slow point
+                    var stop = BuildStop(points, stopStart, lastSlowIdx + 1, cfg);
+                    if (stop != null) stops.Add(stop);
+                    inStop = false;
+                }
+                // Otherwise: stay in stop, grace period absorbs the spike
             }
         }
 
         // Handle stop at end of data
         if (inStop)
         {
-            var stop = BuildStop(points, stopStart, points.Count, cfg);
+            var stop = BuildStop(points, stopStart, lastSlowIdx + 1, cfg);
             if (stop != null) stops.Add(stop);
         }
 
+        // Merge nearby stops
+        if (cfg.MergeGap > TimeSpan.Zero && stops.Count > 1)
+            stops = MergeStops(stops, points, cfg);
+
         return stops;
+    }
+
+    /// <summary>
+    /// Merges stops separated by a gap shorter than mergeGap.
+    /// Recomputes centroid from the original points spanning the merged range.
+    /// </summary>
+    public static List<Stop> MergeStops(List<Stop> stops, List<TrackPoint> points, StopConfig cfg)
+    {
+        if (stops.Count <= 1)
+            return stops;
+
+        var merged = new List<Stop> { stops[0] };
+
+        for (int i = 1; i < stops.Count; i++)
+        {
+            var prev = merged[^1];
+            var gap = stops[i].StartTime - prev.EndTime;
+
+            if (gap <= cfg.MergeGap)
+            {
+                // Merge: find point indices for centroid recomputation
+                var mergedStart = prev.StartTime;
+                var mergedEnd = stops[i].EndTime;
+                var duration = mergedEnd - mergedStart;
+
+                // Compute centroid from all points in the merged range
+                double sumLat = 0, sumLon = 0;
+                int count = 0;
+                for (int p = 0; p < points.Count; p++)
+                {
+                    if (points[p].Time >= mergedStart && points[p].Time <= mergedEnd)
+                    {
+                        sumLat += points[p].Lat;
+                        sumLon += points[p].Lon;
+                        count++;
+                    }
+                }
+
+                if (count == 0) count = 1; // safety
+
+                merged[^1] = new Stop
+                {
+                    StartTime = mergedStart,
+                    EndTime = mergedEnd,
+                    Duration = duration,
+                    Lat = sumLat / count,
+                    Lon = sumLon / count,
+                };
+            }
+            else
+            {
+                merged.Add(stops[i]);
+            }
+        }
+
+        return merged;
     }
 
     private static Stop? BuildStop(List<TrackPoint> points, int startIdx, int endIdx, StopConfig cfg)
