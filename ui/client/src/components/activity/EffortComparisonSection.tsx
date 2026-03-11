@@ -5,7 +5,7 @@ import { DIFFICULTY_STYLES } from '../../constants/difficulty';
 function PerformanceBar({ ratio, label }: { ratio: number; label: string }) {
   // ratio: <1 = faster than model, 1 = matching, >1 = slower
   const pct = Math.min(ratio * 50, 100); // scale so 1.0 = 50%, 2.0 = 100%
-  const color = ratio < 0.9 ? '#00ff88' : ratio < 1.1 ? '#00d4ff' : ratio < 1.5 ? '#f59e0b' : '#ef4444';
+  const color = ratio < 0.9 ? 'var(--accent-green)' : ratio < 1.1 ? 'var(--accent)' : ratio < 1.5 ? '#f59e0b' : 'var(--accent-red)';
 
   return (
     <div>

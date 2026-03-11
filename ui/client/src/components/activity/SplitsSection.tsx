@@ -94,7 +94,7 @@ export default function SplitsSection({ splits, bestEfforts, activityType }: Pro
                     const barPct = paceRange > 0
                       ? ((slowestPace - split.paceSecondsPerKm) / paceRange) * 100
                       : 50;
-                    const barColor = isFastest ? '#22c55e' : isSlowest ? '#ef4444' : '#00d4ff';
+                    const barColor = isFastest ? 'var(--accent-green)' : isSlowest ? 'var(--accent-red)' : 'var(--accent)';
 
                     return (
                       <tr

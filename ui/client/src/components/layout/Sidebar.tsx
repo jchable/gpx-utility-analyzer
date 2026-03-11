@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import LanguageSwitcher from './LanguageSwitcher';
+import ThemeSwitcher from './ThemeSwitcher';
 
 const navItems = [
   { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard },
@@ -85,6 +86,7 @@ export default function Sidebar() {
 
         {/* Footer */}
         <div className="px-2 py-2 border-t border-border">
+          <ThemeSwitcher collapsed={collapsed} />
           <LanguageSwitcher collapsed={collapsed} />
           {!collapsed && (
             <p className="text-xs text-content-muted/60 px-3 py-1">v0.1.0</p>
@@ -118,6 +120,7 @@ export default function Sidebar() {
             )}
           </NavLink>
         ))}
+        <ThemeSwitcher mobile />
         <LanguageSwitcher mobile />
       </nav>
     </>

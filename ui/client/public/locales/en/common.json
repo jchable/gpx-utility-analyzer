@@ -86,6 +86,11 @@
     "topo2d": "Topo 2D",
     "loadingTrack": "Loading track..."
   },
+  "theme": {
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark"
+  },
   "language": {
     "en": "English",
     "fr": "Français"

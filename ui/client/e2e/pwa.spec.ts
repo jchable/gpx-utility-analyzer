@@ -9,7 +9,8 @@ test.describe('PWA meta tags and assets', () => {
   test('has theme-color meta tag', async ({ page }) => {
     await page.goto('/');
     const meta = page.locator('meta[name="theme-color"]');
-    await expect(meta).toHaveAttribute('content', '#0f0f1a');
+    const content = await meta.getAttribute('content');
+    expect(['#0f0f1a', '#f0f2f5']).toContain(content);
   });
 
   test('has manifest link', async ({ page }) => {

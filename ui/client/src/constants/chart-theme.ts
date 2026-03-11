@@ -1,33 +1,34 @@
 /**
  * Shared Recharts theme configuration.
  * Used by ElevationProfileChart, ElevationChart, and EditorElevationProfile.
+ * Theme-dependent colors use CSS variables — they adapt automatically to light/dark mode.
  */
 
 /** Data series colors for charts */
 export const CHART_COLORS = {
-  elevation: '#00d4ff',
-  speed: '#ff8800',
-  gap: '#00ff88',
+  elevation: 'var(--accent)',
+  speed: 'var(--accent-orange)',
+  gap: 'var(--accent-green)',
   hr: '#ef4444',
   power: '#eab308',
   tobler: '#9333ea',
-  hoverDot: '#ff6b6b',
+  hoverDot: 'var(--accent-red)',
   /** Muted text for axis labels */
-  text: '#a0a0b0',
+  text: 'var(--content-muted)',
   /** Grid lines */
-  grid: 'rgba(255,255,255,0.05)',
+  grid: 'var(--chart-grid)',
   /** Axis line */
-  axisLine: 'rgba(255,255,255,0.08)',
+  axisLine: 'var(--chart-axis)',
   /** Tooltip background */
-  tooltipBg: '#0f0f1a',
+  tooltipBg: 'var(--surface)',
 } as const;
 
 /** Shared Recharts Tooltip contentStyle */
 export const TOOLTIP_STYLE: React.CSSProperties = {
-  backgroundColor: CHART_COLORS.tooltipBg,
-  border: '1px solid rgba(255,255,255,0.1)',
+  backgroundColor: 'var(--surface)',
+  border: '1px solid var(--border-color)',
   borderRadius: '8px',
-  color: '#e0e0e0',
+  color: 'var(--content)',
   fontSize: '12px',
 };
 
@@ -64,5 +65,5 @@ export const GRID_PROPS = {
 
 /** Shared Tooltip cursor style */
 export const TOOLTIP_CURSOR = {
-  stroke: 'rgba(255,255,255,0.15)',
+  stroke: 'var(--chart-cursor)',
 } as const;

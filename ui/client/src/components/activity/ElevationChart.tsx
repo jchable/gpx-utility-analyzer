@@ -29,10 +29,10 @@ interface ElevationBarEntry {
 
 export default function ElevationChart({ stats }: ElevationChartProps) {
   const data: ElevationBarEntry[] = [
-    { name: 'Min Elev.', value: Math.round(stats.min_elevation_m), color: '#00d4ff' },
-    { name: 'Max Elev.', value: Math.round(stats.max_elevation_m), color: '#00ff88' },
-    { name: 'Gain', value: Math.round(stats.elevation_gain_m), color: '#ff8800' },
-    { name: 'Loss', value: Math.round(stats.elevation_loss_m), color: '#ff4444' },
+    { name: 'Min Elev.', value: Math.round(stats.min_elevation_m), color: 'var(--accent)' },
+    { name: 'Max Elev.', value: Math.round(stats.max_elevation_m), color: 'var(--accent-green)' },
+    { name: 'Gain', value: Math.round(stats.elevation_gain_m), color: 'var(--accent-orange)' },
+    { name: 'Loss', value: Math.round(stats.elevation_loss_m), color: 'var(--accent-red)' },
   ];
 
   return (
@@ -45,10 +45,10 @@ export default function ElevationChart({ stats }: ElevationChartProps) {
 
       {/* Summary chips */}
       <div className="flex flex-wrap gap-2">
-        <ElevationChip label="Min" value={`${Math.round(stats.min_elevation_m)} m`} color="#00d4ff" />
-        <ElevationChip label="Max" value={`${Math.round(stats.max_elevation_m)} m`} color="#00ff88" />
-        <ElevationChip label="Gain" value={`+${Math.round(stats.elevation_gain_m)} m`} color="#ff8800" />
-        <ElevationChip label="Loss" value={`-${Math.round(stats.elevation_loss_m)} m`} color="#ff4444" />
+        <ElevationChip label="Min" value={`${Math.round(stats.min_elevation_m)} m`} color="var(--accent)" />
+        <ElevationChip label="Max" value={`${Math.round(stats.max_elevation_m)} m`} color="var(--accent-green)" />
+        <ElevationChip label="Gain" value={`+${Math.round(stats.elevation_gain_m)} m`} color="var(--accent-orange)" />
+        <ElevationChip label="Loss" value={`-${Math.round(stats.elevation_loss_m)} m`} color="var(--accent-red)" />
       </div>
 
       {/* Bar chart */}
@@ -71,7 +71,7 @@ export default function ElevationChart({ stats }: ElevationChartProps) {
             />
             <Tooltip
               contentStyle={TOOLTIP_STYLE}
-              cursor={{ fill: 'rgba(255,255,255,0.03)' }}
+              cursor={{ fill: 'var(--chart-cursor)' }}
               formatter={(value: number | undefined) => [`${value ?? 0} m`, 'Elevation']}
             />
             <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={48}>

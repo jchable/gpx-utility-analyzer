@@ -188,8 +188,8 @@ export default function ActivityDetail() {
                       className="text-xs font-bold px-2.5 py-1 rounded-full border transition-colors"
                       style={{
                         backgroundColor: isActive ? c + '33' : 'transparent',
-                        color: isActive ? c : '#94a3b8',
-                        borderColor: isActive ? c + '55' : '#334155',
+                        color: isActive ? c : 'var(--content-muted)',
+                        borderColor: isActive ? c + '55' : 'var(--ring-track)',
                       }}
                     >
                       {tc(`activityType.${t}`)}

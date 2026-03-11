@@ -8,7 +8,7 @@ interface StatCardProps {
   color?: string;
 }
 
-export default function StatCard({ label, value, unit, icon, color = '#00d4ff' }: StatCardProps) {
+export default function StatCard({ label, value, unit, icon, color = 'var(--accent)' }: StatCardProps) {
   return (
     <div className="flex items-center gap-4 bg-surface-card rounded-xl border border-border px-4 py-3 transition-colors hover:border-border">
       {icon && (

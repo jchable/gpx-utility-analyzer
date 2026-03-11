@@ -114,7 +114,7 @@ export default function Dashboard() {
             <div className="relative w-40 h-40 shrink-0">
               <div
                 className="w-full h-full rounded-full"
-                style={{ background: totalBreakdown > 0 ? conicGradient : '#334155' }}
+                style={{ background: totalBreakdown > 0 ? conicGradient : 'var(--ring-track)' }}
               />
               <div className="absolute inset-5 bg-surface-card rounded-full flex items-center justify-center">
                 <div className="text-center">
