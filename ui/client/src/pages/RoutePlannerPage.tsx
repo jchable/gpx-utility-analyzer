@@ -52,8 +52,8 @@ export default function RoutePlannerPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">{t('predict.title')}</h1>
-        <p className="text-sm text-slate-400 mt-1">{t('predict.description')}</p>
+        <h1 className="text-2xl font-bold text-content">{t('predict.title')}</h1>
+        <p className="text-sm text-content-muted mt-1">{t('predict.description')}</p>
       </div>
 
       {/* Upload zone */}
@@ -65,7 +65,7 @@ export default function RoutePlannerPage() {
         className={`relative border-2 border-dashed rounded-2xl p-6 sm:p-10 text-center cursor-pointer transition-all ${
           isDragOver
             ? 'border-emerald-400 bg-emerald-400/5'
-            : 'border-slate-700 hover:border-slate-500 bg-[#16213e]/50'
+            : 'border-border hover:border-content-muted/30 bg-surface-card/50'
         }`}
       >
         <input
@@ -79,23 +79,23 @@ export default function RoutePlannerPage() {
           }}
         />
         <svg
-          className={`w-12 h-12 mx-auto mb-3 transition-colors ${isDragOver ? 'text-emerald-400' : 'text-slate-600'}`}
+          className={`w-12 h-12 mx-auto mb-3 transition-colors ${isDragOver ? 'text-emerald-400' : 'text-content-muted/70'}`}
           fill="none" stroke="currentColor" viewBox="0 0 24 24"
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
         </svg>
-        <p className={`text-lg font-medium mb-1 ${isDragOver ? 'text-emerald-400' : 'text-slate-300'}`}>
+        <p className={`text-lg font-medium mb-1 ${isDragOver ? 'text-emerald-400' : 'text-content'}`}>
           {isDragOver ? t('predict.dropActive') : t('predict.dropZone')}
         </p>
-        <p className="text-sm text-slate-500">{t('predict.hint')}</p>
+        <p className="text-sm text-content-muted">{t('predict.hint')}</p>
       </div>
 
       {/* Loading */}
       {isAnalyzing && (
-        <div className="bg-[#16213e] rounded-2xl p-8 border border-slate-700/50 text-center">
+        <div className="bg-surface-card rounded-2xl p-8 border border-border text-center">
           <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-emerald-400 mx-auto mb-4" />
-          <p className="text-slate-300 font-medium">{t('predict.analyzing')}</p>
-          <p className="text-slate-500 text-sm mt-1">{fileName}</p>
+          <p className="text-content font-medium">{t('predict.analyzing')}</p>
+          <p className="text-content-muted text-sm mt-1">{fileName}</p>
         </div>
       )}
 
@@ -109,7 +109,7 @@ export default function RoutePlannerPage() {
       {/* Results */}
       {result && stats && (
         <div className="space-y-6">
-          <h2 className="text-xl font-semibold text-white">{t('predict.results')}</h2>
+          <h2 className="text-xl font-semibold text-content">{t('predict.results')}</h2>
 
           {/* Track Map */}
           {result.track && (
@@ -128,42 +128,42 @@ export default function RoutePlannerPage() {
 
           {/* Basic stats grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-              <p className="text-xs text-slate-500 mb-1">{t('distance')}</p>
-              <p className="text-lg font-bold text-cyan-400">{stats.total_distance_km.toFixed(1)} {tc('unit.km')}</p>
+            <div className="bg-surface-card rounded-xl p-4 border border-border">
+              <p className="text-xs text-content-muted mb-1">{t('distance')}</p>
+              <p className="text-lg font-bold text-accent">{stats.total_distance_km.toFixed(1)} {tc('unit.km')}</p>
             </div>
-            <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-              <p className="text-xs text-slate-500 mb-1">{t('detail.elevationGain')}</p>
+            <div className="bg-surface-card rounded-xl p-4 border border-border">
+              <p className="text-xs text-content-muted mb-1">{t('detail.elevationGain')}</p>
               <p className="text-lg font-bold text-green-400">+{Math.round(stats.elevation_gain_m)} {tc('unit.m')}</p>
             </div>
-            <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-              <p className="text-xs text-slate-500 mb-1">{t('detail.elevationLoss')}</p>
+            <div className="bg-surface-card rounded-xl p-4 border border-border">
+              <p className="text-xs text-content-muted mb-1">{t('detail.elevationLoss')}</p>
               <p className="text-lg font-bold text-red-400">&minus;{Math.round(stats.elevation_loss_m)} {tc('unit.m')}</p>
             </div>
-            <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-              <p className="text-xs text-slate-500 mb-1">{t('detail.maxElevation')}</p>
-              <p className="text-lg font-bold text-white">{Math.round(stats.max_elevation_m)} {tc('unit.m')}</p>
+            <div className="bg-surface-card rounded-xl p-4 border border-border">
+              <p className="text-xs text-content-muted mb-1">{t('detail.maxElevation')}</p>
+              <p className="text-lg font-bold text-content">{Math.round(stats.max_elevation_m)} {tc('unit.m')}</p>
             </div>
           </div>
 
           {/* Terrain details */}
           {stats.effort && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-                <p className="text-xs text-slate-500 mb-1">{t('effort.avgGrade')}</p>
-                <p className="text-lg font-bold text-white">{stats.effort.terrain_difficulty.avg_grade_percent.toFixed(1)}%</p>
+              <div className="bg-surface-card rounded-xl p-4 border border-border">
+                <p className="text-xs text-content-muted mb-1">{t('effort.avgGrade')}</p>
+                <p className="text-lg font-bold text-content">{stats.effort.terrain_difficulty.avg_grade_percent.toFixed(1)}%</p>
               </div>
-              <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-                <p className="text-xs text-slate-500 mb-1">{t('effort.maxGrade')}</p>
-                <p className="text-lg font-bold text-white">{stats.effort.terrain_difficulty.max_grade_percent.toFixed(1)}%</p>
+              <div className="bg-surface-card rounded-xl p-4 border border-border">
+                <p className="text-xs text-content-muted mb-1">{t('effort.maxGrade')}</p>
+                <p className="text-lg font-bold text-content">{stats.effort.terrain_difficulty.max_grade_percent.toFixed(1)}%</p>
               </div>
-              <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-                <p className="text-xs text-slate-500 mb-1">{t('effort.steepRatio')}</p>
-                <p className="text-lg font-bold text-white">{(stats.effort.terrain_difficulty.steep_section_ratio * 100).toFixed(1)}%</p>
+              <div className="bg-surface-card rounded-xl p-4 border border-border">
+                <p className="text-xs text-content-muted mb-1">{t('effort.steepRatio')}</p>
+                <p className="text-lg font-bold text-content">{(stats.effort.terrain_difficulty.steep_section_ratio * 100).toFixed(1)}%</p>
               </div>
-              <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-                <p className="text-xs text-slate-500 mb-1">{t('effort.elevPerKm')}</p>
-                <p className="text-lg font-bold text-white">{stats.effort.terrain_difficulty.elevation_per_km.toFixed(0)} {tc('unit.m')}/{tc('unit.km')}</p>
+              <div className="bg-surface-card rounded-xl p-4 border border-border">
+                <p className="text-xs text-content-muted mb-1">{t('effort.elevPerKm')}</p>
+                <p className="text-lg font-bold text-content">{stats.effort.terrain_difficulty.elevation_per_km.toFixed(0)} {tc('unit.m')}/{tc('unit.km')}</p>
               </div>
             </div>
           )}

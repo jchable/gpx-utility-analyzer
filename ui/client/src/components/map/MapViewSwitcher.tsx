@@ -18,7 +18,7 @@ export default function MapViewSwitcher({ current, onChange }: MapViewSwitcherPr
   const { t } = useTranslation();
 
   return (
-    <div className="absolute top-3 right-3 z-10 flex rounded-lg overflow-hidden border border-white/10 bg-[#0f0f1a]/90 backdrop-blur-sm shadow-lg">
+    <div className="absolute top-3 right-3 z-10 flex rounded-lg overflow-hidden border border-border bg-surface/90 backdrop-blur-sm shadow-lg">
       {views.map(({ id, labelKey, Icon }) => {
         const isActive = current === id;
         const label = t(`map.${labelKey}`);
@@ -29,9 +29,9 @@ export default function MapViewSwitcher({ current, onChange }: MapViewSwitcherPr
             title={label}
             className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors ${
               isActive
-                ? 'bg-[#00d4ff]/15 text-[#00d4ff]'
-                : 'text-[#a0a0b0] hover:text-white hover:bg-white/5'
-            } ${id !== '3d-terrain' ? 'border-l border-white/10' : ''}`}
+                ? 'bg-accent/15 text-accent'
+                : 'text-content-muted hover:text-content hover:bg-surface-alt/30'
+            } ${id !== '3d-terrain' ? 'border-l border-border' : ''}`}
           >
             <Icon size={16} />
             <span className="hidden sm:inline">{label}</span>

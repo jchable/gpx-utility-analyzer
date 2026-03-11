@@ -6,7 +6,6 @@ import { useActivity, useProfile, useTrack, useSplits, useSettings } from '../ho
 import { api } from '../api/client';
 import { routesApi } from '../api/routes-client';
 import { ACTIVITY_COLORS, ACTIVITY_TYPES } from '../types/activity';
-import type { TrackReport } from '../types/activity';
 import TrackMap from '../components/map/TrackMap';
 import ElevationProfileChart from '../components/activity/ElevationProfileChart';
 import HRZonesSection from '../components/activity/HRZonesSection';
@@ -15,222 +14,19 @@ import AnomalyBanner from '../components/activity/AnomalyBanner';
 import StopsTable from '../components/activity/StopsTable';
 import SplitsSection from '../components/activity/SplitsSection';
 import EffortComparisonSection from '../components/activity/EffortComparisonSection';
+import AiReportSection from '../components/activity/AiReportSection';
+import RadialStat from '../components/widgets/RadialStat';
+import ElevationGauge from '../components/widgets/ElevationGauge';
 import { getEffectiveMaxHR, computeHRZones, computePowerZones, computeTRIMP, computePowerMetrics } from '../utils/zones';
-import { formatDuration } from '../utils/format';
+import { formatDuration, formatDate } from '../utils/format';
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; pulse?: boolean }> = {
-  Pending: { color: 'text-slate-400', bg: 'bg-slate-400' },
+  Pending: { color: 'text-content-muted', bg: 'bg-content-muted' },
   Analyzing: { color: 'text-amber-400', bg: 'bg-amber-400', pulse: true },
   AiProcessing: { color: 'text-purple-400', bg: 'bg-purple-400', pulse: true },
   Completed: { color: 'text-green-400', bg: 'bg-green-400' },
   Failed: { color: 'text-red-400', bg: 'bg-red-400' },
 };
-
-const DIFFICULTY_COLORS: Record<string, string> = {
-  easy: 'bg-green-500/20 text-green-400 border-green-500/30',
-  moderate: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-  hard: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
-  expert: 'bg-red-500/20 text-red-400 border-red-500/30',
-};
-
-/** Radial gauge-style stat card */
-function RadialStat({
-  label,
-  value,
-  unit,
-  percentage,
-  color,
-}: {
-  label: string;
-  value: string;
-  unit: string;
-  percentage: number;
-  color: string;
-}) {
-  const radius = 40;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (Math.min(percentage, 100) / 100) * circumference;
-
-  return (
-    <div className="bg-[#16213e] rounded-2xl p-5 border border-slate-700/50 flex flex-col items-center">
-      <div className="relative w-24 h-24 mb-3">
-        <svg className="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r={radius} fill="none" stroke="#334155" strokeWidth="6" />
-          <circle
-            cx="50" cy="50" r={radius} fill="none"
-            stroke={color} strokeWidth="6" strokeLinecap="round"
-            strokeDasharray={circumference} strokeDashoffset={offset}
-            className="transition-all duration-1000"
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-lg font-bold text-white">{value}</span>
-        </div>
-      </div>
-      <p className="text-xs text-slate-400">{unit}</p>
-      <p className="text-sm font-medium text-slate-300 mt-1">{label}</p>
-    </div>
-  );
-}
-
-/** Dual-arc gauge showing D+ (green) and D- (red) proportions */
-function ElevationGauge({
-  gain,
-  loss,
-  label,
-  unitLabel,
-}: {
-  gain: number;
-  loss: number;
-  label: string;
-  unitLabel: string;
-}) {
-  const radius = 40;
-  const circumference = 2 * Math.PI * radius;
-  const total = gain + loss;
-  const gainPct = total > 0 ? gain / total : 0.5;
-  const gainArc = gainPct * circumference;
-  const lossArc = (1 - gainPct) * circumference;
-
-  return (
-    <div className="bg-[#16213e] rounded-2xl p-5 border border-slate-700/50 flex flex-col items-center">
-      <div className="relative w-24 h-24 mb-3">
-        <svg className="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r={radius} fill="none" stroke="#334155" strokeWidth="6" />
-          {/* D+ green arc from top */}
-          <circle
-            cx="50" cy="50" r={radius} fill="none"
-            stroke="#00ff88" strokeWidth="6"
-            strokeDasharray={circumference} strokeDashoffset={circumference - gainArc}
-            className="transition-all duration-1000"
-          />
-          {/* D- red arc continuing after green */}
-          <circle
-            cx="50" cy="50" r={radius} fill="none"
-            stroke="#ff6b6b" strokeWidth="6"
-            strokeDasharray={circumference} strokeDashoffset={circumference - lossArc}
-            className="transition-all duration-1000"
-            style={{ transform: `rotate(${gainPct * 360}deg)`, transformOrigin: '50px 50px' }}
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-sm font-bold text-[#00ff88] leading-tight">+{Math.round(gain)}</span>
-          <span className="text-sm font-bold text-[#ff6b6b] leading-tight">&minus;{Math.round(loss)}</span>
-        </div>
-      </div>
-      <p className="text-xs text-slate-400">{unitLabel}</p>
-      <p className="text-sm font-medium text-slate-300 mt-1">{label}</p>
-    </div>
-  );
-}
-
-function AiReportSection({ report }: { report: TrackReport }) {
-  const { t } = useTranslation('activities');
-  const { t: tc } = useTranslation();
-
-  const difficultyGrade = report.difficulty.grade.toLowerCase();
-  const difficultyClass = DIFFICULTY_COLORS[difficultyGrade] || DIFFICULTY_COLORS.moderate;
-
-  return (
-    <div className="bg-[#16213e] rounded-2xl p-6 border border-slate-700/50 space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-white flex items-center gap-3">
-          <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-          </svg>
-          {t('aiReport.title')}
-        </h2>
-        <span className={`text-sm font-bold px-3 py-1 rounded-full border ${difficultyClass}`}>
-          {report.difficulty.grade} ({report.difficulty.score}/10)
-        </span>
-      </div>
-
-      {/* Summary */}
-      <div>
-        <h3 className="text-sm font-medium text-slate-400 mb-2">{t('aiReport.summary')}</h3>
-        <p className="text-slate-300 leading-relaxed">{report.summary}</p>
-      </div>
-
-      {/* Difficulty Justification */}
-      <div>
-        <h3 className="text-sm font-medium text-slate-400 mb-2">{t('aiReport.difficultyAssessment')}</h3>
-        <p className="text-slate-300 text-sm">{report.difficulty.justification}</p>
-      </div>
-
-      {/* Effort */}
-      {report.effort && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-slate-800/50 rounded-xl p-4">
-            <p className="text-xs text-slate-500 mb-1">{t('aiReport.fitnessLevel')}</p>
-            <p className="text-sm font-semibold text-white">{report.effort.fitness_level}</p>
-          </div>
-          <div className="bg-slate-800/50 rounded-xl p-4">
-            <p className="text-xs text-slate-500 mb-1">{t('aiReport.estimatedDuration')}</p>
-            <p className="text-sm font-semibold text-white">{report.effort.estimated_duration}</p>
-          </div>
-          {report.effort.calorie_estimate && (
-            <div className="bg-slate-800/50 rounded-xl p-4">
-              <p className="text-xs text-slate-500 mb-1">{t('aiReport.calories')}</p>
-              <p className="text-sm font-semibold text-white">
-                ~{report.effort.calorie_estimate} {tc('unit.kcal')}
-              </p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Key Segments */}
-      {report.key_segments && report.key_segments.length > 0 && (
-        <div>
-          <h3 className="text-sm font-medium text-slate-400 mb-3">{t('aiReport.keySegments')}</h3>
-          <div className="space-y-2">
-            {report.key_segments.map((seg, i) => (
-              <div
-                key={i}
-                className="flex items-start gap-3 bg-slate-800/30 rounded-xl p-3"
-              >
-                <span className="text-xs font-bold text-cyan-400 bg-cyan-400/10 px-2 py-1 rounded shrink-0 uppercase">
-                  {seg.type}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm text-slate-300">{seg.description}</p>
-                  <div className="flex gap-4 mt-1">
-                    {seg.distance_km != null && (
-                      <span className="text-xs text-slate-500">{seg.distance_km} {tc('unit.km')}</span>
-                    )}
-                    {seg.elevation_change != null && (
-                      <span className="text-xs text-slate-500">
-                        {seg.elevation_change > 0 ? '+' : ''}
-                        {seg.elevation_change} {tc('unit.m')}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Recommendations */}
-      {report.recommendations && report.recommendations.length > 0 && (
-        <div>
-          <h3 className="text-sm font-medium text-slate-400 mb-3">{t('aiReport.recommendations')}</h3>
-          <ul className="space-y-2">
-            {report.recommendations.map((rec, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-slate-300">
-                <svg className="w-4 h-4 text-green-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                {rec}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default function ActivityDetail() {
   const { id } = useParams<{ id: string }>();
@@ -290,21 +86,15 @@ export default function ActivityDetail() {
     [activity?.stats?.power, ftp, activity?.stats?.moving_time.seconds],
   );
 
-  const formatDate = (iso: string): string => {
-    return new Date(iso).toLocaleDateString(i18n.language, {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+  const detailDateOpts: Intl.DateTimeFormatOptions = {
+    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-400" />
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent" />
       </div>
     );
   }
@@ -372,14 +162,14 @@ export default function ActivityDetail() {
         <div>
           <button
             onClick={() => navigate(-1)}
-            className="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-1 mb-3"
+            className="text-content-muted hover:text-content transition-colors text-sm flex items-center gap-1 mb-3"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             {tc('button.back')}
           </button>
-          <h1 className="text-3xl font-bold text-white tracking-tight">{activity.name}</h1>
+          <h1 className="text-3xl font-bold text-content tracking-tight">{activity.name}</h1>
           <div className="flex items-center gap-3 mt-2">
             {editingType ? (
               <div className="flex items-center gap-1 flex-wrap">
@@ -421,7 +211,7 @@ export default function ActivityDetail() {
               <div className={`w-2 h-2 rounded-full ${statusCfg.bg} ${statusCfg.pulse ? 'animate-pulse' : ''}`} />
               <span className={`text-sm ${statusCfg.color}`}>{tc(`status.${activity.status}`)}</span>
             </div>
-            <span className="text-sm text-slate-500">{formatDate(activity.startTime)}</span>
+            <span className="text-sm text-content-muted">{formatDate(activity.startTime, i18n.language, detailDateOpts)}</span>
           </div>
           {activity.errorMessage && (
             <p className="text-red-400 text-sm mt-2 bg-red-900/20 border border-red-800 rounded-lg px-3 py-2">
@@ -435,7 +225,7 @@ export default function ActivityDetail() {
           <a
             href={api.getGpxUrl(activity.id)}
             download
-            className="px-3 py-2 rounded-lg bg-[#16213e] border border-slate-700 text-slate-300 text-sm hover:bg-slate-700/50 transition-colors flex items-center gap-2"
+            className="px-3 py-2 rounded-lg bg-surface-card border border-border text-content text-sm hover:bg-surface-alt/50 transition-colors flex items-center gap-2"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -445,7 +235,7 @@ export default function ActivityDetail() {
           <button
             onClick={handleEditAsRoute}
             disabled={isCreatingRoute || activity.status !== 'Completed'}
-            className="px-3 py-2 rounded-lg bg-[#16213e] border border-cyan-700 text-cyan-400 text-sm hover:bg-cyan-900/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+            className="px-3 py-2 rounded-lg bg-surface-card border border-accent text-accent text-sm hover:bg-cyan-900/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -483,29 +273,29 @@ export default function ActivityDetail() {
       {/* Key Stats */}
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-            <p className="text-xs text-slate-500 mb-1">{t('distance')}</p>
-            <p className="text-lg font-bold text-cyan-400">{stats.total_distance_km.toFixed(1)} {tc('unit.km')}</p>
+          <div className="bg-surface-card rounded-xl p-4 border border-border">
+            <p className="text-xs text-content-muted mb-1">{t('distance')}</p>
+            <p className="text-lg font-bold text-accent">{stats.total_distance_km.toFixed(1)} {tc('unit.km')}</p>
           </div>
-          <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-            <p className="text-xs text-slate-500 mb-1">{t('detail.movingTime')}</p>
-            <p className="text-lg font-bold text-white">{stats.moving_time.display}</p>
+          <div className="bg-surface-card rounded-xl p-4 border border-border">
+            <p className="text-xs text-content-muted mb-1">{t('detail.movingTime')}</p>
+            <p className="text-lg font-bold text-content">{stats.moving_time.display}</p>
           </div>
-          <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-            <p className="text-xs text-slate-500 mb-1">{t('detail.avgSpeed')}</p>
-            <p className="text-lg font-bold text-white">{stats.avg_moving_speed_kmh.toFixed(1)} {tc('unit.kmh')}</p>
+          <div className="bg-surface-card rounded-xl p-4 border border-border">
+            <p className="text-xs text-content-muted mb-1">{t('detail.avgSpeed')}</p>
+            <p className="text-lg font-bold text-content">{stats.avg_moving_speed_kmh.toFixed(1)} {tc('unit.kmh')}</p>
           </div>
-          <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-            <p className="text-xs text-slate-500 mb-1">{t('detail.elevationGain')}</p>
-            <p className="text-lg font-bold text-[#00ff88]">+{Math.round(stats.elevation_gain_m)} {tc('unit.m')}</p>
+          <div className="bg-surface-card rounded-xl p-4 border border-border">
+            <p className="text-xs text-content-muted mb-1">{t('detail.elevationGain')}</p>
+            <p className="text-lg font-bold text-accent-green">+{Math.round(stats.elevation_gain_m)} {tc('unit.m')}</p>
           </div>
-          <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-            <p className="text-xs text-slate-500 mb-1">{t('detail.totalTime')}</p>
-            <p className="text-lg font-bold text-white">{formatDuration(stats.total_time.seconds, tc)}</p>
+          <div className="bg-surface-card rounded-xl p-4 border border-border">
+            <p className="text-xs text-content-muted mb-1">{t('detail.totalTime')}</p>
+            <p className="text-lg font-bold text-content">{formatDuration(stats.total_time.seconds, tc)}</p>
           </div>
-          <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-            <p className="text-xs text-slate-500 mb-1">{t('detail.avgPace')}</p>
-            <p className="text-lg font-bold text-white">{stats.avg_moving_pace}</p>
+          <div className="bg-surface-card rounded-xl p-4 border border-border">
+            <p className="text-xs text-content-muted mb-1">{t('detail.avgPace')}</p>
+            <p className="text-lg font-bold text-content">{stats.avg_moving_pace}</p>
           </div>
         </div>
       )}
@@ -528,7 +318,7 @@ export default function ActivityDetail() {
       {/* Ratio Gauges */}
       {stats && (
         <div>
-          <h2 className="text-xl font-semibold text-white mb-4">{t('detail.performanceStats')}</h2>
+          <h2 className="text-xl font-semibold text-content mb-4">{t('detail.performanceStats')}</h2>
           <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
             <RadialStat
               label={t('detail.movingRatio')}
@@ -550,33 +340,33 @@ export default function ActivityDetail() {
       {/* Extended Stats */}
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-            <p className="text-xs text-slate-500 mb-1">{t('detail.maxSpeed')}</p>
-            <p className="text-lg font-bold text-white">{stats.max_speed_kmh.toFixed(1)} {tc('unit.kmh')}</p>
+          <div className="bg-surface-card rounded-xl p-4 border border-border">
+            <p className="text-xs text-content-muted mb-1">{t('detail.maxSpeed')}</p>
+            <p className="text-lg font-bold text-content">{stats.max_speed_kmh.toFixed(1)} {tc('unit.kmh')}</p>
           </div>
-          <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-            <p className="text-xs text-slate-500 mb-1">{t('detail.maxElevation')}</p>
-            <p className="text-lg font-bold text-white">{Math.round(stats.max_elevation_m)} {tc('unit.m')}</p>
+          <div className="bg-surface-card rounded-xl p-4 border border-border">
+            <p className="text-xs text-content-muted mb-1">{t('detail.maxElevation')}</p>
+            <p className="text-lg font-bold text-content">{Math.round(stats.max_elevation_m)} {tc('unit.m')}</p>
           </div>
-          <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-            <p className="text-xs text-slate-500 mb-1">{t('detail.minElevation')}</p>
-            <p className="text-lg font-bold text-white">{Math.round(stats.min_elevation_m)} {tc('unit.m')}</p>
+          <div className="bg-surface-card rounded-xl p-4 border border-border">
+            <p className="text-xs text-content-muted mb-1">{t('detail.minElevation')}</p>
+            <p className="text-lg font-bold text-content">{Math.round(stats.min_elevation_m)} {tc('unit.m')}</p>
           </div>
-          <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-            <p className="text-xs text-slate-500 mb-1">{t('detail.stoppedTime')}</p>
-            <p className="text-lg font-bold text-white">{formatDuration(stats.stopped_time.seconds, tc)}</p>
+          <div className="bg-surface-card rounded-xl p-4 border border-border">
+            <p className="text-xs text-content-muted mb-1">{t('detail.stoppedTime')}</p>
+            <p className="text-lg font-bold text-content">{formatDuration(stats.stopped_time.seconds, tc)}</p>
           </div>
-          <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-            <p className="text-xs text-slate-500 mb-1">{t('detail.stops')}</p>
-            <p className="text-lg font-bold text-white">{stats.stop_count}</p>
+          <div className="bg-surface-card rounded-xl p-4 border border-border">
+            <p className="text-xs text-content-muted mb-1">{t('detail.stops')}</p>
+            <p className="text-lg font-bold text-content">{stats.stop_count}</p>
           </div>
-          <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-            <p className="text-xs text-slate-500 mb-1">{t('detail.pointsPerKm')}</p>
-            <p className="text-lg font-bold text-white">{Math.round(stats.points_per_km)}</p>
+          <div className="bg-surface-card rounded-xl p-4 border border-border">
+            <p className="text-xs text-content-muted mb-1">{t('detail.pointsPerKm')}</p>
+            <p className="text-lg font-bold text-content">{Math.round(stats.points_per_km)}</p>
           </div>
           {stats.power && (
-            <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-              <p className="text-xs text-slate-500 mb-1">{t('detail.avgPower')}</p>
+            <div className="bg-surface-card rounded-xl p-4 border border-border">
+              <p className="text-xs text-content-muted mb-1">{t('detail.avgPower')}</p>
               <p className="text-lg font-bold text-yellow-400">{Math.round(stats.power.avg_watts)} {tc('unit.watts')}</p>
             </div>
           )}
@@ -585,8 +375,8 @@ export default function ActivityDetail() {
             const cadenceValue = isFootActivity ? stats.cadence!.avg_rpm * 2 : stats.cadence!.avg_rpm;
             const cadenceUnit = isFootActivity ? tc('unit.spm') : tc('unit.rpm');
             return (
-              <div className="bg-[#16213e] rounded-xl p-4 border border-slate-700/50">
-                <p className="text-xs text-slate-500 mb-1">{t('detail.avgCadence')}</p>
+              <div className="bg-surface-card rounded-xl p-4 border border-border">
+                <p className="text-xs text-content-muted mb-1">{t('detail.avgCadence')}</p>
                 <p className="text-lg font-bold text-blue-400">{Math.round(cadenceValue)} {cadenceUnit}</p>
               </div>
             );
@@ -645,28 +435,28 @@ export default function ActivityDetail() {
 
       {/* Processing indicator when not yet complete */}
       {(activity.status === 'Analyzing' || activity.status === 'AiProcessing') && (
-        <div className="bg-[#16213e] rounded-2xl p-8 border border-slate-700/50 text-center">
+        <div className="bg-surface-card rounded-2xl p-8 border border-border text-center">
           <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-purple-400 mx-auto mb-4" />
-          <p className="text-slate-300 font-medium">
+          <p className="text-content font-medium">
             {activity.status === 'Analyzing' ? t('detail.analyzingGpx') : t('detail.aiProcessing')}
           </p>
-          <p className="text-slate-500 text-sm mt-1">{t('detail.autoRefresh')}</p>
+          <p className="text-content-muted text-sm mt-1">{t('detail.autoRefresh')}</p>
         </div>
       )}
 
       {/* Change type confirmation dialog */}
       {pendingType && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => !isChangingType && setPendingType(null)}>
-          <div className="bg-[#16213e] border border-slate-700/50 rounded-xl p-6 max-w-sm mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-white mb-3">{t('detail.changeTypeTitle')}</h3>
-            <p className="text-sm text-slate-300 mb-5">
+          <div className="bg-surface-card border border-border rounded-xl p-6 max-w-sm mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-content mb-3">{t('detail.changeTypeTitle')}</h3>
+            <p className="text-sm text-content mb-5">
               {t('detail.changeTypeConfirm', { type: tc(`activityType.${pendingType}`) })}
             </p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setPendingType(null)}
                 disabled={isChangingType}
-                className="px-4 py-2 text-sm text-slate-300 hover:text-white transition-colors rounded-lg disabled:opacity-50"
+                className="px-4 py-2 text-sm text-content hover:text-content transition-colors rounded-lg disabled:opacity-50"
               >
                 {tc('button.cancel')}
               </button>

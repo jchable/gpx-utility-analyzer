@@ -278,12 +278,12 @@ export default function EditorPage() {
   }, []);
 
   return (
-    <div className="h-screen flex flex-col bg-[#0a0a1a] overflow-hidden">
+    <div className="h-screen flex flex-col bg-surface overflow-hidden">
       {/* Top bar */}
-      <div className="flex items-center gap-3 px-4 py-2 bg-[#16213e] border-b border-white/5 shrink-0">
+      <div className="flex items-center gap-3 px-4 py-2 bg-surface-card border-b border-border shrink-0">
         <button
           onClick={handleDiscard}
-          className="flex items-center gap-1 text-[#a0a0b0] hover:text-white transition-colors text-sm"
+          className="flex items-center gap-1 text-content-muted hover:text-content transition-colors text-sm"
         >
           <ArrowLeft size={16} />
           <span className="hidden sm:inline">{t('editor.discard')}</span>
@@ -295,7 +295,7 @@ export default function EditorPage() {
             value={routeName}
             onChange={(e) => useEditorStore.getState().setRouteName(e.target.value)}
             placeholder={t('editor.title')}
-            className="bg-transparent text-white text-sm font-medium border-none outline-none w-full placeholder-[#a0a0b0]/50"
+            className="bg-transparent text-content text-sm font-medium border-none outline-none w-full placeholder-content-muted/50"
           />
         </div>
 
@@ -309,7 +309,7 @@ export default function EditorPage() {
             <button
               onClick={handleEnrichElevation}
               disabled={enriching}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#a0a0b0] hover:text-white hover:bg-white/5 rounded-lg transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-content-muted hover:text-content hover:bg-surface-alt/30 rounded-lg transition-colors disabled:opacity-50"
               title={t('editor.enrichElevation')}
             >
               <Mountain size={14} />
@@ -322,14 +322,14 @@ export default function EditorPage() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[#00d4ff]/15 text-[#00d4ff] hover:bg-[#00d4ff]/25 rounded-lg transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-accent/15 text-accent hover:bg-accent/25 rounded-lg transition-colors disabled:opacity-50"
           >
             <Save size={14} />
             {saving ? t('editor.saving') : t('editor.save')}
           </button>
           <button
             onClick={handleExport}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#a0a0b0] hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-content-muted hover:text-content hover:bg-surface-alt/30 rounded-lg transition-colors"
           >
             <Download size={14} />
             {t('editor.export')}
@@ -342,8 +342,8 @@ export default function EditorPage() {
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <div className="flex flex-col items-center gap-3">
-              <div className="w-8 h-8 border-2 border-[#00d4ff] border-t-transparent rounded-full animate-spin" />
-              <span className="text-sm text-[#a0a0b0]">{t('editor.title')}</span>
+              <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+              <span className="text-sm text-content-muted">{t('editor.title')}</span>
             </div>
           </div>
         ) : (

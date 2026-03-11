@@ -2,11 +2,12 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSettings, useUpdateSettings } from '../hooks/useActivities';
 import type { AppSettings } from '../types/activity';
+import { BRAND_COLORS } from '../constants/brands';
 
 function SectionCard({ title, id, children }: { title: string; id?: string; children: React.ReactNode }) {
   return (
-    <div id={id} className="bg-[#16213e] rounded-xl border border-slate-700/50 p-6 scroll-mt-6">
-      <h2 className="text-lg font-semibold text-white mb-4">{title}</h2>
+    <div id={id} className="bg-surface-card rounded-xl border border-border p-6 scroll-mt-6">
+      <h2 className="text-lg font-semibold text-content mb-4">{title}</h2>
       {children}
     </div>
   );
@@ -15,7 +16,7 @@ function SectionCard({ title, id, children }: { title: string; id?: string; chil
 function FieldGroup({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="mb-4 last:mb-0">
-      <label className="block text-sm font-medium text-[#a0a0b0] mb-1.5">{label}</label>
+      <label className="block text-sm font-medium text-content-muted mb-1.5">{label}</label>
       {children}
     </div>
   );
@@ -34,7 +35,7 @@ function SelectInput({
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full bg-[#0d1b2a] border border-slate-700/50 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500/50"
+      className="w-full bg-surface-input border border-border rounded-lg px-3 py-2 text-content text-sm focus:outline-none focus:border-blue-500/50"
     >
       {options.map((opt) => (
         <option key={opt.value} value={opt.value}>
@@ -62,7 +63,7 @@ function TextInput({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full bg-[#0d1b2a] border border-slate-700/50 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500/50 placeholder-slate-600"
+      className="w-full bg-surface-input border border-border rounded-lg px-3 py-2 text-content text-sm focus:outline-none focus:border-blue-500/50 placeholder-content-muted/60"
     />
   );
 }
@@ -216,7 +217,7 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-white mb-6">{t('title')}</h1>
+      <h1 className="text-2xl font-bold text-content mb-6">{t('title')}</h1>
 
       <div className="space-y-6">
         {/* Athlete Profile */}
@@ -247,17 +248,17 @@ export default function SettingsPage() {
               />
             </FieldGroup>
           </div>
-          <p className="text-xs text-slate-500 mt-3">{t('athleteHint')}</p>
+          <p className="text-xs text-content-muted mt-3">{t('athleteHint')}</p>
         </SectionCard>
 
         {/* Integration Credentials */}
         <SectionCard title={t('integrationCredentials')}>
           <div className="space-y-5">
             <div>
-              <h3 className="text-sm font-semibold text-white mb-3 flex items-center">
+              <h3 className="text-sm font-semibold text-content mb-3 flex items-center">
                 <span
                   className="inline-flex items-center justify-center w-5 h-5 rounded text-xs font-bold mr-2"
-                  style={{ backgroundColor: '#FC4C02', color: 'white' }}
+                  style={{ backgroundColor: BRAND_COLORS.strava, color: 'white' }}
                 >
                   S
                 </span>
@@ -282,11 +283,11 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <div className="border-t border-slate-700/50 pt-5">
-              <h3 className="text-sm font-semibold text-white mb-3 flex items-center">
+            <div className="border-t border-border pt-5">
+              <h3 className="text-sm font-semibold text-content mb-3 flex items-center">
                 <span
                   className="inline-flex items-center justify-center w-5 h-5 rounded text-xs font-bold mr-2"
-                  style={{ backgroundColor: '#007CC3', color: 'white' }}
+                  style={{ backgroundColor: BRAND_COLORS.garmin, color: 'white' }}
                 >
                   G
                 </span>
@@ -350,15 +351,15 @@ export default function SettingsPage() {
                 role="switch"
                 aria-checked={form.analysis.fixAnomalies}
                 onClick={() => updateAnalysis('fixAnomalies', !form.analysis.fixAnomalies)}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#16213e] ${form.analysis.fixAnomalies ? 'bg-blue-600' : 'bg-slate-600'}`}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-surface-card ${form.analysis.fixAnomalies ? 'bg-blue-600' : 'bg-surface-alt'}`}
               >
                 <span
                   className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${form.analysis.fixAnomalies ? 'translate-x-5' : 'translate-x-0'}`}
                 />
               </button>
               <div>
-                <span className="text-sm font-medium text-[#a0a0b0]">{t('fixAnomalies')}</span>
-                <p className="text-xs text-slate-500 mt-0.5">{t('fixAnomaliesHint')}</p>
+                <span className="text-sm font-medium text-content-muted">{t('fixAnomalies')}</span>
+                <p className="text-xs text-content-muted mt-0.5">{t('fixAnomaliesHint')}</p>
               </div>
             </div>
           </div>

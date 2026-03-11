@@ -14,21 +14,20 @@ import {
 import { Mountain, ChevronDown, ChevronUp, Scissors, Check, X } from 'lucide-react';
 import { useEditorStore } from '../../stores/editorStore';
 import { useRouteStats } from '../../hooks/useRouteStats';
+import {
+  CHART_COLORS,
+  TOOLTIP_STYLE_COMPACT,
+  AXIS_TICK_COMPACT,
+  AXIS_LINE,
+  GRID_PROPS,
+  TOOLTIP_CURSOR,
+} from '../../constants/chart-theme';
 
 interface ProfileData {
   index: number;
   distance: number;
   elevation: number;
 }
-
-const COLORS = {
-  elevation: '#00d4ff',
-  text: '#a0a0b0',
-  grid: 'rgba(255,255,255,0.05)',
-  axisLine: 'rgba(255,255,255,0.08)',
-  tooltipBg: '#0f0f1a',
-  hoverDot: '#ff6b6b',
-} as const;
 
 interface EditorElevationProfileProps {
   collapsed?: boolean;
@@ -177,29 +176,29 @@ export default function EditorElevationProfile({
   const header = (
     <button
       onClick={onToggle}
-      className="flex items-center justify-between w-full px-4 py-2 bg-[#16213e] hover:bg-[#1a2744] transition-colors"
+      className="flex items-center justify-between w-full px-4 py-2 bg-surface-card hover:bg-surface-alt transition-colors"
     >
       <div className="flex items-center gap-2">
-        <Mountain size={16} className="text-[#00d4ff]" />
-        <span className="text-xs font-medium text-white">{t('stats.distance')}: {stats.distanceKm.toFixed(1)} km</span>
+        <Mountain size={16} className="text-accent" />
+        <span className="text-xs font-medium text-content">{t('stats.distance')}: {stats.distanceKm.toFixed(1)} km</span>
         {hasElevation && (
           <>
-            <span className="text-xs text-[#a0a0b0] mx-1">|</span>
-            <span className="text-xs text-[#a0a0b0]">D+ {stats.elevationGain}m</span>
-            <span className="text-xs text-[#a0a0b0]">D- {stats.elevationLoss}m</span>
+            <span className="text-xs text-content-muted mx-1">|</span>
+            <span className="text-xs text-content-muted">D+ {stats.elevationGain}m</span>
+            <span className="text-xs text-content-muted">D- {stats.elevationLoss}m</span>
           </>
         )}
       </div>
-      {collapsed ? <ChevronUp size={16} className="text-[#a0a0b0]" /> : <ChevronDown size={16} className="text-[#a0a0b0]" />}
+      {collapsed ? <ChevronUp size={16} className="text-content-muted" /> : <ChevronDown size={16} className="text-content-muted" />}
     </button>
   );
 
   if (collapsed || profileData.length === 0) {
-    return <div className="border-t border-white/5">{header}</div>;
+    return <div className="border-t border-border">{header}</div>;
   }
 
   return (
-    <div className="border-t border-white/5 bg-[#16213e]">
+    <div className="border-t border-border bg-surface-card">
       {header}
 
       {/* Crop controls */}
@@ -225,24 +224,24 @@ export default function EditorElevationProfile({
           >
             <defs>
               <linearGradient id="editorElevGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={COLORS.elevation} stopOpacity={0.35} />
-                <stop offset="100%" stopColor={COLORS.elevation} stopOpacity={0} />
+                <stop offset="0%" stopColor={CHART_COLORS.elevation} stopOpacity={0.35} />
+                <stop offset="100%" stopColor={CHART_COLORS.elevation} stopOpacity={0} />
               </linearGradient>
             </defs>
 
-            <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} vertical={false} />
+            <CartesianGrid {...GRID_PROPS} />
 
             <XAxis
               dataKey="distance"
-              tick={{ fill: COLORS.text, fontSize: 10 }}
-              axisLine={{ stroke: COLORS.axisLine }}
+              tick={AXIS_TICK_COMPACT}
+              axisLine={AXIS_LINE}
               tickLine={false}
               tickFormatter={(v: number) => `${v.toFixed(1)}`}
               label={{
                 value: 'km',
                 position: 'insideBottomRight',
                 offset: -4,
-                fill: COLORS.text,
+                fill: CHART_COLORS.text,
                 fontSize: 9,
               }}
             />
@@ -251,7 +250,7 @@ export default function EditorElevationProfile({
               yAxisId="elevation"
               orientation="left"
               domain={elevDomain}
-              tick={{ fill: COLORS.text, fontSize: 10 }}
+              tick={AXIS_TICK_COMPACT}
               axisLine={false}
               tickLine={false}
               width={45}
@@ -259,15 +258,8 @@ export default function EditorElevationProfile({
             />
 
             <Tooltip
-              contentStyle={{
-                backgroundColor: COLORS.tooltipBg,
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '8px',
-                color: '#e0e0e0',
-                fontSize: '11px',
-                padding: '6px 10px',
-              }}
-              cursor={{ stroke: 'rgba(255,255,255,0.15)' }}
+              contentStyle={TOOLTIP_STYLE_COMPACT}
+              cursor={TOOLTIP_CURSOR}
               labelFormatter={(v) => `${Number(v).toFixed(2)} km`}
               formatter={(value: number | undefined) => [`${Math.round(value ?? 0)} m`, t('stats.elevationGain').replace(' +', '')]}
             />
@@ -296,7 +288,7 @@ export default function EditorElevationProfile({
               yAxisId="elevation"
               type="monotone"
               dataKey="elevation"
-              stroke={COLORS.elevation}
+              stroke={CHART_COLORS.elevation}
               strokeWidth={1.5}
               fill="url(#editorElevGradient)"
               dot={false}
@@ -311,7 +303,7 @@ export default function EditorElevationProfile({
                 x={hoveredData.distance}
                 y={hoveredData.elevation}
                 r={5}
-                fill={COLORS.hoverDot}
+                fill={CHART_COLORS.hoverDot}
                 stroke="#ffffff"
                 strokeWidth={2}
               />
@@ -376,26 +368,26 @@ function CropSlider({ cropStart, cropEnd, maxIndex, onStartChange, onEndChange, 
   }, [dragging, maxIndex, cropStart, cropEnd, onStartChange, onEndChange]);
 
   return (
-    <div className="px-4 py-2 border-b border-white/5">
+    <div className="px-4 py-2 border-b border-border">
       <div className="flex items-center gap-2 mb-2">
         <Scissors size={12} className="text-amber-400" />
         <span className="text-[10px] text-amber-400 font-medium uppercase tracking-wider">
           {t('editor.toolbar.crop')}
         </span>
-        <span className="text-[10px] text-[#a0a0b0] ml-1">
+        <span className="text-[10px] text-content-muted ml-1">
           {t('editor.cropHint')}
         </span>
         <div className="flex-1" />
         <button
           onClick={onCancel}
-          className="flex items-center gap-1 text-[10px] text-[#a0a0b0] hover:text-white transition-colors"
+          className="flex items-center gap-1 text-[10px] text-content-muted hover:text-content transition-colors"
         >
           <X size={12} />
           {t('editor.cropCancel')}
         </button>
         <button
           onClick={onApply}
-          className="flex items-center gap-1 text-[10px] text-[#00d4ff] hover:text-white transition-colors"
+          className="flex items-center gap-1 text-[10px] text-accent hover:text-content transition-colors"
         >
           <Check size={12} />
           {t('editor.cropApply')}
@@ -408,30 +400,30 @@ function CropSlider({ cropStart, cropEnd, maxIndex, onStartChange, onEndChange, 
         className="relative h-4 select-none touch-none"
       >
         {/* Background track */}
-        <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 h-1 bg-white/10 rounded-full" />
+        <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 h-1 bg-surface-alt/50 rounded-full" />
 
         {/* Selected range */}
         <div
-          className="absolute top-1/2 -translate-y-1/2 h-1 bg-[#00d4ff] rounded-full"
+          className="absolute top-1/2 -translate-y-1/2 h-1 bg-accent rounded-full"
           style={{ left: `${startPct}%`, width: `${endPct - startPct}%` }}
         />
 
         {/* Start handle */}
         <div
-          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 bg-white rounded-full border-2 border-[#00d4ff] cursor-ew-resize shadow-lg"
+          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 bg-white rounded-full border-2 border-accent cursor-ew-resize shadow-lg"
           style={{ left: `${startPct}%` }}
           onPointerDown={() => handlePointerDown('start')}
         />
 
         {/* End handle */}
         <div
-          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 bg-white rounded-full border-2 border-[#00d4ff] cursor-ew-resize shadow-lg"
+          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 bg-white rounded-full border-2 border-accent cursor-ew-resize shadow-lg"
           style={{ left: `${endPct}%` }}
           onPointerDown={() => handlePointerDown('end')}
         />
       </div>
 
-      <div className="flex justify-between text-[9px] text-[#a0a0b0] mt-1">
+      <div className="flex justify-between text-[9px] text-content-muted mt-1">
         <span>pt {cropStart}</span>
         <span>{cropEnd - cropStart + 1} pts</span>
         <span>pt {cropEnd}</span>

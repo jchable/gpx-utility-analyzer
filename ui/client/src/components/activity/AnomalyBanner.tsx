@@ -63,7 +63,7 @@ export default function AnomalyBanner({ report }: { report: AnomalyReport }) {
           <span className={`font-semibold ${scoreColor}`}>
             {t('anomaly.qualityScore')}: {report.quality_score}/100
           </span>
-          <span className="text-sm text-slate-400">
+          <span className="text-sm text-content-muted">
             {report.critical_count > 0 && (
               <span className="text-red-400">{report.critical_count} {t('anomaly.critical')}</span>
             )}
@@ -78,7 +78,7 @@ export default function AnomalyBanner({ report }: { report: AnomalyReport }) {
           </span>
         </div>
         <svg
-          className={`w-5 h-5 text-slate-400 transition-transform shrink-0 ${expanded ? 'rotate-180' : ''}`}
+          className={`w-5 h-5 text-content-muted transition-transform shrink-0 ${expanded ? 'rotate-180' : ''}`}
           fill="none" stroke="currentColor" viewBox="0 0 24 24"
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -87,7 +87,7 @@ export default function AnomalyBanner({ report }: { report: AnomalyReport }) {
 
       {/* Impact summary */}
       {(Math.abs(report.distance_impact_m) >= 1 || Math.abs(report.time_impact_s) >= 1) && (
-        <div className="flex gap-4 mt-2 ml-8 text-sm text-slate-400">
+        <div className="flex gap-4 mt-2 ml-8 text-sm text-content-muted">
           {Math.abs(report.distance_impact_m) >= 1 && (
             <span>{t('anomaly.distanceImpact')}: {formatImpactDistance(report.distance_impact_m)}</span>
           )}
@@ -110,19 +110,19 @@ export default function AnomalyBanner({ report }: { report: AnomalyReport }) {
               : `points ${a.start_index}-${a.end_index}`;
 
             return (
-              <div key={i} className="flex items-start gap-2 bg-slate-800/40 rounded-xl p-3">
+              <div key={i} className="flex items-start gap-2 bg-surface-alt/50 rounded-xl p-3">
                 <span className={`text-xs font-bold px-2 py-0.5 rounded uppercase shrink-0 ${sev.color} ${sev.bg}`}>
                   {a.severity}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm text-slate-300">
-                    <span className="font-medium text-white">{a.type.replace(/_/g, ' ')}</span>
-                    <span className="text-slate-500 ml-2">({timeRange})</span>
+                  <p className="text-sm text-content">
+                    <span className="font-medium text-content">{a.type.replace(/_/g, ' ')}</span>
+                    <span className="text-content-muted ml-2">({timeRange})</span>
                   </p>
-                  <p className="text-xs text-slate-400 mt-0.5">{a.description}</p>
+                  <p className="text-xs text-content-muted mt-0.5">{a.description}</p>
                   <div className="flex gap-3 mt-1">
                     {Math.abs(a.distance_impact_m) >= 1 && (
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-content-muted">
                         {t('anomaly.distanceImpact')}: {formatImpactDistance(a.distance_impact_m)}
                       </span>
                     )}

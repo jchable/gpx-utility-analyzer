@@ -134,7 +134,7 @@ export default function UploadPage() {
   const statusIcon = (status: UploadStatus) => {
     switch (status) {
       case 'pending':
-        return <div className="w-5 h-5 rounded-full border-2 border-slate-600" />;
+        return <div className="w-5 h-5 rounded-full border-2 border-content-muted/70" />;
       case 'uploading':
         return <div className="w-5 h-5 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin" />;
       case 'processing':
@@ -166,10 +166,10 @@ export default function UploadPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-white">{t('title')}</h1>
+      <h1 className="text-2xl font-bold text-content">{t('title')}</h1>
 
       <div>
-        <label className="block text-sm font-medium text-slate-400 mb-3">{t('activityType')}</label>
+        <label className="block text-sm font-medium text-content-muted mb-3">{t('activityType')}</label>
         <div className="flex flex-wrap gap-2">
           {ACTIVITY_TYPES.map((key) => {
             const color = ACTIVITY_COLORS[key] || '#888';
@@ -182,7 +182,7 @@ export default function UploadPage() {
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all border ${
                   isSelected
                     ? 'border-transparent text-white'
-                    : 'border-slate-700 text-slate-400 hover:text-white hover:border-slate-500 bg-[#16213e]'
+                    : 'border-border text-content-muted hover:text-content hover:border-content-muted/30 bg-surface-card'
                 } disabled:opacity-50`}
                 style={isSelected ? { backgroundColor: color + '33', color, borderColor: color + '55' } : undefined}
               >
@@ -201,7 +201,7 @@ export default function UploadPage() {
         className={`relative border-2 border-dashed rounded-2xl p-6 sm:p-12 text-center cursor-pointer transition-all ${
           isDragOver
             ? 'border-cyan-400 bg-cyan-400/5'
-            : 'border-slate-700 hover:border-slate-500 bg-[#16213e]/50'
+            : 'border-border hover:border-content-muted/30 bg-surface-card/50'
         }`}
       >
         <input
@@ -216,29 +216,29 @@ export default function UploadPage() {
           }}
         />
         <svg
-          className={`w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 transition-colors ${isDragOver ? 'text-cyan-400' : 'text-slate-600'}`}
+          className={`w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 transition-colors ${isDragOver ? 'text-cyan-400' : 'text-content-muted/70'}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
         </svg>
-        <p className={`text-lg font-medium mb-1 ${isDragOver ? 'text-cyan-400' : 'text-slate-300'}`}>
+        <p className={`text-lg font-medium mb-1 ${isDragOver ? 'text-cyan-400' : 'text-content'}`}>
           {isDragOver ? t('dropZoneActive') : t('dropZone')}
         </p>
-        <p className="text-sm text-slate-500">{t('browseHint')}</p>
+        <p className="text-sm text-content-muted">{t('browseHint')}</p>
       </div>
 
       {files.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-white">
+            <h2 className="text-lg font-semibold text-content">
               {t('fileCount', { count: files.length })}
             </h2>
             {pendingCount > 0 && !isUploading && (
               <button
                 onClick={() => setFiles([])}
-                className="text-sm text-slate-500 hover:text-red-400 transition-colors"
+                className="text-sm text-content-muted hover:text-red-400 transition-colors"
               >
                 {t('clearAll')}
               </button>
@@ -249,12 +249,12 @@ export default function UploadPage() {
             {files.map((entry, i) => (
               <div
                 key={`${entry.file.name}-${i}`}
-                className="flex items-center gap-3 bg-[#16213e] rounded-xl px-4 py-3 border border-slate-700/50"
+                className="flex items-center gap-3 bg-surface-card rounded-xl px-4 py-3 border border-border"
               >
                 {statusIcon(entry.status)}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">{entry.file.name}</p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-sm font-medium text-content truncate">{entry.file.name}</p>
+                  <p className="text-xs text-content-muted">
                     {(entry.file.size / 1024).toFixed(0)} {tc('unit.kb')}
                     {entry.error && <span className="text-red-400 ml-2">{entry.error}</span>}
                   </p>
@@ -263,7 +263,7 @@ export default function UploadPage() {
                   entry.status === 'error' ? 'text-red-400' :
                   entry.status === 'processing' ? 'text-purple-400' :
                   entry.status === 'uploading' ? 'text-cyan-400' :
-                  entry.status === 'done' ? 'text-green-400' : 'text-slate-500'
+                  entry.status === 'done' ? 'text-green-400' : 'text-content-muted'
                 }`}>
                   {statusLabel(entry.status)}
                 </span>
@@ -277,7 +277,7 @@ export default function UploadPage() {
                 ) : entry.status === 'pending' ? (
                   <button
                     onClick={() => removeFile(i)}
-                    className="p-1 rounded-lg text-slate-600 hover:text-red-400 transition-colors shrink-0"
+                    className="p-1 rounded-lg text-content-muted/70 hover:text-red-400 transition-colors shrink-0"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -304,7 +304,7 @@ export default function UploadPage() {
             {processedFiles.length > 0 && !isUploading && (
               <button
                 onClick={() => navigate('/activities')}
-                className="px-6 py-3 rounded-xl bg-[#16213e] border border-slate-700 text-slate-300 font-medium hover:bg-slate-700/50 transition-colors"
+                className="px-6 py-3 rounded-xl bg-surface-card border border-border text-content font-medium hover:bg-surface-alt/50 transition-colors"
               >
                 {t('viewAllActivities')}
               </button>

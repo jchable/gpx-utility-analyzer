@@ -20,7 +20,7 @@ const queryClient = new QueryClient({
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <Suspense fallback={<div className="flex items-center justify-center h-screen bg-[#0a0a1a]"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-400" /></div>}>
+    <Suspense fallback={<div className="flex items-center justify-center h-screen bg-surface"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent" /></div>}>
       <BrowserRouter>
         <QueryClientProvider client={queryClient}>
           <App />

@@ -15,7 +15,7 @@ const EditorPage = lazy(() => import('./pages/EditorPage'));
 function PageLoader() {
   return (
     <div className="flex items-center justify-center h-64">
-      <div className="w-8 h-8 border-2 border-[#00d4ff]/30 border-t-[#00d4ff] rounded-full animate-spin" />
+      <div className="w-8 h-8 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
     </div>
   );
 }

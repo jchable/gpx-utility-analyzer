@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import MapViewSwitcher, { type MapView } from './MapViewSwitcher';
+import { getMapTilerKey, computeBounds, getStyleUrl } from '../../utils/map-helpers';
 
 interface TrackMapProps {
   /** Coordinates as [lon, lat] or [lon, lat, ele] arrays. */
@@ -13,57 +14,6 @@ interface TrackMapProps {
   error?: string | null;
   /** When set, the map flies to this location (e.g. clicked stop). */
   focusedPoint?: { lat: number; lon: number } | null;
-}
-
-function getMapTilerKey(): string {
-  if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_MAPTILER_KEY) {
-    return import.meta.env.VITE_MAPTILER_KEY as string;
-  }
-  const root = document.getElementById('root');
-  if (root?.dataset.maptilerKey) {
-    return root.dataset.maptilerKey;
-  }
-  return '';
-}
-
-function computeBounds(coords: number[][]): maplibregl.LngLatBoundsLike {
-  let minLon = Infinity,
-    minLat = Infinity,
-    maxLon = -Infinity,
-    maxLat = -Infinity;
-
-  for (const [lon, lat] of coords) {
-    if (lon < minLon) minLon = lon;
-    if (lon > maxLon) maxLon = lon;
-    if (lat < minLat) minLat = lat;
-    if (lat > maxLat) maxLat = lat;
-  }
-
-  return [
-    [minLon, minLat],
-    [maxLon, maxLat],
-  ];
-}
-
-function getStyleUrl(view: MapView, key: string): string | maplibregl.StyleSpecification {
-  switch (view) {
-    case '3d-terrain':
-      return `https://api.maptiler.com/maps/outdoor-v2/style.json?key=${key}`;
-    case '3d-satellite':
-      return `https://api.maptiler.com/maps/hybrid/style.json?key=${key}`;
-    case '2d-topo':
-      return {
-        version: 8,
-        sources: {
-          topo: {
-            type: 'raster',
-            tiles: ['https://tile.opentopomap.org/{z}/{x}/{y}.png'],
-            tileSize: 256,
-          },
-        },
-        layers: [{ id: 'topo', type: 'raster', source: 'topo' }],
-      };
-  }
 }
 
 const TRACK_SOURCE_ID = 'gpx-track';
@@ -330,23 +280,23 @@ export default function TrackMap({
   }, [focusedPoint]);
 
   return (
-    <div className="relative w-full h-full min-h-[250px] sm:min-h-[400px] rounded-xl overflow-hidden border border-white/5 bg-[#0f0f1a]">
+    <div className="relative w-full h-full min-h-[250px] sm:min-h-[400px] rounded-xl overflow-hidden border border-border bg-surface">
       <MapViewSwitcher current={view} onChange={setView} />
       <div ref={containerRef} className="w-full h-full min-h-[250px] sm:min-h-[400px]" />
 
       {loading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-[#0f0f1a]/80 backdrop-blur-sm z-20">
+        <div className="absolute inset-0 flex items-center justify-center bg-surface/80 backdrop-blur-sm z-20">
           <div className="flex flex-col items-center gap-3">
-            <div className="w-8 h-8 border-2 border-[#00d4ff] border-t-transparent rounded-full animate-spin" />
-            <span className="text-sm text-[#a0a0b0]">{t('map.loadingTrack')}</span>
+            <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+            <span className="text-sm text-content-muted">{t('map.loadingTrack')}</span>
           </div>
         </div>
       )}
 
       {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-[#0f0f1a]/80 backdrop-blur-sm z-20">
-          <div className="flex flex-col items-center gap-2 px-6 py-4 bg-[#16213e] rounded-xl border border-[#ff4444]/30">
-            <span className="text-sm text-[#ff4444]">{error}</span>
+        <div className="absolute inset-0 flex items-center justify-center bg-surface/80 backdrop-blur-sm z-20">
+          <div className="flex flex-col items-center gap-2 px-6 py-4 bg-surface-card rounded-xl border border-accent-red/30">
+            <span className="text-sm text-accent-red">{error}</span>
           </div>
         </div>
       )}

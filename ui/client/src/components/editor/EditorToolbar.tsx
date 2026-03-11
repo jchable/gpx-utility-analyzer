@@ -13,6 +13,7 @@ import {
 import { useEditorStore, type EditorMode } from '../../stores/editorStore';
 import { useRouteStats } from '../../hooks/useRouteStats';
 import type { RoutingProfile } from '../../types/route';
+import { formatDurationCompact } from '../../utils/format';
 
 const MODES: { id: EditorMode; icon: typeof MousePointer2; labelKey: string }[] = [
   { id: 'select', icon: MousePointer2, labelKey: 'editor.toolbar.select' },
@@ -30,14 +31,6 @@ const ROUTING_PROFILES: { id: RoutingProfile; labelKey: string }[] = [
   { id: 'cycling', labelKey: 'editor.routing.cycling' },
   { id: 'road', labelKey: 'editor.routing.road' },
 ];
-
-function formatDuration(seconds: number): string {
-  if (seconds <= 0) return '--';
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  if (h > 0) return `${h}h${m.toString().padStart(2, '0')}`;
-  return `${m}min`;
-}
 
 export default function EditorToolbar() {
   const { t } = useTranslation('routes');
@@ -58,7 +51,7 @@ export default function EditorToolbar() {
   return (
     <div className="absolute left-3 top-1/2 -translate-y-1/2 z-10 flex flex-col gap-2">
       {/* Mode buttons */}
-      <div className="flex flex-col rounded-lg overflow-hidden border border-white/10 bg-[#0f0f1a]/90 backdrop-blur-sm shadow-lg">
+      <div className="flex flex-col rounded-lg overflow-hidden border border-border bg-surface/90 backdrop-blur-sm shadow-lg">
         {MODES.map(({ id, icon: Icon, labelKey }) => {
           const isActive = mode === id;
           return (
@@ -68,9 +61,9 @@ export default function EditorToolbar() {
               title={t(labelKey)}
               className={`flex items-center justify-center w-10 h-10 transition-colors ${
                 isActive
-                  ? 'bg-[#00d4ff]/20 text-[#00d4ff]'
-                  : 'text-[#a0a0b0] hover:text-white hover:bg-white/5'
-              } ${id !== 'select' ? 'border-t border-white/5' : ''}`}
+                  ? 'bg-accent/20 text-accent'
+                  : 'text-content-muted hover:text-content hover:bg-surface-alt/30'
+              } ${id !== 'select' ? 'border-t border-border' : ''}`}
             >
               <Icon size={18} />
             </button>
@@ -79,26 +72,26 @@ export default function EditorToolbar() {
       </div>
 
       {/* Reverse button */}
-      <div className="flex flex-col rounded-lg overflow-hidden border border-white/10 bg-[#0f0f1a]/90 backdrop-blur-sm shadow-lg">
+      <div className="flex flex-col rounded-lg overflow-hidden border border-border bg-surface/90 backdrop-blur-sm shadow-lg">
         <button
           onClick={reverseRoute}
           title={t('editor.toolbar.reverse')}
-          className="flex items-center justify-center w-10 h-10 text-[#a0a0b0] hover:text-white hover:bg-white/5 transition-colors"
+          className="flex items-center justify-center w-10 h-10 text-content-muted hover:text-content hover:bg-surface-alt/30 transition-colors"
         >
           <ArrowLeftRight size={18} />
         </button>
       </div>
 
       {/* Undo / Redo */}
-      <div className="flex flex-col rounded-lg overflow-hidden border border-white/10 bg-[#0f0f1a]/90 backdrop-blur-sm shadow-lg">
+      <div className="flex flex-col rounded-lg overflow-hidden border border-border bg-surface/90 backdrop-blur-sm shadow-lg">
         <button
           onClick={() => undo()}
           disabled={!canUndo}
           title={t('editor.undo')}
           className={`flex items-center justify-center w-10 h-10 transition-colors ${
             canUndo
-              ? 'text-[#a0a0b0] hover:text-white hover:bg-white/5'
-              : 'text-[#a0a0b0]/30 cursor-not-allowed'
+              ? 'text-content-muted hover:text-content hover:bg-surface-alt/30'
+              : 'text-content-muted/30 cursor-not-allowed'
           }`}
         >
           <Undo2 size={18} />
@@ -107,10 +100,10 @@ export default function EditorToolbar() {
           onClick={() => redo()}
           disabled={!canRedo}
           title={t('editor.redo')}
-          className={`flex items-center justify-center w-10 h-10 border-t border-white/5 transition-colors ${
+          className={`flex items-center justify-center w-10 h-10 border-t border-border transition-colors ${
             canRedo
-              ? 'text-[#a0a0b0] hover:text-white hover:bg-white/5'
-              : 'text-[#a0a0b0]/30 cursor-not-allowed'
+              ? 'text-content-muted hover:text-content hover:bg-surface-alt/30'
+              : 'text-content-muted/30 cursor-not-allowed'
           }`}
         >
           <Redo2 size={18} />
@@ -118,7 +111,7 @@ export default function EditorToolbar() {
       </div>
 
       {/* Routing profile */}
-      <div className="flex flex-col rounded-lg overflow-hidden border border-white/10 bg-[#0f0f1a]/90 backdrop-blur-sm shadow-lg">
+      <div className="flex flex-col rounded-lg overflow-hidden border border-border bg-surface/90 backdrop-blur-sm shadow-lg">
         {ROUTING_PROFILES.map(({ id, labelKey }, i) => {
           const isActive = routingProfile === id;
           return (
@@ -128,9 +121,9 @@ export default function EditorToolbar() {
               title={t(labelKey)}
               className={`flex items-center justify-center px-2 h-8 text-[10px] font-medium transition-colors whitespace-nowrap ${
                 isActive
-                  ? 'bg-[#00d4ff]/20 text-[#00d4ff]'
-                  : 'text-[#a0a0b0] hover:text-white hover:bg-white/5'
-              } ${i > 0 ? 'border-t border-white/5' : ''}`}
+                  ? 'bg-accent/20 text-accent'
+                  : 'text-content-muted hover:text-content hover:bg-surface-alt/30'
+              } ${i > 0 ? 'border-t border-border' : ''}`}
             >
               {t(labelKey)}
             </button>
@@ -140,23 +133,23 @@ export default function EditorToolbar() {
 
       {/* Live stats */}
       {routeCoordinates.length >= 2 && (
-        <div className="flex flex-col gap-1 rounded-lg border border-white/10 bg-[#0f0f1a]/90 backdrop-blur-sm shadow-lg px-2 py-2 text-[10px] text-[#a0a0b0]">
+        <div className="flex flex-col gap-1 rounded-lg border border-border bg-surface/90 backdrop-blur-sm shadow-lg px-2 py-2 text-[10px] text-content-muted">
           <div className="flex justify-between gap-2">
             <span>{t('stats.distance')}</span>
-            <span className="text-white font-medium">{stats.distanceKm.toFixed(1)} km</span>
+            <span className="text-content font-medium">{stats.distanceKm.toFixed(1)} km</span>
           </div>
           <div className="flex justify-between gap-2">
             <span>{t('stats.elevationGain')}</span>
-            <span className="text-white font-medium">{stats.elevationGain} m</span>
+            <span className="text-content font-medium">{stats.elevationGain} m</span>
           </div>
           <div className="flex justify-between gap-2">
             <span>{t('stats.elevationLoss')}</span>
-            <span className="text-white font-medium">{stats.elevationLoss} m</span>
+            <span className="text-content font-medium">{stats.elevationLoss} m</span>
           </div>
           <div className="flex justify-between gap-2">
             <span>{t('stats.estimatedTime')}</span>
-            <span className="text-white font-medium">
-              {formatDuration(stats.estimatedTimeSeconds)}
+            <span className="text-content font-medium">
+              {formatDurationCompact(stats.estimatedTimeSeconds)}
             </span>
           </div>
         </div>

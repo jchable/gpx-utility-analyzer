@@ -16,51 +16,8 @@ import MapViewSwitcher, { type MapView } from '../map/MapViewSwitcher';
 import { useEditorStore } from '../../stores/editorStore';
 import type { EditorMode } from '../../stores/editorStore';
 import type { PoiType } from '../../types/route';
-
-// --- Map style helpers (reused from TrackMap) ---
-
-function getMapTilerKey(): string {
-  if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_MAPTILER_KEY) {
-    return import.meta.env.VITE_MAPTILER_KEY as string;
-  }
-  const root = document.getElementById('root');
-  if (root?.dataset.maptilerKey) {
-    return root.dataset.maptilerKey;
-  }
-  return '';
-}
-
-function computeBounds(coords: number[][]): maplibregl.LngLatBoundsLike {
-  let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
-  for (const [lon, lat] of coords) {
-    if (lon < minLon) minLon = lon;
-    if (lon > maxLon) maxLon = lon;
-    if (lat < minLat) minLat = lat;
-    if (lat > maxLat) maxLat = lat;
-  }
-  return [[minLon, minLat], [maxLon, maxLat]];
-}
-
-function getStyleUrl(view: MapView, key: string): string | maplibregl.StyleSpecification {
-  switch (view) {
-    case '3d-terrain':
-      return `https://api.maptiler.com/maps/outdoor-v2/style.json?key=${key}`;
-    case '3d-satellite':
-      return `https://api.maptiler.com/maps/hybrid/style.json?key=${key}`;
-    case '2d-topo':
-      return {
-        version: 8,
-        sources: {
-          topo: {
-            type: 'raster',
-            tiles: ['https://tile.opentopomap.org/{z}/{x}/{y}.png'],
-            tileSize: 256,
-          },
-        },
-        layers: [{ id: 'topo', type: 'raster', source: 'topo' }],
-      };
-  }
-}
+import { getMapTilerKey, computeBounds, getStyleUrl } from '../../utils/map-helpers';
+import { poiColorMatchExpression } from '../../constants/poi';
 
 // --- Layer IDs ---
 const ROUTE_SOURCE = 'editor-route';
@@ -210,19 +167,7 @@ export default function EditorMap({ poiType = 'custom', onSplitRequest }: Editor
         source: POIS_SOURCE,
         paint: {
           'circle-radius': 8,
-          'circle-color': [
-            'match', ['get', 'type'],
-            'water', '#3b82f6',
-            'parking', '#8b5cf6',
-            'refuge', '#f59e0b',
-            'summit', '#ef4444',
-            'viewpoint', '#10b981',
-            'danger', '#ef4444',
-            'food', '#f97316',
-            'camping', '#22c55e',
-            'custom', '#6b7280',
-            '#6b7280',
-          ] as maplibregl.ExpressionSpecification,
+          'circle-color': poiColorMatchExpression(),
           'circle-stroke-color': '#ffffff',
           'circle-stroke-width': 2,
         },
@@ -678,15 +623,15 @@ export default function EditorMap({ poiType = 'custom', onSplitRequest }: Editor
   }, [view]);
 
   return (
-    <div className="relative w-full h-full min-h-[300px] bg-[#0f0f1a]">
+    <div className="relative w-full h-full min-h-[300px] bg-surface">
       <MapViewSwitcher current={view} onChange={setView} />
       <div ref={containerRef} className="w-full h-full" />
 
       {useEditorStore.getState().isRouteLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-[#0f0f1a]/60 backdrop-blur-sm z-20 pointer-events-none">
+        <div className="absolute inset-0 flex items-center justify-center bg-surface/60 backdrop-blur-sm z-20 pointer-events-none">
           <div className="flex flex-col items-center gap-3">
-            <div className="w-8 h-8 border-2 border-[#00d4ff] border-t-transparent rounded-full animate-spin" />
-            <span className="text-sm text-[#a0a0b0]">{t('map.loadingTrack')}</span>
+            <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+            <span className="text-sm text-content-muted">{t('map.loadingTrack')}</span>
           </div>
         </div>
       )}

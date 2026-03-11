@@ -3,10 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { useIntegrations } from '../hooks/useActivities';
 import { api } from '../api/client';
 import type { IntegrationInfo } from '../types/activity';
+import { BRAND_COLORS } from '../constants/brands';
 
 const PROVIDER_STYLE: Record<string, { color: string; icon: string }> = {
-  strava: { color: '#FC4C02', icon: 'S' },
-  garmin: { color: '#007CC3', icon: 'G' },
+  strava: { color: BRAND_COLORS.strava, icon: 'S' },
+  garmin: { color: BRAND_COLORS.garmin, icon: 'G' },
   coros: { color: '#00D4AA', icon: 'C' },
   suunto: { color: '#E4032E', icon: 'S' },
   polar: { color: '#D0021B', icon: 'P' },
@@ -49,7 +50,7 @@ function IntegrationCard({
   };
 
   return (
-    <div className="bg-[#16213e] rounded-2xl p-6 border border-slate-700/50 hover:border-slate-600 transition-colors">
+    <div className="bg-surface-card rounded-2xl p-6 border border-border hover:border-content-muted/30 transition-colors">
       <div className="flex items-start gap-4">
         {/* Provider Icon */}
         <div
@@ -62,18 +63,18 @@ function IntegrationCard({
         {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <h3 className="text-white font-semibold">{providerName}</h3>
+            <h3 className="text-content font-semibold">{providerName}</h3>
             {integration.isConnected && (
               <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">
                 {t('connected')}
               </span>
             )}
           </div>
-          <p className="text-sm text-slate-400 mb-4">{providerDescription}</p>
+          <p className="text-sm text-content-muted mb-4">{providerDescription}</p>
 
           {/* Connected details */}
           {integration.isConnected && integration.externalUserId && (
-            <p className="text-xs text-slate-500 mb-3">
+            <p className="text-xs text-content-muted mb-3">
               {t('account', { userId: integration.externalUserId })}
               {integration.connectedAt && (
                 <> -- {t('connected')} {new Date(integration.connectedAt).toLocaleDateString(i18n.language)}</>
@@ -146,8 +147,8 @@ export default function Integrations() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white tracking-tight">{t('title')}</h1>
-        <p className="text-slate-400 mt-1">
+        <h1 className="text-3xl font-bold text-content tracking-tight">{t('title')}</h1>
+        <p className="text-content-muted mt-1">
           {t('subtitle')}
         </p>
       </div>
@@ -155,7 +156,7 @@ export default function Integrations() {
       {/* Connected */}
       {connected.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-content mb-4 flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-green-400" />
             {t('connectedServices')}
           </h2>
@@ -175,7 +176,7 @@ export default function Integrations() {
       {/* Available */}
       {available.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold text-white mb-4">{t('availableIntegrations')}</h2>
+          <h2 className="text-lg font-semibold text-content mb-4">{t('availableIntegrations')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {available.map((integration) => (
               <IntegrationCard
@@ -191,12 +192,12 @@ export default function Integrations() {
 
       {/* Empty state */}
       {integrations && integrations.length === 0 && (
-        <div className="bg-[#16213e] rounded-2xl p-12 border border-slate-700/50 text-center">
-          <svg className="w-16 h-16 mx-auto text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-surface-card rounded-2xl p-12 border border-border text-center">
+          <svg className="w-16 h-16 mx-auto text-content-muted/70 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
           </svg>
-          <p className="text-slate-400 text-lg">{t('emptyState')}</p>
-          <p className="text-slate-500 text-sm mt-1">
+          <p className="text-content-muted text-lg">{t('emptyState')}</p>
+          <p className="text-content-muted text-sm mt-1">
             {t('emptyStateHint')}
           </p>
         </div>

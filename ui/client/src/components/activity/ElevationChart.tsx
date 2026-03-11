@@ -10,6 +10,12 @@ import {
 } from 'recharts';
 import { Mountain } from 'lucide-react';
 import type { GpxStats } from '../../types/activity';
+import {
+  TOOLTIP_STYLE,
+  AXIS_TICK,
+  AXIS_LINE,
+  GRID_PROPS,
+} from '../../constants/chart-theme';
 
 interface ElevationChartProps {
   stats: GpxStats;
@@ -33,8 +39,8 @@ export default function ElevationChart({ stats }: ElevationChartProps) {
     <div className="flex flex-col gap-3">
       {/* Header */}
       <div className="flex items-center gap-2">
-        <Mountain size={18} className="text-[#00d4ff]" />
-        <h4 className="text-sm font-semibold text-white">Elevation Profile</h4>
+        <Mountain size={18} className="text-accent" />
+        <h4 className="text-sm font-semibold text-content">Elevation Profile</h4>
       </div>
 
       {/* Summary chips */}
@@ -46,35 +52,25 @@ export default function ElevationChart({ stats }: ElevationChartProps) {
       </div>
 
       {/* Bar chart */}
-      <div className="bg-[#16213e] rounded-xl border border-white/5 p-4">
+      <div className="bg-surface-card rounded-xl border border-border p-4">
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={data} margin={{ top: 8, right: 8, bottom: 4, left: 0 }}>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="rgba(255,255,255,0.05)"
-              vertical={false}
-            />
+            <CartesianGrid {...GRID_PROPS} />
             <XAxis
               dataKey="name"
-              tick={{ fill: '#a0a0b0', fontSize: 11 }}
-              axisLine={{ stroke: 'rgba(255,255,255,0.08)' }}
+              tick={AXIS_TICK}
+              axisLine={AXIS_LINE}
               tickLine={false}
             />
             <YAxis
-              tick={{ fill: '#a0a0b0', fontSize: 11 }}
+              tick={AXIS_TICK}
               axisLine={false}
               tickLine={false}
               width={50}
               tickFormatter={(v: number) => `${v} m`}
             />
             <Tooltip
-              contentStyle={{
-                backgroundColor: '#0f0f1a',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '8px',
-                color: '#e0e0e0',
-                fontSize: '12px',
-              }}
+              contentStyle={TOOLTIP_STYLE}
               cursor={{ fill: 'rgba(255,255,255,0.03)' }}
               formatter={(value: number | undefined) => [`${value ?? 0} m`, 'Elevation']}
             />
@@ -108,7 +104,7 @@ function ElevationChip({
         borderColor: `${color}25`,
       }}
     >
-      <span className="text-[#a0a0b0]">{label}</span>
+      <span className="text-content-muted">{label}</span>
       <span>{value}</span>
     </div>
   );
