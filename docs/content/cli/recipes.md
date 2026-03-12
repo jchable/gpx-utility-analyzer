@@ -119,6 +119,28 @@ gpx-analyzer benchmark my-hike.gpx -o results.csv -v
 gpx-analyzer analyze mountain-pass-ride.gpx --preset cycling --smoothing light
 ```
 
+### Analyze a road run
+
+```bash
+gpx-analyzer analyze 10k-race.gpx --preset running --max-hr 185
+```
+
+### Analyze a swim session (open water or pool)
+
+```bash
+gpx-analyzer analyze lake-swim.gpx --preset swimming --format json | jq '{distance: .total_distance_km, avg_pace: .avg_moving_pace}'
+```
+
+The `swimming` preset uses very low speed thresholds suited to aquatic movement. If the GPX was recorded with a Garmin multisport watch, water temperature (`gpxtpx:wtemp`) is extracted automatically and included in the biometrics output.
+
+### Analyze a Backyard Ultra
+
+```bash
+gpx-analyzer analyze backyard.gpx --preset running --stop-duration 3m --fix-anomalies
+```
+
+Each yard (loop of ~6.706 km) ends with a stop at the start/finish. Using `--stop-duration 3m` captures the brief rests between loops without counting short natural pauses.
+
 ## Performance tuning
 
 For long tracks (hundreds of km, thousands of points), processing time is dominated by DEM tile downloads and elevation computations. Here are several options to speed up analysis.

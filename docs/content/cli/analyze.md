@@ -27,7 +27,7 @@ gpx-analyzer analyze [files...] [flags]
 | `--dp-epsilon` | Douglas-Peucker: max tolerated vertical deviation (meters) | `3.0` |
 | `--seg-min-length` | Segments: minimum segment length (meters) | `200.0` |
 | `--seg-max-deviation` | Segments: max RMS residual per segment (meters) | `2.0` |
-| `--preset` | Stop detection preset: `hiking`, `trail`, `cycling` | `hiking` |
+| `--preset` | Stop detection preset: `hiking`, `trail`, `cycling`, `running`, `walking`, `swimming` | `hiking` |
 | `--stop-speed` | Override max speed for a stop (m/s) | _(per preset)_ |
 | `--stop-duration` | Override min duration for a stop (e.g., `2m`) | _(per preset)_ |
 | `--export` | Export reprocessed GPX files (DEM + smoothing) to this directory | _(disabled)_ |

@@ -163,8 +163,11 @@ Track smoothing (lat/lon) → DEM correction → Elevation smoothing (--smoothin
 
 | Preset | Max speed | Min duration | Use |
 |--------|----------|-------------|-----|
-| `hiking` | 0.3 m/s (1.1 km/h) | 2 min | Hiking, walking |
-| `trail` | 0.5 m/s (1.8 km/h) | 1 min | Trail running, mountain running |
+| `hiking` | 0.2 m/s (0.7 km/h) | 3 min | Hiking |
+| `walking` | 0.2 m/s (0.7 km/h) | 3 min | Urban walking, casual walks |
+| `trail` | 0.3 m/s (1.1 km/h) | 2 min | Trail running, mountain running |
+| `running` | 0.5 m/s (1.8 km/h) | 5 min | Road running, track |
 | `cycling` | 1.0 m/s (3.6 km/h) | 30 sec | Cycling, mountain biking |
+| `swimming` | 0.15 m/s (0.5 km/h) | 2 min | Open water, pool swimming |
 
 A stop is detected when the computed speed (distance between points / elapsed time) remains below the threshold for at least the minimum duration. Thresholds can be customized with `--stop-speed` and `--stop-duration`.
