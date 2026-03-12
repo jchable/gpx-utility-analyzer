@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
-import type { AppSettings } from '../types/activity';
+import type { AppSettings, UpdateProfile } from '../types/activity';
 
 export function useDashboard() {
   return useQuery({
@@ -76,5 +76,29 @@ export function useUpdateSettings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings'] });
     },
+  });
+}
+
+export function useUserProfile() {
+  return useQuery({
+    queryKey: ['userProfile'],
+    queryFn: api.getUserProfile,
+  });
+}
+
+export function useUpdateUserProfile() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: UpdateProfile) => api.updateUserProfile(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+    },
+  });
+}
+
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: ({ currentPassword, newPassword }: { currentPassword: string; newPassword: string }) =>
+      api.changePassword(currentPassword, newPassword),
   });
 }

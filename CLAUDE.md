@@ -400,5 +400,6 @@ Run `npm run e2e` after significant UI modifications to catch regressions. If a 
 - For local scripts and system operations, use **PowerShell** (Python is not installed)
 - After a modification or an addition on the source code, rebuild and test the modified component.
 - After a modification in the backend, use ef core migrations for database changes, and apply it to the current compose deployment once the feature finished
+- **EF Core migration rules**: NEVER edit migration `.cs` files manually. Always use `dotnet ef migrations add <Name>` to create and `dotnet ef migrations remove` to delete. If parallel branches created conflicting/empty migrations, use `remove` repeatedly to clean up, then re-add. If the dev DB is out of sync, wipe it (`rm data/gpxanalyzer.db`) and run `dotnet ef database update`. Check for pending changes with `dotnet ef migrations has-pending-model-changes`.
 - After changes, redeploy on compose (`docker compose up --build -d`) for the user to test.
 - At the end of a new feature, suggest to tracked only added or modified in this feature and in a second step to commit your work. Propose a commit message without git commit yourself.

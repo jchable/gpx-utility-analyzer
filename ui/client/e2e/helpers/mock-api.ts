@@ -15,6 +15,7 @@ const activities = loadFixture('activities.json');
 const activityCompleted = loadFixture('activity-completed.json');
 const activityAnalyzing = loadFixture('activity-analyzing.json');
 const profile = loadFixture('profile.json');
+const userProfile = loadFixture('user-profile.json');
 const track = loadFixture('track.json');
 const integrations = loadFixture('integrations.json');
 const settings = loadFixture('settings.json');
@@ -72,6 +73,20 @@ export async function mockAllApi(page: Page) {
 
   // Auth — mock logout
   await page.route('**/api/auth/logout', (route) =>
+    route.fulfill({ status: 204 }),
+  );
+
+  // User profile (GET and PUT)
+  await page.route('**/api/profile', (route) => {
+    if (route.request().method() === 'GET') {
+      route.fulfill({ json: userProfile });
+    } else {
+      route.fulfill({ json: userProfile });
+    }
+  });
+
+  // Change password
+  await page.route('**/api/profile/change-password', (route) =>
     route.fulfill({ status: 204 }),
   );
 

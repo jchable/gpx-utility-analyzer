@@ -8,6 +8,7 @@ import {
   Route,
   Link,
   Settings,
+  User,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -23,6 +24,7 @@ const navItems = [
   { to: '/predict', labelKey: 'nav.predict', icon: Map },
   { to: '/routes', labelKey: 'nav.routes', icon: Route },
   { to: '/integrations', labelKey: 'nav.integrations', icon: Link },
+  { to: '/profile', labelKey: 'nav.profile', icon: User },
   { to: '/settings', labelKey: 'nav.settings', icon: Settings },
 ];
 

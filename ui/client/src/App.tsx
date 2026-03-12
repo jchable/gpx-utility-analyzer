@@ -12,6 +12,7 @@ const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const RoutePlannerPage = lazy(() => import('./pages/RoutePlannerPage'));
 const RoutesPage = lazy(() => import('./pages/RoutesPage'));
 const EditorPage = lazy(() => import('./pages/EditorPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 
@@ -47,6 +48,7 @@ export default function App() {
           <Route path="/routes" element={<RoutesPage />} />
           <Route path="/integrations" element={<Integrations />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
         </Route>
 
         {/* Editor pages — full-screen, no Layout wrapper, but still protected */}

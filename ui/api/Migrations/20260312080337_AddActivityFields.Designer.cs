@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GpxAnalyzer.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260312073203_AddDetectedSubType")]
-    partial class AddDetectedSubType
+    [Migration("20260312080337_AddActivityFields")]
+    partial class AddActivityFields
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
