@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Text.Json;
 using GpxAnalyzer.Api.Data;
 using GpxAnalyzer.Api.Entities;
+using GpxAnalyzer.Api.Services.Storage;
 using GpxAnalyzer.Cli.Core.Stats;
 
 public class ActivityProcessingService
@@ -48,6 +49,8 @@ public class ActivityProcessingService
         _logger.LogInformation("Starting processing for activity {Id} ({Name}, type={Type}, source={Source})",
             activityId, activity.Name, activity.ActivityType, activity.Source);
 
+        GpxAiAnalyzer.Core.Models.GpxStats? analysisStats = null;
+
         try
         {
             // Step 1: Run GPX analysis
@@ -56,112 +59,118 @@ public class ActivityProcessingService
             await _db.SaveChangesAsync(ct);
 
             // Determine which GPX to analyze: original archive (reanalyze) or uploaded file (first run)
-            string gpxToAnalyze;
-            string? tempExtractedPath = null;
-            if (_storage.HasOriginalArchive(activity.GpxFilePath))
-            {
-                // Reanalyze: extract original from zip
-                tempExtractedPath = _storage.ExtractOriginalToTemp(activity.GpxFilePath);
-                gpxToAnalyze = tempExtractedPath;
-                _logger.LogInformation("[{Id}] Reanalyze: extracted original from archive", activityId);
-            }
-            else
-            {
-                gpxToAnalyze = _storage.GetFullPath(activity.GpxFilePath);
-            }
+            var isReanalyze = await _storage.HasOriginalArchiveAsync(activity.GpxFilePath, ct);
+            LocalFileLease? gpxLease = null;
 
-            _logger.LogInformation("[{Id}] Step 1/2: Running GPX analysis on {Path}", activityId, activity.GpxFilePath);
-
-            // Phase A: auto-detect activity type from GPX metadata (before analysis)
-            var autoDetectStr = await _settings.GetAsync(userId, "GpxCli:AutoDetectActivityType");
-            var autoDetect = bool.TryParse(autoDetectStr, out var ad) && ad;
-            if (autoDetect)
-            {
-                var gpxType = GpxAnalysisService.ExtractGpxType(gpxToAnalyze);
-                var detectedFromGpx = ActivityTypeDetector.DetectFromGpxType(gpxType);
-                if (detectedFromGpx != null)
-                {
-                    _logger.LogInformation("[{Id}] Phase A: GPX type '{GpxType}' → {Detected}",
-                        activityId, gpxType, detectedFromGpx);
-                    activity.ActivityType = detectedFromGpx;
-                }
-            }
-
-            // Create temp export directory for the processed GPX
-            var exportDir = Path.Combine(Path.GetTempPath(), $"gpx-export-{Guid.NewGuid()}");
-            Directory.CreateDirectory(exportDir);
-
-            var stepSw = Stopwatch.StartNew();
-            var stats = await _analysisService.AnalyzeAsync(userId, gpxToAnalyze, activity.ActivityType, exportDir, ct);
-            stepSw.Stop();
-
-            _logger.LogInformation("[{Id}] GPX analysis completed in {Elapsed:F1}s — {Distance:F1} km, D+{Gain:F0}m, D-{Loss:F0}m, moving {MovingTime}",
-                activityId, stepSw.Elapsed.TotalSeconds,
-                stats.TotalDistanceKm, stats.ElevationGainM, stats.ElevationLossM,
-                TimeSpan.FromSeconds(stats.MovingTime.Seconds).ToString(@"hh\:mm\:ss"));
-
-            // Archive original GPX as zip (only on first processing, skipped if already archived)
-            if (tempExtractedPath is null)
-            {
-                _storage.ArchiveOriginalAsZip(activity.GpxFilePath);
-                _logger.LogInformation("[{Id}] Archived original GPX as zip", activityId);
-            }
-
-            // Move processed GPX to replace the original path
-            var exportedFiles = Directory.GetFiles(exportDir, "*_processed.gpx");
-            if (exportedFiles.Length > 0)
-            {
-                _storage.ReplaceWithProcessed(activity.GpxFilePath, exportedFiles[0]);
-                _logger.LogInformation("[{Id}] Replaced GPX with processed version", activityId);
-            }
-
-            // Compute profile and track GeoJSON from enriched GPX
-            stepSw.Restart();
-            var enrichedGpxPath = _storage.GetFullPath(activity.GpxFilePath);
-            var (profileJson, trackGeoJson, splitsJson) = _profileService.ComputeFromEnrichedGpx(enrichedGpxPath);
-            stepSw.Stop();
-
-            activity.ProfileJson = profileJson;
-            activity.TrackGeoJson = trackGeoJson;
-            activity.SplitsJson = splitsJson;
-            _logger.LogInformation("[{Id}] Profile computed in {Elapsed:F1}s ({ProfileSize} profile, {TrackSize} track)",
-                activityId, stepSw.Elapsed.TotalSeconds,
-                profileJson?.Length.ToString("N0") ?? "null",
-                trackGeoJson?.Length.ToString("N0") ?? "null");
-
-            // Cleanup temp directories
             try
             {
-                if (Directory.Exists(exportDir))
-                    Directory.Delete(exportDir, recursive: true);
-                if (tempExtractedPath is not null)
-                    Directory.Delete(Path.GetDirectoryName(tempExtractedPath)!, recursive: true);
+                if (isReanalyze)
+                {
+                    gpxLease = await _storage.ExtractOriginalToTempAsync(activity.GpxFilePath, ct);
+                    _logger.LogInformation("[{Id}] Reanalyze: extracted original from archive", activityId);
+                }
+                else
+                {
+                    gpxLease = await _storage.GetLocalPathAsync(activity.GpxFilePath, ct);
+                }
+
+                var gpxToAnalyze = gpxLease.Path;
+                _logger.LogInformation("[{Id}] Step 1/2: Running GPX analysis on {Path}", activityId, activity.GpxFilePath);
+
+                // Phase A: auto-detect activity type from GPX metadata (before analysis)
+                var autoDetectStr = await _settings.GetAsync(userId, "GpxCli:AutoDetectActivityType");
+                var autoDetect = bool.TryParse(autoDetectStr, out var ad) && ad;
+                if (autoDetect)
+                {
+                    var gpxType = GpxAnalysisService.ExtractGpxType(gpxToAnalyze);
+                    var detectedFromGpx = ActivityTypeDetector.DetectFromGpxType(gpxType);
+                    if (detectedFromGpx != null)
+                    {
+                        _logger.LogInformation("[{Id}] Phase A: GPX type '{GpxType}' → {Detected}",
+                            activityId, gpxType, detectedFromGpx);
+                        activity.ActivityType = detectedFromGpx;
+                    }
+                }
+
+                // Create temp export directory for the processed GPX
+                var exportDir = Path.Combine(Path.GetTempPath(), $"gpx-export-{Guid.NewGuid()}");
+                Directory.CreateDirectory(exportDir);
+
+                var stepSw = Stopwatch.StartNew();
+                var stats = await _analysisService.AnalyzeAsync(userId, gpxToAnalyze, activity.ActivityType, exportDir, ct);
+                stepSw.Stop();
+
+                _logger.LogInformation("[{Id}] GPX analysis completed in {Elapsed:F1}s — {Distance:F1} km, D+{Gain:F0}m, D-{Loss:F0}m, moving {MovingTime}",
+                    activityId, stepSw.Elapsed.TotalSeconds,
+                    stats.TotalDistanceKm, stats.ElevationGainM, stats.ElevationLossM,
+                    TimeSpan.FromSeconds(stats.MovingTime.Seconds).ToString(@"hh\:mm\:ss"));
+
+                // Archive original GPX as zip (only on first processing, skipped if already archived)
+                if (!isReanalyze)
+                {
+                    await _storage.ArchiveOriginalAsZipAsync(activity.GpxFilePath, ct);
+                    _logger.LogInformation("[{Id}] Archived original GPX as zip", activityId);
+                }
+
+                // Move processed GPX to replace the original path
+                var exportedFiles = Directory.GetFiles(exportDir, "*_processed.gpx");
+                if (exportedFiles.Length > 0)
+                {
+                    await _storage.ReplaceWithProcessedAsync(activity.GpxFilePath, exportedFiles[0], ct);
+                    _logger.LogInformation("[{Id}] Replaced GPX with processed version", activityId);
+                }
+
+                // Cleanup export dir
+                try
+                {
+                    if (Directory.Exists(exportDir))
+                        Directory.Delete(exportDir, recursive: true);
+                }
+                catch (Exception cleanupEx)
+                {
+                    _logger.LogWarning(cleanupEx, "[{Id}] Export dir cleanup failed (non-critical)", activityId);
+                }
+
+                // Compute profile and track GeoJSON from enriched GPX
+                stepSw.Restart();
+                using var enrichedLease = await _storage.GetLocalPathAsync(activity.GpxFilePath, ct);
+                var (profileJson, trackGeoJson, splitsJson) = _profileService.ComputeFromEnrichedGpx(enrichedLease.Path);
+                stepSw.Stop();
+
+                activity.ProfileJson = profileJson;
+                activity.TrackGeoJson = trackGeoJson;
+                activity.SplitsJson = splitsJson;
+                _logger.LogInformation("[{Id}] Profile computed in {Elapsed:F1}s ({ProfileSize} profile, {TrackSize} track)",
+                    activityId, stepSw.Elapsed.TotalSeconds,
+                    profileJson?.Length.ToString("N0") ?? "null",
+                    trackGeoJson?.Length.ToString("N0") ?? "null");
+
+                // Store stats and populate summary fields
+                activity.StatsJson = JsonSerializer.Serialize(stats);
+                analysisStats = stats;
+                activity.DistanceKm = stats.TotalDistanceKm;
+                activity.ElevationGainM = stats.ElevationGainM;
+                activity.ElevationLossM = stats.ElevationLossM;
+                activity.MovingTimeSeconds = stats.MovingTime.Seconds;
+
+                if (DateTime.TryParse(stats.StartTime, out var start))
+                    activity.StartTime = start;
+                if (DateTime.TryParse(stats.EndTime, out var end))
+                    activity.EndTime = end;
+
+                // Phase B: auto-detect activity type from computed stats
+                if (autoDetect)
+                {
+                    var detection = ActivityTypeDetector.DetectFromStats(stats);
+                    _logger.LogInformation("[{Id}] Phase B: Detected {Type} ({Confidence:P0}), sub={SubType}",
+                        activityId, detection.ActivityType, detection.Confidence, detection.SubType);
+                    activity.ActivityType = detection.ActivityType;
+                    activity.DetectedSubType = detection.SubType;
+                }
             }
-            catch (Exception cleanupEx)
+            finally
             {
-                _logger.LogWarning(cleanupEx, "[{Id}] Temp cleanup failed (non-critical)", activityId);
-            }
-
-            // Store stats and populate summary fields
-            activity.StatsJson = JsonSerializer.Serialize(stats);
-            activity.DistanceKm = stats.TotalDistanceKm;
-            activity.ElevationGainM = stats.ElevationGainM;
-            activity.ElevationLossM = stats.ElevationLossM;
-            activity.MovingTimeSeconds = stats.MovingTime.Seconds;
-
-            if (DateTime.TryParse(stats.StartTime, out var start))
-                activity.StartTime = start;
-            if (DateTime.TryParse(stats.EndTime, out var end))
-                activity.EndTime = end;
-
-            // Phase B: auto-detect activity type from computed stats
-            if (autoDetect)
-            {
-                var detection = ActivityTypeDetector.DetectFromStats(stats);
-                _logger.LogInformation("[{Id}] Phase B: Detected {Type} ({Confidence:P0}), sub={SubType}",
-                    activityId, detection.ActivityType, detection.Confidence, detection.SubType);
-                activity.ActivityType = detection.ActivityType;
-                activity.DetectedSubType = detection.SubType;
+                gpxLease?.Dispose();
             }
 
             // Step 2: Run AI analysis
@@ -171,20 +180,23 @@ public class ActivityProcessingService
 
             _logger.LogInformation("[{Id}] Step 2/2: Running AI analysis", activityId);
 
-            try
+            if (analysisStats is not null)
             {
-                stepSw.Restart();
-                var report = await _aiService.AnalyzeAsync(userId, stats, activity.Language, ct);
-                stepSw.Stop();
-                if (report is not null)
+                try
                 {
-                    activity.AiReportJson = JsonSerializer.Serialize(report);
-                    _logger.LogInformation("[{Id}] AI analysis completed in {Elapsed:F1}s", activityId, stepSw.Elapsed.TotalSeconds);
+                    var stepSw = Stopwatch.StartNew();
+                    var report = await _aiService.AnalyzeAsync(userId, analysisStats, activity.Language, ct);
+                    stepSw.Stop();
+                    if (report is not null)
+                    {
+                        activity.AiReportJson = JsonSerializer.Serialize(report);
+                        _logger.LogInformation("[{Id}] AI analysis completed in {Elapsed:F1}s", activityId, stepSw.Elapsed.TotalSeconds);
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "[{Id}] AI analysis failed, continuing without AI report: {Message}", activityId, ex.Message);
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "[{Id}] AI analysis failed, continuing without AI report: {Message}", activityId, ex.Message);
+                }
             }
 
             activity.Status = ProcessingStatus.Completed;

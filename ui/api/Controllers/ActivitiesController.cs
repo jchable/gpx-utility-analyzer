@@ -146,7 +146,7 @@ public class ActivitiesController : ControllerBase
         var activity = await _db.Activities.FindAsync(id);
         if (activity is null || activity.UserId != User.GetUserId()) return NotFound();
 
-        _storage.DeleteWithOriginal(activity.GpxFilePath);
+        await _storage.DeleteWithOriginalAsync(activity.GpxFilePath);
         _db.Activities.Remove(activity);
         await _db.SaveChangesAsync();
 
@@ -159,10 +159,11 @@ public class ActivitiesController : ControllerBase
         var activity = await _db.Activities.FindAsync(id);
         if (activity is null || activity.UserId != User.GetUserId()) return NotFound();
 
-        var fullPath = _storage.GetFullPath(activity.GpxFilePath);
-        if (!System.IO.File.Exists(fullPath)) return NotFound(new { code = "GPX_NOT_FOUND" });
+        if (!await _storage.ExistsAsync(activity.GpxFilePath))
+            return NotFound(new { code = "GPX_NOT_FOUND" });
 
-        return PhysicalFile(Path.GetFullPath(fullPath), "application/gpx+xml", $"{activity.Name}.gpx");
+        var stream = await _storage.GetStreamAsync(activity.GpxFilePath);
+        return File(stream, "application/gpx+xml", $"{activity.Name}.gpx");
     }
 
     [HttpGet("{id:guid}/profile")]

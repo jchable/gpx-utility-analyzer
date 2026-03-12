@@ -34,6 +34,16 @@ const sidebars: SidebarsConfig = {
         'ai-analyzer/index',
       ],
     },
+    {
+      type: 'category',
+      label: 'Web App (ASP.NET + React)',
+      collapsed: true,
+      items: [
+        'web-app/index',
+        'web-app/deployment',
+        'web-app/configuration',
+      ],
+    },
   ],
 };
 

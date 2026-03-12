@@ -12,16 +12,10 @@ using Microsoft.EntityFrameworkCore;
 [ApiController]
 [Authorize]
 [Route("api/profile")]
-public class ProfileController : ControllerBase
+public class ProfileController(UserManager<ApplicationUser> userManager, AppDbContext db) : ControllerBase
 {
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly AppDbContext _db;
-
-    public ProfileController(UserManager<ApplicationUser> userManager, AppDbContext db)
-    {
-        _userManager = userManager;
-        _db = db;
-    }
+    private readonly UserManager<ApplicationUser> _userManager = userManager;
+    private readonly AppDbContext _db = db;
 
     [HttpGet]
     public async Task<IActionResult> GetProfile()

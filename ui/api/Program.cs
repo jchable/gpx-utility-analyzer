@@ -6,7 +6,9 @@ using GpxAnalyzer.Api.BackgroundServices;
 using GpxAnalyzer.Api.Data;
 using GpxAnalyzer.Api.Entities;
 using GpxAnalyzer.Api.Services;
+using GpxAnalyzer.Api.Services.Email;
 using GpxAnalyzer.Api.Services.Integrations;
+using GpxAnalyzer.Api.Services.Storage;
 using GpxAiAnalyzer.Core.Providers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -95,6 +97,20 @@ builder.Services.AddResponseCompression(o =>
 builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
 builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
 
+// Object storage (local filesystem or S3-compatible)
+var storageType = builder.Configuration["Storage:Type"]?.ToLowerInvariant() ?? "local";
+if (storageType == "s3")
+    builder.Services.AddScoped<IStorageService, S3StorageService>();
+else
+    builder.Services.AddScoped<IStorageService, LocalStorageService>();
+
+// Email service
+var emailType = builder.Configuration["Email:Type"]?.ToLowerInvariant() ?? "noop";
+if (emailType == "smtp")
+    builder.Services.AddScoped<IEmailService, SmtpEmailService>();
+else
+    builder.Services.AddScoped<IEmailService, NoOpEmailService>();
+
 // Services (scoped for multi-user alignment with DbContext)
 builder.Services.AddScoped<GpxStorageService>();
 builder.Services.AddScoped<GpxAnalysisService>();
@@ -164,6 +180,14 @@ using (var scope = app.Services.CreateScope())
         if (!await roleManager.RoleExistsAsync(role))
             await roleManager.CreateAsync(new IdentityRole<Guid> { Name = role });
     }
+}
+
+// Ensure S3 bucket exists when using S3 storage
+if (storageType == "s3")
+{
+    using var scope = app.Services.CreateScope();
+    var s3 = (S3StorageService)scope.ServiceProvider.GetRequiredService<IStorageService>();
+    await s3.EnsureBucketAsync();
 }
 
 app.UseResponseCompression();
