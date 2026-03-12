@@ -53,5 +53,36 @@ public class GpxExtensionsTests
         Assert.Null(points[0].Cadence);
         Assert.Null(points[0].Power);
         Assert.Null(points[0].Temperature);
+        Assert.Null(points[0].DeviceSpeed);
+        Assert.Null(points[0].WaterTemp);
+    }
+
+    [Fact]
+    public void ParseFile_WithGpsQuality_ParsesDeviceSpeed()
+    {
+        var doc = GpxParser.ParseFile(TestDataPath("with-gps-quality.gpx"));
+        var points = doc.AllPoints();
+        Assert.Equal(2.5, points[0].DeviceSpeed);
+        Assert.Equal(3.1, points[1].DeviceSpeed);
+        Assert.Equal(2.8, points[2].DeviceSpeed);
+    }
+
+    [Fact]
+    public void ParseFile_WithGpsQuality_ParsesWaterTemp()
+    {
+        var doc = GpxParser.ParseFile(TestDataPath("with-gps-quality.gpx"));
+        var points = doc.AllPoints();
+        Assert.Null(points[0].WaterTemp);
+        Assert.Equal(22.5, points[1].WaterTemp);
+        Assert.Null(points[2].WaterTemp);
+    }
+
+    [Fact]
+    public void ParseFile_WithExtensions_DeviceSpeedAndWaterTempNull()
+    {
+        var doc = GpxParser.ParseFile(TestDataPath("with-extensions.gpx"));
+        var points = doc.AllPoints();
+        Assert.Null(points[0].DeviceSpeed);
+        Assert.Null(points[0].WaterTemp);
     }
 }

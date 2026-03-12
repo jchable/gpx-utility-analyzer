@@ -10,7 +10,11 @@ When a GPX file contains extension data (e.g., Garmin TrackPointExtension v1/v2)
 
 | Source | Data |
 |--------|------|
-| Garmin TrackPointExtension v1/v2 (`<gpxtpx:hr>`, `<gpxtpx:cad>`, `<gpxtpx:atemp>`) | Heart rate, cadence, temperature |
+| Garmin TrackPointExtension v1/v2 (`<gpxtpx:hr>`) | Heart rate (bpm) |
+| Garmin TrackPointExtension v1/v2 (`<gpxtpx:cad>`) | Cadence (rpm) |
+| Garmin TrackPointExtension v1/v2 (`<gpxtpx:atemp>`) | Air temperature (°C) |
+| Garmin TrackPointExtension v2 (`<gpxtpx:speed>`) | Device-reported speed (m/s) |
+| Garmin TrackPointExtension v2 (`<gpxtpx:wtemp>`) | Water temperature (°C) |
 | Standard `<power>` element | Power (watts) |
 
 ## Computed biometric metrics
@@ -20,7 +24,26 @@ When a GPX file contains extension data (e.g., Garmin TrackPointExtension v1/v2)
 | **Heart Rate** | Average, max, min (bpm). HR zones (Z1-Z5) when `--max-hr` is set |
 | **Power** | Average, max (watts), normalized power (NP) |
 | **Cadence** | Average, max (rpm) |
-| **Temperature** | Average, min, max (°C) |
+| **Air Temperature** | Average, min, max (°C) |
+| **Water Temperature** | Average, min, max (°C) — present on aquatic activities recorded with a compatible Garmin device |
+
+## GPS quality fields
+
+Standard GPX 1.1 quality fields are parsed when present and stored per track point:
+
+| Field | Description |
+|-------|-------------|
+| `<fix>` | Fix type: `none`, `2d`, `3d`, `dgps`, `pps` |
+| `<sat>` | Number of satellites used |
+| `<hdop>` | Horizontal dilution of precision |
+| `<vdop>` | Vertical dilution of precision |
+| `<pdop>` | Position dilution of precision |
+
+These fields are used by the anomaly detector to identify unreliable GPS points (e.g., hdop > 5 or sat < 4 can correlate with position spikes). They are not directly surfaced in the JSON output summary but influence anomaly detection and speed clamping behaviour.
+
+## Device speed vs. computed speed
+
+When `<gpxtpx:speed>` is present, the device-reported speed (Doppler-derived, in m/s) is stored alongside the computed Haversine speed. The device speed is generally more reliable for instantaneous readings. Significant divergence between the two can indicate a GPS position anomaly.
 
 ## HR zones
 

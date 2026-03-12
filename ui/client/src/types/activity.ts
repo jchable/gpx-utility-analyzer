@@ -217,17 +217,19 @@ export interface IntegrationInfo {
   connectedAt?: string;
 }
 
+export interface AthleteSettings {
+  maxHeartRate?: number;
+  restingHeartRate?: number;
+  ftp?: number;
+  vo2Max?: number;
+  age?: number;
+}
+
 export interface AppSettings {
-  athlete: AthleteSettings;
   analysis: AnalysisSettings;
   aiProvider: AiProviderSettings;
   integrations: IntegrationCredentials;
-}
-
-export interface AthleteSettings {
-  maxHeartRate?: number;
-  age?: number;
-  ftp?: number;
+  athlete?: AthleteSettings;
 }
 
 export interface AnalysisSettings {
@@ -236,6 +238,7 @@ export interface AnalysisSettings {
   trackSmoothing: string;
   elevationAlgorithm: string;
   fixAnomalies: boolean;
+  autoDetectActivityType: boolean;
 }
 
 export interface AiProviderSettings {
@@ -297,6 +300,44 @@ export interface ComputedZone {
   maxValue: number;
   durationSeconds: number;
   color: string;
+}
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  displayName: string;
+  bio?: string;
+  city?: string;
+  preferredUnits?: string;
+  language?: string;
+  profilePhotoPath?: string;
+  weightKg?: number;
+  heightCm?: number;
+  sex?: string;
+  dateOfBirth?: string;
+  maxHeartRate?: number;
+  restingHeartRate?: number;
+  ftp?: number;
+  vo2Max?: number;
+  age?: number;
+  estimatedMaxHR?: number;
+  bmi?: number;
+}
+
+export interface UpdateProfile {
+  displayName?: string;
+  bio?: string;
+  city?: string;
+  preferredUnits?: string;
+  language?: string;
+  weightKg?: number;
+  heightCm?: number;
+  sex?: string;
+  dateOfBirth?: string;
+  maxHeartRate?: number;
+  restingHeartRate?: number;
+  ftp?: number;
+  vo2Max?: number;
 }
 
 export const ACTIVITY_COLORS: Record<string, string> = {

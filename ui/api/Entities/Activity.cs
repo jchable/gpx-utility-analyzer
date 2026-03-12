@@ -7,6 +7,7 @@ public class Activity
     public ApplicationUser User { get; set; } = null!;
     public string Name { get; set; } = "";
     public string ActivityType { get; set; } = "trail";
+    public string? DetectedSubType { get; set; }
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; }
     public double DistanceKm { get; set; }

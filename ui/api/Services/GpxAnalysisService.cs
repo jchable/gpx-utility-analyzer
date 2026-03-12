@@ -81,6 +81,15 @@ public class GpxAnalysisService
         return SummaryMapper.ToGpxStats(gpxFilePath, summary);
     }
 
+    /// <summary>
+    /// Extracts the track type from GPX metadata without running full analysis.
+    /// </summary>
+    public static string? ExtractGpxType(string gpxFilePath)
+    {
+        var doc = GpxParser.ParseFile(gpxFilePath);
+        return doc.Tracks.FirstOrDefault()?.Type;
+    }
+
     private static ComputeConfig BuildConfig(string preset, string smoothing, string trackSmoothing, bool fixAnomalies = false)
     {
         if (!StopDetector.Presets.TryGetValue(preset, out var stopCfg))

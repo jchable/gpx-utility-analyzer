@@ -9,7 +9,9 @@ public readonly record struct PointExtensions(
     int? HeartRate,
     int? Cadence,
     int? Power,
-    double? Temperature);
+    double? Temperature,
+    double? DeviceSpeed,
+    double? WaterTemp);
 
 /// <summary>
 /// Parses GPX extensions (Garmin TrackPointExtension v1/v2 and bare power elements).
@@ -46,6 +48,8 @@ public static class GpxExtensionParser
         int? cadence = null;
         int? power = null;
         double? temperature = null;
+        double? deviceSpeed = null;
+        double? waterTemp = null;
 
         // Look for <power> element (may carry parent's default GPX namespace)
         var powerElem = root.Elements().FirstOrDefault(e => e.Name.LocalName == "power");
@@ -80,8 +84,26 @@ public static class GpxExtensionParser
                     System.Globalization.CultureInfo.InvariantCulture, out var tempVal))
                     temperature = tempVal;
             }
+
+            if (deviceSpeed == null)
+            {
+                var spd = tpe.Element(ns + "speed");
+                if (spd != null && double.TryParse(spd.Value,
+                    System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out var spdVal))
+                    deviceSpeed = spdVal;
+            }
+
+            if (waterTemp == null)
+            {
+                var wt = tpe.Element(ns + "wtemp");
+                if (wt != null && double.TryParse(wt.Value,
+                    System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out var wtVal))
+                    waterTemp = wtVal;
+            }
         }
 
-        return new PointExtensions(heartRate, cadence, power, temperature);
+        return new PointExtensions(heartRate, cadence, power, temperature, deviceSpeed, waterTemp);
     }
 }

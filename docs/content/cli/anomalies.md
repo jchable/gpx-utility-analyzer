@@ -21,6 +21,7 @@ Each trace receives a quality score from 0 to 100, deducting per anomaly:
 | Category | Type | Severity | Description |
 |----------|------|----------|-------------|
 | Position | GPS Frozen | Critical | Consecutive points at identical coordinates while biometrics indicate movement |
+| Position | GPS Teleportation | — | Point-to-point speed exceeds threshold; removed by GPS filter before analysis |
 | Position | Signal Loss | Warning | Time gaps between consecutive points (> 30s) |
 | Position | GPS Drift | Warning | Position oscillation during stops |
 | Speed | Speed Spike | Warning | Points exceeding max speed threshold (already clamped) |
@@ -152,6 +153,16 @@ All detection thresholds have sensible defaults and are not exposed as CLI flags
 | `MinPointsPerKm` | 5 | Point density threshold |
 | `ConstantElevationRangeM` | 2 | Max elevation range for "constant" |
 | `ActiveCadenceThreshold` | 30 | RPM threshold for "moving" |
+
+## GPS Signal Quality
+
+Standard GPX 1.1 quality fields (`<fix>`, `<sat>`, `<hdop>`, `<vdop>`, `<pdop>`) are parsed from the source file when present. They provide additional context for anomaly detection:
+
+- **hdop > 5**: Horizontal accuracy is poor — position errors correlate with speed spikes and GPS drift
+- **sat < 4**: Fewer than 4 satellites — signal is unreliable, common in canyons, urban canyons, under dense canopy
+- **fix = "none" or "2d"**: No 3D fix — elevation readings will be unreliable
+
+These fields are stored per track point and used internally to reinforce anomaly detection signals. They are not directly surfaced in the JSON output summary.
 
 ## Web UI Integration
 

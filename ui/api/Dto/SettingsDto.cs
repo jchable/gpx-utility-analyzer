@@ -2,17 +2,9 @@ namespace GpxAnalyzer.Api.Dto;
 
 public class AppSettingsDto
 {
-    public AthleteSettingsDto Athlete { get; set; } = new();
     public AnalysisSettingsDto Analysis { get; set; } = new();
     public AiProviderSettingsDto AiProvider { get; set; } = new();
     public IntegrationCredentialsDto Integrations { get; set; } = new();
-}
-
-public class AthleteSettingsDto
-{
-    public int? MaxHeartRate { get; set; }
-    public int? Age { get; set; }
-    public int? Ftp { get; set; }
 }
 
 public class AnalysisSettingsDto
@@ -22,6 +14,7 @@ public class AnalysisSettingsDto
     public string TrackSmoothing { get; set; } = "medium";
     public string ElevationAlgorithm { get; set; } = "threshold";
     public bool FixAnomalies { get; set; }
+    public bool AutoDetectActivityType { get; set; }
 }
 
 public class AiProviderSettingsDto

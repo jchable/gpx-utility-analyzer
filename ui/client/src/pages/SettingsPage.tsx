@@ -92,6 +92,7 @@ export default function SettingsPage() {
         strava: { ...settings.integrations.strava, clientSecret: '' },
         garmin: { ...settings.integrations.garmin, consumerSecret: '' },
       },
+      analysis: { ...settings.analysis },
     };
   }, [settings]);
 
@@ -107,7 +108,7 @@ export default function SettingsPage() {
     [baseForm],
   );
 
-  // Scroll to anchor section (e.g. #athlete-profile) on mount
+  // Scroll to anchor section on mount
   const scrollToHash = useCallback(() => {
     const hash = window.location.hash;
     if (hash) {
@@ -177,17 +178,6 @@ export default function SettingsPage() {
     );
   };
 
-  const updateAthlete = (field: string, value: string) => {
-    setForm((f) =>
-      f
-        ? {
-            ...f,
-            athlete: { ...f.athlete, [field]: value === '' ? undefined : Number(value) },
-          }
-        : f,
-    );
-  };
-
   const providerOptions = (settings?.aiProvider.availableProviders ?? []).map((p) => ({
     value: p,
     label: p.charAt(0).toUpperCase() + p.slice(1),
@@ -220,37 +210,6 @@ export default function SettingsPage() {
       <h1 className="text-2xl font-bold text-content mb-6">{t('title')}</h1>
 
       <div className="space-y-6">
-        {/* Athlete Profile */}
-        <SectionCard title={t('athleteProfile')} id="athlete-profile">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <FieldGroup label={t('maxHeartRate')}>
-              <TextInput
-                value={form.athlete?.maxHeartRate?.toString() ?? ''}
-                onChange={(v) => updateAthlete('maxHeartRate', v)}
-                placeholder="185"
-                type="number"
-              />
-            </FieldGroup>
-            <FieldGroup label={t('age')}>
-              <TextInput
-                value={form.athlete?.age?.toString() ?? ''}
-                onChange={(v) => updateAthlete('age', v)}
-                placeholder="35"
-                type="number"
-              />
-            </FieldGroup>
-            <FieldGroup label={t('ftp')}>
-              <TextInput
-                value={form.athlete?.ftp?.toString() ?? ''}
-                onChange={(v) => updateAthlete('ftp', v)}
-                placeholder="250"
-                type="number"
-              />
-            </FieldGroup>
-          </div>
-          <p className="text-xs text-content-muted mt-3">{t('athleteHint')}</p>
-        </SectionCard>
-
         {/* Integration Credentials */}
         <SectionCard title={t('integrationCredentials')}>
           <div className="space-y-5">
@@ -360,6 +319,23 @@ export default function SettingsPage() {
               <div>
                 <span className="text-sm font-medium text-content-muted">{t('fixAnomalies')}</span>
                 <p className="text-xs text-content-muted mt-0.5">{t('fixAnomaliesHint')}</p>
+              </div>
+            </div>
+            <div className="col-span-full flex items-start gap-3 pt-2">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={form.analysis.autoDetectActivityType}
+                onClick={() => updateAnalysis('autoDetectActivityType', !form.analysis.autoDetectActivityType)}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-surface-card ${form.analysis.autoDetectActivityType ? 'bg-blue-600' : 'bg-surface-alt'}`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${form.analysis.autoDetectActivityType ? 'translate-x-5' : 'translate-x-0'}`}
+                />
+              </button>
+              <div>
+                <span className="text-sm font-medium text-content-muted">{t('autoDetectActivityType')}</span>
+                <p className="text-xs text-content-muted mt-0.5">{t('autoDetectHint')}</p>
               </div>
             </div>
           </div>

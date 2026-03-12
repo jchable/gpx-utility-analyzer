@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Text.Json;
 using GpxAnalyzer.Api.Data;
 using GpxAnalyzer.Api.Entities;
+using GpxAnalyzer.Cli.Core.Stats;
 
 public class ActivityProcessingService
 {
@@ -12,6 +13,7 @@ public class ActivityProcessingService
     private readonly GpxAnalysisService _analysisService;
     private readonly AiAnalysisService _aiService;
     private readonly ProfileComputationService _profileService;
+    private readonly ISettingsService _settings;
     private readonly ILogger<ActivityProcessingService> _logger;
 
     public ActivityProcessingService(
@@ -20,6 +22,7 @@ public class ActivityProcessingService
         GpxAnalysisService analysisService,
         AiAnalysisService aiService,
         ProfileComputationService profileService,
+        ISettingsService settings,
         ILogger<ActivityProcessingService> logger)
     {
         _db = db;
@@ -27,6 +30,7 @@ public class ActivityProcessingService
         _analysisService = analysisService;
         _aiService = aiService;
         _profileService = profileService;
+        _settings = settings;
         _logger = logger;
     }
 
@@ -67,6 +71,21 @@ public class ActivityProcessingService
             }
 
             _logger.LogInformation("[{Id}] Step 1/2: Running GPX analysis on {Path}", activityId, activity.GpxFilePath);
+
+            // Phase A: auto-detect activity type from GPX metadata (before analysis)
+            var autoDetectStr = await _settings.GetAsync(userId, "GpxCli:AutoDetectActivityType");
+            var autoDetect = bool.TryParse(autoDetectStr, out var ad) && ad;
+            if (autoDetect)
+            {
+                var gpxType = GpxAnalysisService.ExtractGpxType(gpxToAnalyze);
+                var detectedFromGpx = ActivityTypeDetector.DetectFromGpxType(gpxType);
+                if (detectedFromGpx != null)
+                {
+                    _logger.LogInformation("[{Id}] Phase A: GPX type '{GpxType}' → {Detected}",
+                        activityId, gpxType, detectedFromGpx);
+                    activity.ActivityType = detectedFromGpx;
+                }
+            }
 
             // Create temp export directory for the processed GPX
             var exportDir = Path.Combine(Path.GetTempPath(), $"gpx-export-{Guid.NewGuid()}");
@@ -134,6 +153,16 @@ public class ActivityProcessingService
                 activity.StartTime = start;
             if (DateTime.TryParse(stats.EndTime, out var end))
                 activity.EndTime = end;
+
+            // Phase B: auto-detect activity type from computed stats
+            if (autoDetect)
+            {
+                var detection = ActivityTypeDetector.DetectFromStats(stats);
+                _logger.LogInformation("[{Id}] Phase B: Detected {Type} ({Confidence:P0}), sub={SubType}",
+                    activityId, detection.ActivityType, detection.Confidence, detection.SubType);
+                activity.ActivityType = detection.ActivityType;
+                activity.DetectedSubType = detection.SubType;
+            }
 
             // Step 2: Run AI analysis
             activity.Status = ProcessingStatus.AiProcessing;

@@ -42,7 +42,7 @@ The output is a self-contained, single-file native executable (`gpx-analyzer` / 
 dotnet test tests/GpxAnalyzer.Cli.Tests/
 ```
 
-120 unit tests covering parsing, algorithms, formatting, mapping, anomaly detection, and integration.
+223 unit tests covering parsing, algorithms, formatting, mapping, anomaly detection, activity type detection, and integration.
 
 ## Anomaly Detection
 
@@ -53,6 +53,7 @@ The CLI automatically detects GPS and sensor data quality issues during analysis
 | Category | Type | Severity | Description |
 |----------|------|----------|-------------|
 | Position | GPS Frozen | Critical | Consecutive points at identical coordinates while biometrics indicate movement |
+| Position | GPS Teleportation | — | Point-to-point speed exceeds threshold; removed by GPS filter before analysis |
 | Position | Signal Loss | Warning | Time gaps between consecutive points (> 30s) |
 | Position | GPS Drift | Warning | Position oscillation during stops |
 | Speed | Speed Spike | Warning | Points exceeding max speed threshold (already clamped) |

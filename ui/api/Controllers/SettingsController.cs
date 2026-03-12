@@ -27,12 +27,6 @@ public class SettingsController : ControllerBase
         var userId = User.GetUserId();
         var dto = new AppSettingsDto
         {
-            Athlete = new AthleteSettingsDto
-            {
-                MaxHeartRate = int.TryParse(await _settings.GetAsync(userId, "Athlete:MaxHR"), out var mhr) ? mhr : null,
-                Age = int.TryParse(await _settings.GetAsync(userId, "Athlete:Age"), out var age) ? age : null,
-                Ftp = int.TryParse(await _settings.GetAsync(userId, "Athlete:FTP"), out var ftp) ? ftp : null,
-            },
             Analysis = new AnalysisSettingsDto
             {
                 Preset = await _settings.GetAsync(userId, "GpxCli:DefaultPreset", "trail") ?? "trail",
@@ -40,6 +34,7 @@ public class SettingsController : ControllerBase
                 TrackSmoothing = await _settings.GetAsync(userId, "GpxCli:DefaultTrackSmoothing", "medium") ?? "medium",
                 ElevationAlgorithm = await _settings.GetAsync(userId, "GpxCli:ElevationAlgorithm", "threshold") ?? "threshold",
                 FixAnomalies = bool.TryParse(await _settings.GetAsync(userId, "GpxCli:FixAnomalies"), out var fix) && fix,
+                AutoDetectActivityType = bool.TryParse(await _settings.GetAsync(userId, "GpxCli:AutoDetectActivityType"), out var autoDetect) && autoDetect,
             },
             AiProvider = new AiProviderSettingsDto
             {
@@ -73,20 +68,13 @@ public class SettingsController : ControllerBase
         var userId = User.GetUserId();
         var updates = new Dictionary<string, string>();
 
-        // Athlete settings
-        if (dto.Athlete.MaxHeartRate.HasValue)
-            updates["Athlete:MaxHR"] = dto.Athlete.MaxHeartRate.Value.ToString();
-        if (dto.Athlete.Age.HasValue)
-            updates["Athlete:Age"] = dto.Athlete.Age.Value.ToString();
-        if (dto.Athlete.Ftp.HasValue)
-            updates["Athlete:FTP"] = dto.Athlete.Ftp.Value.ToString();
-
         // Analysis settings
         updates["GpxCli:DefaultPreset"] = dto.Analysis.Preset;
         updates["GpxCli:DefaultSmoothing"] = dto.Analysis.Smoothing;
         updates["GpxCli:DefaultTrackSmoothing"] = dto.Analysis.TrackSmoothing;
         updates["GpxCli:ElevationAlgorithm"] = dto.Analysis.ElevationAlgorithm;
         updates["GpxCli:FixAnomalies"] = dto.Analysis.FixAnomalies.ToString().ToLowerInvariant();
+        updates["GpxCli:AutoDetectActivityType"] = dto.Analysis.AutoDetectActivityType.ToString().ToLowerInvariant();
 
         // AI Provider
         if (!string.IsNullOrEmpty(dto.AiProvider.Name))

@@ -43,6 +43,7 @@ public sealed class GpxTrack
 {
     public string Name { get; init; } = "";
     public string Desc { get; init; } = "";
+    public string? Type { get; init; }
     public List<GpxSegment> Segments { get; init; } = [];
 }
 

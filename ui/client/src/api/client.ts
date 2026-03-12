@@ -1,5 +1,5 @@
 import i18n from '../i18n';
-import type { ActivityListItem, ActivityDetail, DashboardSummary, IntegrationInfo, AppSettings, ProfilePoint, SplitsData, PredictResult } from '../types/activity';
+import type { ActivityListItem, ActivityDetail, DashboardSummary, IntegrationInfo, AppSettings, ProfilePoint, SplitsData, PredictResult, UserProfile, UpdateProfile } from '../types/activity';
 
 const BASE = '/api';
 
@@ -183,7 +183,22 @@ export const api = {
   },
 
   // Settings
-  getSettings: () => fetchJson<AppSettings>('/settings'),
+  getSettings: async (): Promise<AppSettings> => {
+    const [settings, profile] = await Promise.all([
+      fetchJson<AppSettings>('/settings'),
+      fetchJson<UserProfile>('/profile').catch(() => null),
+    ]);
+    if (profile) {
+      settings.athlete = {
+        maxHeartRate: profile.maxHeartRate,
+        restingHeartRate: profile.restingHeartRate,
+        ftp: profile.ftp,
+        vo2Max: profile.vo2Max,
+        age: profile.age,
+      };
+    }
+    return settings;
+  },
 
   updateSettings: async (settings: AppSettings): Promise<void> => {
     const res = await fetchWithAuth('/settings', {
@@ -198,4 +213,31 @@ export const api = {
   },
 
   getProviders: () => fetchJson<string[]>('/settings/providers'),
+
+  // Profile
+  getUserProfile: () => fetchJson<UserProfile>('/profile'),
+
+  updateUserProfile: (data: UpdateProfile) =>
+    fetchJson<UserProfile>('/profile', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }),
+
+  changePassword: async (currentPassword: string, newPassword: string): Promise<void> => {
+    const res = await fetchWithAuth('/profile/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+    if (!res.ok) {
+      let code = '';
+      try {
+        const json = await res.json();
+        code = json.code || '';
+      } catch { /* not JSON */ }
+      if (code) throw new Error(code);
+      throw new Error(`API error ${res.status}`);
+    }
+  },
 };
