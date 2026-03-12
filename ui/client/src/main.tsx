@@ -7,6 +7,7 @@ import './i18n';
 import './index.css';
 import App from './App';
 import ThemeProvider from './components/layout/ThemeProvider';
+import { AuthProvider } from './contexts/AuthContext';
 
 registerSW({ immediate: true });
 
@@ -24,9 +25,11 @@ createRoot(document.getElementById('root')!).render(
     <Suspense fallback={<div className="flex items-center justify-center h-screen bg-surface"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent" /></div>}>
       <ThemeProvider>
         <BrowserRouter>
-          <QueryClientProvider client={queryClient}>
-            <App />
-          </QueryClientProvider>
+          <AuthProvider>
+            <QueryClientProvider client={queryClient}>
+              <App />
+            </QueryClientProvider>
+          </AuthProvider>
         </BrowserRouter>
       </ThemeProvider>
     </Suspense>

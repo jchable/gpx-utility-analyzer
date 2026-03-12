@@ -1,11 +1,14 @@
 namespace GpxAnalyzer.Api.Controllers;
 
+using GpxAnalyzer.Api.Auth;
 using GpxAnalyzer.Api.Dto;
 using GpxAnalyzer.Api.Services;
 using GpxAnalyzer.Api.Services.Routing;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class RoutesController : ControllerBase
 {
@@ -28,14 +31,16 @@ public class RoutesController : ControllerBase
         [FromQuery] string? status = null,
         CancellationToken ct = default)
     {
-        var routes = await _routeService.ListAsync(page, pageSize, type, status, ct);
+        var userId = User.GetUserId();
+        var routes = await _routeService.ListAsync(userId, page, pageSize, type, status, ct);
         return routes;
     }
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<RouteDetailDto>> GetRoute(Guid id, CancellationToken ct = default)
     {
-        var route = await _routeService.GetAsync(id, ct);
+        var userId = User.GetUserId();
+        var route = await _routeService.GetAsync(userId, id, ct);
         if (route is null) return NotFound();
         return route;
     }
@@ -43,32 +48,35 @@ public class RoutesController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<RouteDetailDto>> CreateRoute([FromBody] RouteCreateDto dto, CancellationToken ct = default)
     {
+        var userId = User.GetUserId();
         var language = GetLanguage();
-        var route = await _routeService.CreateAsync(dto, language, ct);
-        var detail = await _routeService.GetAsync(route.Id, ct);
+        var route = await _routeService.CreateAsync(userId, dto, language, ct);
+        var detail = await _routeService.GetAsync(userId, route.Id, ct);
         return CreatedAtAction(nameof(GetRoute), new { id = route.Id }, detail);
     }
 
     [HttpPut("{id:guid}")]
     public async Task<ActionResult<RouteDetailDto>> UpdateRoute(Guid id, [FromBody] RouteUpdateDto dto, CancellationToken ct = default)
     {
+        var userId = User.GetUserId();
         // Enrich with DEM elevation at save time
         if (dto.Points is { Length: >= 2 })
         {
             dto.Points = await _elevationService.EnrichElevationAsync(dto.Points, ct);
         }
 
-        var route = await _routeService.UpdateAsync(id, dto, ct);
+        var route = await _routeService.UpdateAsync(userId, id, dto, ct);
         if (route is null) return NotFound();
 
-        var detail = await _routeService.GetAsync(id, ct);
+        var detail = await _routeService.GetAsync(userId, id, ct);
         return Ok(detail);
     }
 
     [HttpPatch("{id:guid}/autosave")]
     public async Task<IActionResult> AutoSave(Guid id, [FromBody] RouteAutoSaveDto dto, CancellationToken ct = default)
     {
-        var success = await _routeService.AutoSaveAsync(id, dto, ct);
+        var userId = User.GetUserId();
+        var success = await _routeService.AutoSaveAsync(userId, id, dto, ct);
         if (!success) return NotFound();
         return NoContent();
     }
@@ -76,7 +84,8 @@ public class RoutesController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteRoute(Guid id, CancellationToken ct = default)
     {
-        var success = await _routeService.DeleteAsync(id, ct);
+        var userId = User.GetUserId();
+        var success = await _routeService.DeleteAsync(userId, id, ct);
         if (!success) return NotFound();
         return NoContent();
     }
@@ -84,11 +93,12 @@ public class RoutesController : ControllerBase
     [HttpPost("from-activity/{activityId:guid}")]
     public async Task<ActionResult<RouteDetailDto>> CreateFromActivity(Guid activityId, CancellationToken ct = default)
     {
+        var userId = User.GetUserId();
         var language = GetLanguage();
-        var route = await _routeService.CreateFromActivityAsync(activityId, language, ct);
+        var route = await _routeService.CreateFromActivityAsync(userId, activityId, language, ct);
         if (route is null) return NotFound();
 
-        var detail = await _routeService.GetAsync(route.Id, ct);
+        var detail = await _routeService.GetAsync(userId, route.Id, ct);
         return CreatedAtAction(nameof(GetRoute), new { id = route.Id }, detail);
     }
 
@@ -101,19 +111,21 @@ public class RoutesController : ControllerBase
         if (!file.FileName.EndsWith(".gpx", StringComparison.OrdinalIgnoreCase))
             return BadRequest(new { code = "INVALID_FILE_TYPE" });
 
+        var userId = User.GetUserId();
         var language = GetLanguage();
         using var stream = file.OpenReadStream();
-        var route = await _routeService.ImportGpxAsync(stream, file.FileName, language, ct);
+        var route = await _routeService.ImportGpxAsync(userId, stream, file.FileName, language, ct);
         if (route is null) return BadRequest(new { code = "EMPTY_GPX_FILE" });
 
-        var detail = await _routeService.GetAsync(route.Id, ct);
+        var detail = await _routeService.GetAsync(userId, route.Id, ct);
         return CreatedAtAction(nameof(GetRoute), new { id = route.Id }, detail);
     }
 
     [HttpGet("tags")]
     public async Task<ActionResult<List<string>>> GetTags(CancellationToken ct = default)
     {
-        var tags = await _routeService.GetTagsAsync(ct);
+        var userId = User.GetUserId();
+        var tags = await _routeService.GetTagsAsync(userId, ct);
         return tags;
     }
 
@@ -122,7 +134,8 @@ public class RoutesController : ControllerBase
     [HttpGet("{id:guid}/export/gpx")]
     public async Task<IActionResult> ExportGpx(Guid id, CancellationToken ct = default)
     {
-        var data = await _routeService.ExportGpxAsync(id, ct);
+        var userId = User.GetUserId();
+        var data = await _routeService.ExportGpxAsync(userId, id, ct);
         if (data is null) return NotFound();
         return File(data.Stream, "application/gpx+xml", data.FileName);
     }
@@ -130,7 +143,8 @@ public class RoutesController : ControllerBase
     [HttpGet("{id:guid}/export/geojson")]
     public async Task<IActionResult> ExportGeoJson(Guid id, CancellationToken ct = default)
     {
-        var data = await _routeService.ExportGeoJsonAsync(id, ct);
+        var userId = User.GetUserId();
+        var data = await _routeService.ExportGeoJsonAsync(userId, id, ct);
         if (data is null) return NotFound();
         return File(data.Stream, "application/geo+json", data.FileName);
     }
@@ -138,7 +152,8 @@ public class RoutesController : ControllerBase
     [HttpGet("{id:guid}/export/kml")]
     public async Task<IActionResult> ExportKml(Guid id, CancellationToken ct = default)
     {
-        var data = await _routeService.ExportKmlAsync(id, ct);
+        var userId = User.GetUserId();
+        var data = await _routeService.ExportKmlAsync(userId, id, ct);
         if (data is null) return NotFound();
         return File(data.Stream, "application/vnd.google-earth.kml+xml", data.FileName);
     }
@@ -173,7 +188,8 @@ public class RoutesController : ControllerBase
     [HttpPost("{id:guid}/elevation")]
     public async Task<ActionResult<RouteDetailDto>> EnrichElevation(Guid id, CancellationToken ct = default)
     {
-        var detail = await _routeService.GetAsync(id, ct);
+        var userId = User.GetUserId();
+        var detail = await _routeService.GetAsync(userId, id, ct);
         if (detail is null) return NotFound();
 
         if (detail.Points is not { Length: >= 2 })
@@ -194,8 +210,8 @@ public class RoutesController : ControllerBase
             Points = enriched,
         };
 
-        await _routeService.UpdateAsync(id, updateDto, ct);
-        return Ok(await _routeService.GetAsync(id, ct));
+        await _routeService.UpdateAsync(userId, id, updateDto, ct);
+        return Ok(await _routeService.GetAsync(userId, id, ct));
     }
 
     private string GetLanguage()

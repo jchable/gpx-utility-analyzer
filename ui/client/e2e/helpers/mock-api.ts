@@ -22,7 +22,59 @@ const providers = loadFixture('providers.json');
 const routes = loadFixture('routes.json');
 const routeDetail = loadFixture('route-detail.json');
 
+// Build a fake JWT that jwt-decode can parse (not cryptographically valid, just base64-decodable)
+function fakeMockJwt(): string {
+  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+  const payload = btoa(
+    JSON.stringify({
+      sub: 'test-user-id',
+      email: 'test@gpx-analyzer.test',
+      exp: Math.floor(Date.now() / 1000) + 3600, // 1h from now
+    }),
+  );
+  const sig = btoa('fake-signature');
+  return `${header}.${payload}.${sig}`;
+}
+
 export async function mockAllApi(page: Page) {
+  // Seed localStorage with fake auth tokens BEFORE any navigation
+  const fakeJwt = fakeMockJwt();
+  await page.addInitScript(
+    (tokens: { jwt: string }) => {
+      localStorage.setItem('gpx_access_token', tokens.jwt);
+      localStorage.setItem('gpx_refresh_token', 'mock-refresh-token');
+    },
+    { jwt: fakeJwt },
+  );
+
+  // Auth — mock /api/auth/me to simulate authenticated user
+  await page.route('**/api/auth/me', (route) =>
+    route.fulfill({
+      json: {
+        id: 'test-user-id',
+        email: 'test@gpx-analyzer.test',
+        displayName: 'Test User',
+        role: 'Admin',
+      },
+    }),
+  );
+
+  // Auth — mock refresh token
+  await page.route('**/api/auth/refresh', (route) =>
+    route.fulfill({
+      json: {
+        accessToken: fakeJwt,
+        refreshToken: 'mock-refresh-token',
+        expiresAt: new Date(Date.now() + 3600000).toISOString(),
+      },
+    }),
+  );
+
+  // Auth — mock logout
+  await page.route('**/api/auth/logout', (route) =>
+    route.fulfill({ status: 204 }),
+  );
+
   // Dashboard
   await page.route('**/api/dashboard/summary', (route) =>
     route.fulfill({ json: dashboard }),

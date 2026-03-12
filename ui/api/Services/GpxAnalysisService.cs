@@ -30,14 +30,26 @@ public class GpxAnalysisService
     };
 
     public async Task<GpxStats> AnalyzeAsync(string gpxFilePath, string? activityType = null, string? exportDir = null, CancellationToken ct = default)
+        => await AnalyzeAsync(null, gpxFilePath, activityType, exportDir, ct);
+
+    public async Task<GpxStats> AnalyzeAsync(Guid? userId, string gpxFilePath, string? activityType = null, string? exportDir = null, CancellationToken ct = default)
     {
-        var defaultPreset = await _settings.GetAsync("GpxCli:DefaultPreset", "trail") ?? "trail";
+        var defaultPreset = userId.HasValue
+            ? await _settings.GetAsync(userId.Value, "GpxCli:DefaultPreset", "trail") ?? "trail"
+            : await _settings.GetAsync("GpxCli:DefaultPreset", "trail") ?? "trail";
         var preset = activityType != null && ActivityTypeToPreset.TryGetValue(activityType, out var mapped)
             ? mapped
             : defaultPreset;
-        var smoothing = await _settings.GetAsync("GpxCli:DefaultSmoothing", "medium") ?? "medium";
-        var trackSmoothing = await _settings.GetAsync("GpxCli:DefaultTrackSmoothing", "medium") ?? "medium";
-        var fixAnomalies = bool.TryParse(await _settings.GetAsync("GpxCli:FixAnomalies"), out var fa) && fa;
+        var smoothing = userId.HasValue
+            ? await _settings.GetAsync(userId.Value, "GpxCli:DefaultSmoothing", "medium") ?? "medium"
+            : await _settings.GetAsync("GpxCli:DefaultSmoothing", "medium") ?? "medium";
+        var trackSmoothing = userId.HasValue
+            ? await _settings.GetAsync(userId.Value, "GpxCli:DefaultTrackSmoothing", "medium") ?? "medium"
+            : await _settings.GetAsync("GpxCli:DefaultTrackSmoothing", "medium") ?? "medium";
+        var fixAnomaliesStr = userId.HasValue
+            ? await _settings.GetAsync(userId.Value, "GpxCli:FixAnomalies")
+            : await _settings.GetAsync("GpxCli:FixAnomalies");
+        var fixAnomalies = bool.TryParse(fixAnomaliesStr, out var fa) && fa;
 
         _logger.LogInformation("Analyzing {File} (preset={Preset}, smoothing={Smoothing}, trackSmoothing={TrackSmoothing})",
             gpxFilePath, preset, smoothing, trackSmoothing);

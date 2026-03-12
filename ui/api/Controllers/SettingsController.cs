@@ -1,11 +1,14 @@
 namespace GpxAnalyzer.Api.Controllers;
 
+using GpxAnalyzer.Api.Auth;
 using GpxAnalyzer.Api.Dto;
 using GpxAnalyzer.Api.Services;
 using GpxAiAnalyzer.Core.Providers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class SettingsController : ControllerBase
 {
@@ -21,41 +24,42 @@ public class SettingsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<AppSettingsDto>> GetSettings()
     {
+        var userId = User.GetUserId();
         var dto = new AppSettingsDto
         {
             Athlete = new AthleteSettingsDto
             {
-                MaxHeartRate = int.TryParse(await _settings.GetAsync("Athlete:MaxHR"), out var mhr) ? mhr : null,
-                Age = int.TryParse(await _settings.GetAsync("Athlete:Age"), out var age) ? age : null,
-                Ftp = int.TryParse(await _settings.GetAsync("Athlete:FTP"), out var ftp) ? ftp : null,
+                MaxHeartRate = int.TryParse(await _settings.GetAsync(userId, "Athlete:MaxHR"), out var mhr) ? mhr : null,
+                Age = int.TryParse(await _settings.GetAsync(userId, "Athlete:Age"), out var age) ? age : null,
+                Ftp = int.TryParse(await _settings.GetAsync(userId, "Athlete:FTP"), out var ftp) ? ftp : null,
             },
             Analysis = new AnalysisSettingsDto
             {
-                Preset = await _settings.GetAsync("GpxCli:DefaultPreset", "trail") ?? "trail",
-                Smoothing = await _settings.GetAsync("GpxCli:DefaultSmoothing", "medium") ?? "medium",
-                TrackSmoothing = await _settings.GetAsync("GpxCli:DefaultTrackSmoothing", "medium") ?? "medium",
-                ElevationAlgorithm = await _settings.GetAsync("GpxCli:ElevationAlgorithm", "threshold") ?? "threshold",
-                FixAnomalies = bool.TryParse(await _settings.GetAsync("GpxCli:FixAnomalies"), out var fix) && fix,
+                Preset = await _settings.GetAsync(userId, "GpxCli:DefaultPreset", "trail") ?? "trail",
+                Smoothing = await _settings.GetAsync(userId, "GpxCli:DefaultSmoothing", "medium") ?? "medium",
+                TrackSmoothing = await _settings.GetAsync(userId, "GpxCli:DefaultTrackSmoothing", "medium") ?? "medium",
+                ElevationAlgorithm = await _settings.GetAsync(userId, "GpxCli:ElevationAlgorithm", "threshold") ?? "threshold",
+                FixAnomalies = bool.TryParse(await _settings.GetAsync(userId, "GpxCli:FixAnomalies"), out var fix) && fix,
             },
             AiProvider = new AiProviderSettingsDto
             {
-                Name = await _settings.GetAsync("AiProvider:Name") ?? "",
-                HasApiKey = !string.IsNullOrEmpty(await _settings.GetAsync("AiProvider:ApiKey")),
-                Model = await _settings.GetAsync("AiProvider:Model") ?? "",
-                Endpoint = await _settings.GetAsync("AiProvider:Endpoint") ?? "",
+                Name = await _settings.GetAsync(userId, "AiProvider:Name") ?? "",
+                HasApiKey = !string.IsNullOrEmpty(await _settings.GetAsync(userId, "AiProvider:ApiKey")),
+                Model = await _settings.GetAsync(userId, "AiProvider:Model") ?? "",
+                Endpoint = await _settings.GetAsync(userId, "AiProvider:Endpoint") ?? "",
                 AvailableProviders = _registry.AvailableProviders.ToList(),
             },
             Integrations = new IntegrationCredentialsDto
             {
                 Strava = new StravaCredentialsDto
                 {
-                    ClientId = await _settings.GetAsync("Integrations:Strava:ClientId") ?? "",
-                    HasClientSecret = !string.IsNullOrEmpty(await _settings.GetAsync("Integrations:Strava:ClientSecret")),
+                    ClientId = await _settings.GetAsync(userId, "Integrations:Strava:ClientId") ?? "",
+                    HasClientSecret = !string.IsNullOrEmpty(await _settings.GetAsync(userId, "Integrations:Strava:ClientSecret")),
                 },
                 Garmin = new GarminCredentialsDto
                 {
-                    ConsumerKey = await _settings.GetAsync("Integrations:Garmin:ConsumerKey") ?? "",
-                    HasConsumerSecret = !string.IsNullOrEmpty(await _settings.GetAsync("Integrations:Garmin:ConsumerSecret")),
+                    ConsumerKey = await _settings.GetAsync(userId, "Integrations:Garmin:ConsumerKey") ?? "",
+                    HasConsumerSecret = !string.IsNullOrEmpty(await _settings.GetAsync(userId, "Integrations:Garmin:ConsumerSecret")),
                 },
             },
         };
@@ -66,6 +70,7 @@ public class SettingsController : ControllerBase
     [HttpPut]
     public async Task<IActionResult> UpdateSettings([FromBody] AppSettingsDto dto)
     {
+        var userId = User.GetUserId();
         var updates = new Dictionary<string, string>();
 
         // Athlete settings
@@ -104,7 +109,7 @@ public class SettingsController : ControllerBase
         if (!string.IsNullOrEmpty(dto.Integrations.Garmin.ConsumerSecret))
             updates["Integrations:Garmin:ConsumerSecret"] = dto.Integrations.Garmin.ConsumerSecret;
 
-        await _settings.SetManyAsync(updates);
+        await _settings.SetManyAsync(userId, updates);
 
         return NoContent();
     }

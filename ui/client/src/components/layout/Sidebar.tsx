@@ -14,6 +14,7 @@ import {
 import { useState } from 'react';
 import LanguageSwitcher from './LanguageSwitcher';
 import ThemeSwitcher from './ThemeSwitcher';
+import UserMenu from './UserMenu';
 
 const navItems = [
   { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard },
@@ -86,6 +87,7 @@ export default function Sidebar() {
 
         {/* Footer */}
         <div className="px-2 py-2 border-t border-border">
+          <UserMenu collapsed={collapsed} />
           <ThemeSwitcher collapsed={collapsed} />
           <LanguageSwitcher collapsed={collapsed} />
           {!collapsed && (

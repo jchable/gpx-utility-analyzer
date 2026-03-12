@@ -1,12 +1,18 @@
 using System.IO.Compression;
+using System.Text;
 using System.Threading.Channels;
+using GpxAnalyzer.Api.Auth;
 using GpxAnalyzer.Api.BackgroundServices;
 using GpxAnalyzer.Api.Data;
+using GpxAnalyzer.Api.Entities;
 using GpxAnalyzer.Api.Services;
 using GpxAnalyzer.Api.Services.Integrations;
 using GpxAiAnalyzer.Core.Providers;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +29,48 @@ else
     builder.Services.AddDbContext<AppDbContext>(o => o.UseSqlite(connString));
 }
 
+// ASP.NET Identity
+builder.Services.AddIdentityCore<ApplicationUser>(opt =>
+{
+    opt.Password.RequireDigit = false;
+    opt.Password.RequireUppercase = false;
+    opt.Password.RequireNonAlphanumeric = false;
+    opt.Password.RequiredLength = 8;
+    opt.User.RequireUniqueEmail = true;
+    opt.SignIn.RequireConfirmedEmail = false;
+})
+.AddRoles<IdentityRole<Guid>>()
+.AddEntityFrameworkStores<AppDbContext>()
+.AddSignInManager()
+.AddDefaultTokenProviders();
+
+// JWT Authentication
+var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>() ?? new JwtSettings();
+builder.Services.AddSingleton(jwtSettings);
+builder.Services.AddScoped<TokenService>();
+
+builder.Services.AddAuthentication(opt =>
+{
+    opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(opt =>
+{
+    opt.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret)),
+        ValidateIssuer = true,
+        ValidIssuer = jwtSettings.Issuer,
+        ValidateAudience = true,
+        ValidAudience = jwtSettings.Audience,
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.FromMinutes(1)
+    };
+});
+
+builder.Services.AddAuthorization();
+
 // AI Provider Registry
 var registry = new ProviderRegistry();
 registry.Register(new AzureOpenAIProvider());
@@ -35,7 +83,7 @@ builder.Services.AddSingleton(registry);
 
 // Settings
 builder.Services.AddMemoryCache();
-builder.Services.AddSingleton<ISettingsService, SettingsService>();
+builder.Services.AddScoped<ISettingsService, SettingsService>();
 
 // Response compression
 builder.Services.AddResponseCompression(o =>
@@ -47,36 +95,36 @@ builder.Services.AddResponseCompression(o =>
 builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
 builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
 
-// Services
-builder.Services.AddSingleton<GpxStorageService>();
-builder.Services.AddSingleton<GpxAnalysisService>();
-builder.Services.AddSingleton<AiAnalysisService>();
-builder.Services.AddSingleton<ProfileComputationService>();
-builder.Services.AddSingleton<ActivityProcessingService>();
-builder.Services.AddSingleton<RouteService>();
-builder.Services.AddSingleton<RouteElevationService>();
+// Services (scoped for multi-user alignment with DbContext)
+builder.Services.AddScoped<GpxStorageService>();
+builder.Services.AddScoped<GpxAnalysisService>();
+builder.Services.AddScoped<AiAnalysisService>();
+builder.Services.AddScoped<ProfileComputationService>();
+builder.Services.AddScoped<ActivityProcessingService>();
+builder.Services.AddScoped<RouteService>();
+builder.Services.AddScoped<RouteElevationService>();
 
 // Routing service (ORS or OSRM based on config)
 var routingProvider = builder.Configuration["Routing:Provider"]?.ToLowerInvariant();
 if (routingProvider == "ors")
 {
-    builder.Services.AddSingleton<GpxAnalyzer.Api.Services.Routing.IRoutingService,
+    builder.Services.AddScoped<GpxAnalyzer.Api.Services.Routing.IRoutingService,
         GpxAnalyzer.Api.Services.Routing.OrsRoutingService>();
 }
 else if (routingProvider == "osrm")
 {
-    builder.Services.AddSingleton<GpxAnalyzer.Api.Services.Routing.IRoutingService,
+    builder.Services.AddScoped<GpxAnalyzer.Api.Services.Routing.IRoutingService,
         GpxAnalyzer.Api.Services.Routing.OsrmRoutingService>();
 }
 
-// Processing channel
-builder.Services.AddSingleton(Channel.CreateUnbounded<Guid>());
+// Processing channel — carries (ActivityId, UserId) for multi-user context
+builder.Services.AddSingleton(Channel.CreateUnbounded<(Guid ActivityId, Guid UserId)>());
 builder.Services.AddHostedService<ActivityProcessingWorker>();
 
 // Integration services
 builder.Services.AddHttpClient();
-builder.Services.AddSingleton<IActivityImporter, StravaService>();
-builder.Services.AddSingleton<IActivityImporter, GarminService>();
+builder.Services.AddScoped<IActivityImporter, StravaService>();
+builder.Services.AddScoped<IActivityImporter, GarminService>();
 
 // API
 builder.Services.AddControllers();
@@ -102,11 +150,20 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Auto-migrate database
+// Auto-migrate database and seed roles
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
+
+    // Seed roles
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+    string[] roles = ["Admin", "Premium", "User"];
+    foreach (var role in roles)
+    {
+        if (!await roleManager.RoleExistsAsync(role))
+            await roleManager.CreateAsync(new IdentityRole<Guid> { Name = role });
+    }
 }
 
 app.UseResponseCompression();
@@ -116,9 +173,15 @@ app.UseCors();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapControllers();
 
 // Fallback to index.html for SPA routing
 app.MapFallbackToFile("index.html");
 
 app.Run();
+
+// Expose Program class for WebApplicationFactory in integration tests
+public partial class Program { }

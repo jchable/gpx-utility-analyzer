@@ -3,13 +3,63 @@ import type { ActivityListItem, ActivityDetail, DashboardSummary, IntegrationInf
 
 const BASE = '/api';
 
+const TOKEN_KEY = 'gpx_access_token';
+const REFRESH_KEY = 'gpx_refresh_token';
+
 function langHeaders(): Record<string, string> {
   return { 'Accept-Language': i18n.language || 'en' };
 }
 
+function authHeaders(): Record<string, string> {
+  const token = localStorage.getItem(TOKEN_KEY);
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+function allHeaders(): Record<string, string> {
+  return { ...langHeaders(), ...authHeaders() };
+}
+
+async function tryRefreshToken(): Promise<boolean> {
+  const refreshToken = localStorage.getItem(REFRESH_KEY);
+  if (!refreshToken) return false;
+
+  try {
+    const res = await fetch(`${BASE}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (!res.ok) return false;
+
+    const data = await res.json();
+    localStorage.setItem(TOKEN_KEY, data.accessToken);
+    localStorage.setItem(REFRESH_KEY, data.refreshToken);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const headers = { ...langHeaders(), ...init?.headers };
-  const res = await fetch(`${BASE}${url}`, { cache: 'no-cache', ...init, headers });
+  const headers = { ...allHeaders(), ...init?.headers };
+  let res = await fetch(`${BASE}${url}`, { cache: 'no-cache', ...init, headers });
+
+  // 401 → try refresh token, then retry once
+  if (res.status === 401) {
+    const refreshed = await tryRefreshToken();
+    if (refreshed) {
+      const retryHeaders = { ...allHeaders(), ...init?.headers };
+      res = await fetch(`${BASE}${url}`, { cache: 'no-cache', ...init, headers: retryHeaders });
+    } else {
+      // Clear tokens and redirect to login
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(REFRESH_KEY);
+      window.location.href = '/login';
+      throw new Error('UNAUTHORIZED');
+    }
+  }
+
   if (!res.ok) {
     let code = '';
     try {
@@ -20,6 +70,26 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
     throw new Error(`API error ${res.status}`);
   }
   return res.json();
+}
+
+async function fetchWithAuth(url: string, init?: RequestInit): Promise<Response> {
+  const headers = { ...allHeaders(), ...init?.headers };
+  let res = await fetch(`${BASE}${url}`, { ...init, headers });
+
+  if (res.status === 401) {
+    const refreshed = await tryRefreshToken();
+    if (refreshed) {
+      const retryHeaders = { ...allHeaders(), ...init?.headers };
+      res = await fetch(`${BASE}${url}`, { ...init, headers: retryHeaders });
+    } else {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(REFRESH_KEY);
+      window.location.href = '/login';
+      throw new Error('UNAUTHORIZED');
+    }
+  }
+
+  return res;
 }
 
 export const api = {
@@ -39,9 +109,8 @@ export const api = {
     const formData = new FormData();
     formData.append('file', file);
     if (activityType) formData.append('activityType', activityType);
-    const res = await fetch(`${BASE}/activities/upload`, {
+    const res = await fetchWithAuth('/activities/upload', {
       method: 'POST',
-      headers: langHeaders(),
       body: formData,
     });
     if (!res.ok) {
@@ -57,12 +126,12 @@ export const api = {
   },
 
   deleteActivity: async (id: string) => {
-    const res = await fetch(`${BASE}/activities/${id}`, { method: 'DELETE', headers: langHeaders() });
+    const res = await fetchWithAuth(`/activities/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error(`API error ${res.status}`);
   },
 
   reanalyzeActivity: async (id: string) => {
-    await fetch(`${BASE}/activities/${id}/reanalyze`, { method: 'POST', headers: langHeaders() });
+    await fetchWithAuth(`/activities/${id}/reanalyze`, { method: 'POST' });
   },
 
   updateActivity: (id: string, data: { activityType?: string; name?: string }) =>
@@ -83,9 +152,8 @@ export const api = {
   predictRoute: async (file: File): Promise<PredictResult> => {
     const formData = new FormData();
     formData.append('file', file);
-    const res = await fetch(`${BASE}/activities/predict`, {
+    const res = await fetchWithAuth('/activities/predict', {
       method: 'POST',
-      headers: langHeaders(),
       body: formData,
     });
     if (!res.ok) {
@@ -111,16 +179,16 @@ export const api = {
   },
 
   disconnectIntegration: async (provider: string) => {
-    await fetch(`${BASE}/integrations/${provider}`, { method: 'DELETE', headers: langHeaders() });
+    await fetchWithAuth(`/integrations/${provider}`, { method: 'DELETE' });
   },
 
   // Settings
   getSettings: () => fetchJson<AppSettings>('/settings'),
 
   updateSettings: async (settings: AppSettings): Promise<void> => {
-    const res = await fetch(`${BASE}/settings`, {
+    const res = await fetchWithAuth('/settings', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', ...langHeaders() },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(settings),
     });
     if (!res.ok) {

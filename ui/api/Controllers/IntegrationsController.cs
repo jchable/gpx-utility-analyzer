@@ -1,13 +1,16 @@
 namespace GpxAnalyzer.Api.Controllers;
 
+using GpxAnalyzer.Api.Auth;
 using GpxAnalyzer.Api.Data;
 using GpxAnalyzer.Api.Dto;
 using GpxAnalyzer.Api.Entities;
 using GpxAnalyzer.Api.Services.Integrations;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class IntegrationsController : ControllerBase
 {
@@ -23,7 +26,8 @@ public class IntegrationsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<IntegrationDto>>> GetIntegrations()
     {
-        var integrations = await _db.Integrations.ToListAsync();
+        var userId = User.GetUserId();
+        var integrations = await _db.Integrations.Where(i => i.UserId == userId).ToListAsync();
         var result = _importers.Select(importer =>
         {
             var integration = integrations.FirstOrDefault(i => i.Provider == importer.ProviderName);
@@ -73,7 +77,8 @@ public class IntegrationsController : ControllerBase
         var callbackUrl = $"{Request.Scheme}://{Request.Host}/api/integrations/{provider}/callback";
         var tokenInfo = await importer.ExchangeCodeAsync(exchangeCode, callbackUrl);
 
-        var existing = await _db.Integrations.FirstOrDefaultAsync(i => i.Provider == provider);
+        var userId = User.GetUserId();
+        var existing = await _db.Integrations.FirstOrDefaultAsync(i => i.UserId == userId && i.Provider == provider);
         if (existing is not null)
         {
             existing.AccessToken = tokenInfo.AccessToken;
@@ -88,6 +93,7 @@ public class IntegrationsController : ControllerBase
             _db.Integrations.Add(new Integration
             {
                 Id = Guid.NewGuid(),
+                UserId = userId,
                 Provider = provider,
                 AccessToken = tokenInfo.AccessToken,
                 RefreshToken = tokenInfo.RefreshToken,
@@ -106,7 +112,7 @@ public class IntegrationsController : ControllerBase
     [HttpDelete("{provider}")]
     public async Task<IActionResult> Disconnect(string provider)
     {
-        var integration = await _db.Integrations.FirstOrDefaultAsync(i => i.Provider == provider);
+        var integration = await _db.Integrations.FirstOrDefaultAsync(i => i.UserId == User.GetUserId() && i.Provider == provider);
         if (integration is null) return NotFound();
 
         _db.Integrations.Remove(integration);

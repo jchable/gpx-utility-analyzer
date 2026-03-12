@@ -9,6 +9,8 @@
 
   <ItemGroup>
     <!-- EF Core -->
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.*" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.*" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.*" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.*" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.*">
@@ -17,6 +19,7 @@
     </PackageReference>
     <!-- Garmin FIT SDK -->
     <PackageReference Include="Garmin.FIT.Sdk" Version="21.*" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.*" />
   </ItemGroup>
 
   <ItemGroup>

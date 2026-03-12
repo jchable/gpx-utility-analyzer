@@ -33,8 +33,30 @@ Desktop.ini
 appsettings.Development.json
 
 # ============================================================
-# Playwright
+# .NET build artifacts
+# ============================================================
+
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# ============================================================
+# Playwright / test outputs
 # ============================================================
 
 ui/client/e2e-results/
 ui/client/e2e-report/
+ui/client/test-results/
+
+# ============================================================
+# Temp / local files
+# ============================================================
+
+nul
+sample/
+*_result.json
+*_result2.json
+*_fix.json
+profile_tmp.json

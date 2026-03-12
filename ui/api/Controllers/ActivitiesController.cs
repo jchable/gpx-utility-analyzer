@@ -2,27 +2,30 @@ namespace GpxAnalyzer.Api.Controllers;
 
 using System.Text.Json;
 using System.Threading.Channels;
+using GpxAnalyzer.Api.Auth;
 using GpxAnalyzer.Api.Data;
 using GpxAnalyzer.Api.Dto;
 using GpxAnalyzer.Api.Entities;
 using GpxAnalyzer.Api.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class ActivitiesController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly GpxStorageService _storage;
-    private readonly Channel<Guid> _processingChannel;
+    private readonly Channel<(Guid ActivityId, Guid UserId)> _processingChannel;
     private readonly GpxAnalysisService _analysisService;
     private readonly ProfileComputationService _profileService;
 
     public ActivitiesController(
         AppDbContext db,
         GpxStorageService storage,
-        Channel<Guid> processingChannel,
+        Channel<(Guid ActivityId, Guid UserId)> processingChannel,
         GpxAnalysisService analysisService,
         ProfileComputationService profileService)
     {
@@ -39,7 +42,8 @@ public class ActivitiesController : ControllerBase
         [FromQuery] int pageSize = 20,
         [FromQuery] string? type = null)
     {
-        var query = _db.Activities.AsQueryable();
+        var userId = User.GetUserId();
+        var query = _db.Activities.Where(a => a.UserId == userId);
 
         if (!string.IsNullOrEmpty(type))
             query = query.Where(a => a.ActivityType == type);
@@ -69,7 +73,7 @@ public class ActivitiesController : ControllerBase
     public async Task<ActionResult<ActivityDetailDto>> GetActivity(Guid id)
     {
         var activity = await _db.Activities.FindAsync(id);
-        if (activity is null) return NotFound();
+        if (activity is null || activity.UserId != User.GetUserId()) return NotFound();
 
         return new ActivityDetailDto
         {
@@ -107,9 +111,11 @@ public class ActivitiesController : ControllerBase
         var language = Request.Headers.AcceptLanguage.FirstOrDefault()?.Split(',')[0]?.Trim() ?? "en";
         if (language.Length > 2) language = language[..2];
 
+        var userId = User.GetUserId();
         var activity = new Activity
         {
             Id = Guid.NewGuid(),
+            UserId = userId,
             Name = Path.GetFileNameWithoutExtension(file.FileName),
             ActivityType = activityType ?? "trail",
             GpxFilePath = relativePath,
@@ -121,7 +127,7 @@ public class ActivitiesController : ControllerBase
         _db.Activities.Add(activity);
         await _db.SaveChangesAsync();
 
-        await _processingChannel.Writer.WriteAsync(activity.Id);
+        await _processingChannel.Writer.WriteAsync((activity.Id, userId));
 
         return CreatedAtAction(nameof(GetActivity), new { id = activity.Id }, new ActivityDetailDto
         {
@@ -138,7 +144,7 @@ public class ActivitiesController : ControllerBase
     public async Task<IActionResult> Delete(Guid id)
     {
         var activity = await _db.Activities.FindAsync(id);
-        if (activity is null) return NotFound();
+        if (activity is null || activity.UserId != User.GetUserId()) return NotFound();
 
         _storage.DeleteWithOriginal(activity.GpxFilePath);
         _db.Activities.Remove(activity);
@@ -151,7 +157,7 @@ public class ActivitiesController : ControllerBase
     public async Task<IActionResult> DownloadGpx(Guid id)
     {
         var activity = await _db.Activities.FindAsync(id);
-        if (activity is null) return NotFound();
+        if (activity is null || activity.UserId != User.GetUserId()) return NotFound();
 
         var fullPath = _storage.GetFullPath(activity.GpxFilePath);
         if (!System.IO.File.Exists(fullPath)) return NotFound(new { code = "GPX_NOT_FOUND" });
@@ -163,7 +169,7 @@ public class ActivitiesController : ControllerBase
     public async Task<IActionResult> GetProfile(Guid id)
     {
         var activity = await _db.Activities.FindAsync(id);
-        if (activity is null) return NotFound();
+        if (activity is null || activity.UserId != User.GetUserId()) return NotFound();
 
         if (activity.Status != ProcessingStatus.Completed || activity.ProfileJson is null)
             return NotFound(new { code = "PROFILE_NOT_AVAILABLE" });
@@ -176,7 +182,7 @@ public class ActivitiesController : ControllerBase
     public async Task<IActionResult> GetTrack(Guid id)
     {
         var activity = await _db.Activities.FindAsync(id);
-        if (activity is null) return NotFound();
+        if (activity is null || activity.UserId != User.GetUserId()) return NotFound();
 
         if (activity.Status != ProcessingStatus.Completed || activity.TrackGeoJson is null)
             return NotFound(new { code = "TRACK_NOT_AVAILABLE" });
@@ -189,7 +195,7 @@ public class ActivitiesController : ControllerBase
     public async Task<IActionResult> GetSplits(Guid id)
     {
         var activity = await _db.Activities.FindAsync(id);
-        if (activity is null) return NotFound();
+        if (activity is null || activity.UserId != User.GetUserId()) return NotFound();
 
         if (activity.Status != ProcessingStatus.Completed || activity.SplitsJson is null)
             return NotFound(new { code = "SPLITS_NOT_AVAILABLE" });
@@ -202,7 +208,7 @@ public class ActivitiesController : ControllerBase
     public async Task<IActionResult> UpdateActivity(Guid id, [FromBody] UpdateActivityDto dto)
     {
         var activity = await _db.Activities.FindAsync(id);
-        if (activity is null) return NotFound();
+        if (activity is null || activity.UserId != User.GetUserId()) return NotFound();
 
         if (!string.IsNullOrEmpty(dto.ActivityType))
             activity.ActivityType = dto.ActivityType;
@@ -219,7 +225,7 @@ public class ActivitiesController : ControllerBase
     public async Task<IActionResult> Reanalyze(Guid id)
     {
         var activity = await _db.Activities.FindAsync(id);
-        if (activity is null) return NotFound();
+        if (activity is null || activity.UserId != User.GetUserId()) return NotFound();
 
         var language = Request.Headers.AcceptLanguage.FirstOrDefault()?.Split(',')[0]?.Trim() ?? "en";
         if (language.Length > 2) language = language[..2];
@@ -234,7 +240,7 @@ public class ActivitiesController : ControllerBase
         activity.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
 
-        await _processingChannel.Writer.WriteAsync(id);
+        await _processingChannel.Writer.WriteAsync((id, User.GetUserId()));
 
         return Accepted();
     }

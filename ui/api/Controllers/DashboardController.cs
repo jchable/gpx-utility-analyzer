@@ -1,12 +1,15 @@
 namespace GpxAnalyzer.Api.Controllers;
 
+using GpxAnalyzer.Api.Auth;
 using GpxAnalyzer.Api.Data;
 using GpxAnalyzer.Api.Dto;
 using GpxAnalyzer.Api.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class DashboardController : ControllerBase
 {
@@ -20,9 +23,10 @@ public class DashboardController : ControllerBase
     [HttpGet("summary")]
     public async Task<ActionResult<DashboardSummaryDto>> GetSummary()
     {
+        var userId = User.GetUserId();
         // Use SQL-level aggregation instead of materializing all activities in memory.
         // Pattern: nullable Select + SumAsync to handle empty sets in SQLite.
-        var completed = _db.Activities.Where(a => a.Status == ProcessingStatus.Completed);
+        var completed = _db.Activities.Where(a => a.UserId == userId && a.Status == ProcessingStatus.Completed);
 
         var totalActivities = await completed.CountAsync();
         var totalDistanceKm = await completed.Select(a => (double?)a.DistanceKm).SumAsync() ?? 0;

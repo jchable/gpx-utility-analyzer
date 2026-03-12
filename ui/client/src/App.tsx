@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Layout from './components/layout/Layout';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const ActivityList = lazy(() => import('./pages/ActivityList'));
@@ -11,6 +12,8 @@ const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const RoutePlannerPage = lazy(() => import('./pages/RoutePlannerPage'));
 const RoutesPage = lazy(() => import('./pages/RoutesPage'));
 const EditorPage = lazy(() => import('./pages/EditorPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 
 function PageLoader() {
   return (
@@ -24,7 +27,18 @@ export default function App() {
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
-        <Route element={<Layout />}>
+        {/* Public routes */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+
+        {/* Protected routes */}
+        <Route
+          element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
           <Route path="/" element={<Dashboard />} />
           <Route path="/activities" element={<ActivityList />} />
           <Route path="/activities/:id" element={<ActivityDetail />} />
@@ -34,9 +48,24 @@ export default function App() {
           <Route path="/integrations" element={<Integrations />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Route>
-        {/* Editor pages — full-screen, no Layout wrapper */}
-        <Route path="/editor" element={<EditorPage />} />
-        <Route path="/editor/:id" element={<EditorPage />} />
+
+        {/* Editor pages — full-screen, no Layout wrapper, but still protected */}
+        <Route
+          path="/editor"
+          element={
+            <ProtectedRoute>
+              <EditorPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/editor/:id"
+          element={
+            <ProtectedRoute>
+              <EditorPage />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </Suspense>
   );

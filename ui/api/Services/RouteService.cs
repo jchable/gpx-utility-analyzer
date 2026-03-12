@@ -11,21 +11,18 @@ using Microsoft.EntityFrameworkCore;
 
 public class RouteService
 {
-    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly AppDbContext _db;
     private readonly ILogger<RouteService> _logger;
 
-    public RouteService(IServiceScopeFactory scopeFactory, ILogger<RouteService> logger)
+    public RouteService(AppDbContext db, ILogger<RouteService> logger)
     {
-        _scopeFactory = scopeFactory;
+        _db = db;
         _logger = logger;
     }
 
-    public async Task<List<RouteListDto>> ListAsync(int page, int pageSize, string? type, string? status, CancellationToken ct = default)
+    public async Task<List<RouteListDto>> ListAsync(Guid userId, int page, int pageSize, string? type, string? status, CancellationToken ct = default)
     {
-        using var scope = _scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-        var query = db.Routes.AsQueryable();
+        var query = _db.Routes.Where(r => r.UserId == userId);
 
         if (!string.IsNullOrEmpty(type))
             query = query.Where(r => r.ActivityType == type);
@@ -55,44 +52,36 @@ public class RouteService
             .ToListAsync(ct);
     }
 
-    public async Task<RouteDetailDto?> GetAsync(Guid id, CancellationToken ct = default)
+    public async Task<RouteDetailDto?> GetAsync(Guid userId, Guid id, CancellationToken ct = default)
     {
-        using var scope = _scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-        var route = await db.Routes.FindAsync([id], ct);
+        var route = await _db.Routes.FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId, ct);
         if (route is null) return null;
 
         return MapToDetail(route);
     }
 
-    public async Task<Entities.Route> CreateAsync(RouteCreateDto dto, string language, CancellationToken ct = default)
+    public async Task<Entities.Route> CreateAsync(Guid userId, RouteCreateDto dto, string language, CancellationToken ct = default)
     {
-        using var scope = _scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
         var route = new Entities.Route
         {
             Id = Guid.NewGuid(),
+            UserId = userId,
             Name = dto.Name ?? "New route",
             ActivityType = dto.ActivityType,
             SourceActivityId = dto.SourceActivityId,
             Language = language,
         };
 
-        db.Routes.Add(route);
-        await db.SaveChangesAsync(ct);
+        _db.Routes.Add(route);
+        await _db.SaveChangesAsync(ct);
 
         _logger.LogInformation("Route created: {Id} ({Name})", route.Id, route.Name);
         return route;
     }
 
-    public async Task<Entities.Route?> UpdateAsync(Guid id, RouteUpdateDto dto, CancellationToken ct = default)
+    public async Task<Entities.Route?> UpdateAsync(Guid userId, Guid id, RouteUpdateDto dto, CancellationToken ct = default)
     {
-        using var scope = _scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-        var route = await db.Routes.FindAsync([id], ct);
+        var route = await _db.Routes.FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId, ct);
         if (route is null) return null;
 
         route.Name = dto.Name;
@@ -119,18 +108,15 @@ public class RouteService
             ComputeStats(route, dto.Points);
         }
 
-        await db.SaveChangesAsync(ct);
+        await _db.SaveChangesAsync(ct);
 
         _logger.LogInformation("Route updated: {Id} ({Name}), {Dist:F1} km", route.Id, route.Name, route.DistanceKm);
         return route;
     }
 
-    public async Task<bool> AutoSaveAsync(Guid id, RouteAutoSaveDto dto, CancellationToken ct = default)
+    public async Task<bool> AutoSaveAsync(Guid userId, Guid id, RouteAutoSaveDto dto, CancellationToken ct = default)
     {
-        using var scope = _scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-        var route = await db.Routes.FindAsync([id], ct);
+        var route = await _db.Routes.FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId, ct);
         if (route is null) return false;
 
         if (dto.Points is not null)
@@ -143,37 +129,32 @@ public class RouteService
             route.PoisJson = JsonSerializer.Serialize(dto.Pois);
 
         route.UpdatedAt = DateTime.UtcNow;
-        await db.SaveChangesAsync(ct);
+        await _db.SaveChangesAsync(ct);
 
         return true;
     }
 
-    public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default)
+    public async Task<bool> DeleteAsync(Guid userId, Guid id, CancellationToken ct = default)
     {
-        using var scope = _scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-        var route = await db.Routes.FindAsync([id], ct);
+        var route = await _db.Routes.FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId, ct);
         if (route is null) return false;
 
-        db.Routes.Remove(route);
-        await db.SaveChangesAsync(ct);
+        _db.Routes.Remove(route);
+        await _db.SaveChangesAsync(ct);
 
         _logger.LogInformation("Route deleted: {Id}", id);
         return true;
     }
 
-    public async Task<Entities.Route?> CreateFromActivityAsync(Guid activityId, string language, CancellationToken ct = default)
+    public async Task<Entities.Route?> CreateFromActivityAsync(Guid userId, Guid activityId, string language, CancellationToken ct = default)
     {
-        using var scope = _scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-        var activity = await db.Activities.FindAsync([activityId], ct);
+        var activity = await _db.Activities.FirstOrDefaultAsync(a => a.Id == activityId && a.UserId == userId, ct);
         if (activity is null) return null;
 
         var route = new Entities.Route
         {
             Id = Guid.NewGuid(),
+            UserId = userId,
             Name = $"{activity.Name} (route)",
             ActivityType = activity.ActivityType,
             SourceActivityId = activityId,
@@ -193,14 +174,14 @@ public class RouteService
             }
         }
 
-        db.Routes.Add(route);
-        await db.SaveChangesAsync(ct);
+        _db.Routes.Add(route);
+        await _db.SaveChangesAsync(ct);
 
         _logger.LogInformation("Route created from activity {ActivityId}: {RouteId}", activityId, route.Id);
         return route;
     }
 
-    public async Task<Entities.Route?> ImportGpxAsync(Stream gpxStream, string filename, string language, CancellationToken ct = default)
+    public async Task<Entities.Route?> ImportGpxAsync(Guid userId, Stream gpxStream, string filename, string language, CancellationToken ct = default)
     {
         // Save to temp file for parsing
         var tempFile = Path.Combine(Path.GetTempPath(), $"gpx-import-{Guid.NewGuid()}.gpx");
@@ -219,12 +200,10 @@ public class RouteService
             // Extract coordinates [lon, lat, ele]
             var coords = points.Select(p => new[] { p.Lon, p.Lat, p.Ele }).ToArray();
 
-            using var scope = _scopeFactory.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
             var route = new Entities.Route
             {
                 Id = Guid.NewGuid(),
+                UserId = userId,
                 Name = Path.GetFileNameWithoutExtension(filename),
                 SourceFileName = filename,
                 Language = language,
@@ -233,8 +212,8 @@ public class RouteService
 
             ComputeStats(route, coords);
 
-            db.Routes.Add(route);
-            await db.SaveChangesAsync(ct);
+            _db.Routes.Add(route);
+            await _db.SaveChangesAsync(ct);
 
             _logger.LogInformation("Route imported from GPX '{File}': {Id}, {Points} points, {Dist:F1} km",
                 filename, route.Id, points.Count, route.DistanceKm);
@@ -247,13 +226,10 @@ public class RouteService
         }
     }
 
-    public async Task<List<string>> GetTagsAsync(CancellationToken ct = default)
+    public async Task<List<string>> GetTagsAsync(Guid userId, CancellationToken ct = default)
     {
-        using var scope = _scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-        var routes = await db.Routes
-            .Where(r => r.Tags != null && r.Tags != "")
+        var routes = await _db.Routes
+            .Where(r => r.UserId == userId && r.Tags != null && r.Tags != "")
             .Select(r => r.Tags!)
             .ToListAsync(ct);
 
@@ -266,11 +242,9 @@ public class RouteService
 
     public record ExportResult(MemoryStream Stream, string FileName);
 
-    public async Task<ExportResult?> ExportGpxAsync(Guid id, CancellationToken ct = default)
+    public async Task<ExportResult?> ExportGpxAsync(Guid userId, Guid id, CancellationToken ct = default)
     {
-        using var scope = _scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var route = await db.Routes.FindAsync([id], ct);
+        var route = await _db.Routes.FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId, ct);
         if (route is null) return null;
 
         var coords = route.PointsJson is not null
@@ -292,11 +266,9 @@ public class RouteService
         return new ExportResult(ms, fileName);
     }
 
-    public async Task<ExportResult?> ExportGeoJsonAsync(Guid id, CancellationToken ct = default)
+    public async Task<ExportResult?> ExportGeoJsonAsync(Guid userId, Guid id, CancellationToken ct = default)
     {
-        using var scope = _scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var route = await db.Routes.FindAsync([id], ct);
+        var route = await _db.Routes.FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId, ct);
         if (route is null) return null;
 
         var coords = route.PointsJson is not null
@@ -344,11 +316,9 @@ public class RouteService
         return new ExportResult(ms, fileName);
     }
 
-    public async Task<ExportResult?> ExportKmlAsync(Guid id, CancellationToken ct = default)
+    public async Task<ExportResult?> ExportKmlAsync(Guid userId, Guid id, CancellationToken ct = default)
     {
-        using var scope = _scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var route = await db.Routes.FindAsync([id], ct);
+        var route = await _db.Routes.FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId, ct);
         if (route is null) return null;
 
         var coords = route.PointsJson is not null

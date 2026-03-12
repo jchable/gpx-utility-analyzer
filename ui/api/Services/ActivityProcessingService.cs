@@ -7,37 +7,34 @@ using GpxAnalyzer.Api.Entities;
 
 public class ActivityProcessingService
 {
+    private readonly AppDbContext _db;
     private readonly GpxStorageService _storage;
     private readonly GpxAnalysisService _analysisService;
     private readonly AiAnalysisService _aiService;
     private readonly ProfileComputationService _profileService;
-    private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<ActivityProcessingService> _logger;
 
     public ActivityProcessingService(
+        AppDbContext db,
         GpxStorageService storage,
         GpxAnalysisService analysisService,
         AiAnalysisService aiService,
         ProfileComputationService profileService,
-        IServiceScopeFactory scopeFactory,
         ILogger<ActivityProcessingService> logger)
     {
+        _db = db;
         _storage = storage;
         _analysisService = analysisService;
         _aiService = aiService;
         _profileService = profileService;
-        _scopeFactory = scopeFactory;
         _logger = logger;
     }
 
-    public async Task ProcessActivityAsync(Guid activityId, CancellationToken ct = default)
+    public async Task ProcessActivityAsync(Guid activityId, Guid userId, CancellationToken ct = default)
     {
         var totalSw = Stopwatch.StartNew();
 
-        using var scope = _scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-        var activity = await db.Activities.FindAsync([activityId], ct);
+        var activity = await _db.Activities.FindAsync([activityId], ct);
         if (activity is null)
         {
             _logger.LogWarning("Activity {Id} not found, skipping processing", activityId);
@@ -52,7 +49,7 @@ public class ActivityProcessingService
             // Step 1: Run GPX analysis
             activity.Status = ProcessingStatus.Analyzing;
             activity.UpdatedAt = DateTime.UtcNow;
-            await db.SaveChangesAsync(ct);
+            await _db.SaveChangesAsync(ct);
 
             // Determine which GPX to analyze: original archive (reanalyze) or uploaded file (first run)
             string gpxToAnalyze;
@@ -76,7 +73,7 @@ public class ActivityProcessingService
             Directory.CreateDirectory(exportDir);
 
             var stepSw = Stopwatch.StartNew();
-            var stats = await _analysisService.AnalyzeAsync(gpxToAnalyze, activity.ActivityType, exportDir, ct);
+            var stats = await _analysisService.AnalyzeAsync(userId, gpxToAnalyze, activity.ActivityType, exportDir, ct);
             stepSw.Stop();
 
             _logger.LogInformation("[{Id}] GPX analysis completed in {Elapsed:F1}s — {Distance:F1} km, D+{Gain:F0}m, D-{Loss:F0}m, moving {MovingTime}",
@@ -141,17 +138,20 @@ public class ActivityProcessingService
             // Step 2: Run AI analysis
             activity.Status = ProcessingStatus.AiProcessing;
             activity.UpdatedAt = DateTime.UtcNow;
-            await db.SaveChangesAsync(ct);
+            await _db.SaveChangesAsync(ct);
 
             _logger.LogInformation("[{Id}] Step 2/2: Running AI analysis", activityId);
 
             try
             {
                 stepSw.Restart();
-                var report = await _aiService.AnalyzeAsync(stats, activity.Language, ct);
+                var report = await _aiService.AnalyzeAsync(userId, stats, activity.Language, ct);
                 stepSw.Stop();
-                activity.AiReportJson = JsonSerializer.Serialize(report);
-                _logger.LogInformation("[{Id}] AI analysis completed in {Elapsed:F1}s", activityId, stepSw.Elapsed.TotalSeconds);
+                if (report is not null)
+                {
+                    activity.AiReportJson = JsonSerializer.Serialize(report);
+                    _logger.LogInformation("[{Id}] AI analysis completed in {Elapsed:F1}s", activityId, stepSw.Elapsed.TotalSeconds);
+                }
             }
             catch (Exception ex)
             {
@@ -160,7 +160,7 @@ public class ActivityProcessingService
 
             activity.Status = ProcessingStatus.Completed;
             activity.UpdatedAt = DateTime.UtcNow;
-            await db.SaveChangesAsync(ct);
+            await _db.SaveChangesAsync(ct);
 
             totalSw.Stop();
             _logger.LogInformation("[{Id}] Processing completed in {Elapsed:F1}s (status=Completed)", activityId, totalSw.Elapsed.TotalSeconds);
@@ -172,7 +172,7 @@ public class ActivityProcessingService
             activity.Status = ProcessingStatus.Failed;
             activity.ErrorMessage = ex.Message;
             activity.UpdatedAt = DateTime.UtcNow;
-            await db.SaveChangesAsync(ct);
+            await _db.SaveChangesAsync(ct);
         }
     }
 }

@@ -108,6 +108,12 @@ dotnet build ai-analyzer/src/GpxAiAnalyzer/GpxAiAnalyzer.csproj
 dotnet test ai-analyzer/tests/GpxAiAnalyzer.Tests/
 ```
 
+### API Integration Tests
+
+```bash
+dotnet test ui/api.Tests/GpxAnalyzer.Api.Tests.csproj   # 27 tests (auth + multi-user isolation)
+```
+
 Requires .NET 9.0+.
 
 ### .NET Architecture
