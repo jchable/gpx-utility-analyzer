@@ -2,7 +2,11 @@
 
 .NET CLI tool for analyzing GPX files: distance, elevation gain/loss, speed, stop detection, biometrics (heart rate, power, cadence, temperature from GPX extensions), time-based splitting, file merging. Includes altitude correction using a digital elevation model (SRTM). Built as a Native AOT single-file executable with no runtime dependency.
 
-## Prerequisites
+## Installation
+
+Pre-built binaries are available for Windows, Linux, and macOS. See [docs/INSTALL.md](docs/INSTALL.md) for installation via **winget**, **apt**, or portable archives.
+
+## Prerequisites (build from source)
 
 - .NET 9.0 SDK or later
 

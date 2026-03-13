@@ -1,0 +1,12 @@
+Package: gpx-analyzer
+Version: 0.0.0
+Architecture: amd64
+Maintainer: GPX Analyzer Project <noreply@github.com>
+Section: utils
+Priority: optional
+Depends:
+Description: GPX file analysis tool
+ Analyzes GPX files for distance, elevation gain/loss, speed, stop detection,
+ and biometrics (heart rate, power, cadence, temperature). Includes altitude
+ correction via SRTM digital elevation model.
+ Self-contained Native AOT binary with no runtime dependency.

@@ -1,0 +1,7 @@
+Origin: GPX Analyzer
+Label: GPX Analyzer
+Codename: stable
+Architectures: amd64
+Components: main
+Description: GPX Analyzer APT Repository
+SignWith: <GPG_KEY_ID>

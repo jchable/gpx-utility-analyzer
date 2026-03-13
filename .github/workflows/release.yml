@@ -1,0 +1,220 @@
+name: Release CLI
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version string (without v prefix, e.g. 1.0.0)'
+        required: false
+        default: '0.0.0-dev'
+
+permissions:
+  contents: write
+
+jobs:
+  # ──────────────────────────────────────────────────────────────────────────
+  # Windows: portable ZIP + NSIS installer
+  # ──────────────────────────────────────────────────────────────────────────
+  build-windows:
+    name: Build Windows (win-x64)
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Determine version
+        id: version
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF_TYPE -eq 'tag') {
+            $v = $env:GITHUB_REF_NAME -replace '^v', ''
+          } else {
+            $v = '${{ github.event.inputs.version }}'
+            if (-not $v) { $v = '0.0.0-dev' }
+          }
+          echo "VERSION=$v" >> $env:GITHUB_OUTPUT
+
+      - name: Publish win-x64
+        shell: pwsh
+        run: |
+          dotnet publish cli/src/GpxAnalyzer.Cli `
+            -c Release `
+            -r win-x64 `
+            -p:Version=${{ steps.version.outputs.VERSION }} `
+            --output publish/win-x64
+
+      - name: Create portable ZIP
+        shell: pwsh
+        run: |
+          $version = '${{ steps.version.outputs.VERSION }}'
+          Compress-Archive `
+            -Path publish/win-x64/gpx-analyzer.exe `
+            -DestinationPath "gpx-analyzer-${version}-win-x64.zip"
+
+      - name: Build NSIS installer
+        shell: pwsh
+        run: |
+          $version = '${{ steps.version.outputs.VERSION }}'
+          $exePath = (Resolve-Path "publish/win-x64/gpx-analyzer.exe").Path
+          makensis `
+            "/DVERSION=$version" `
+            "/DEXE_PATH=$exePath" `
+            installers/windows/gpx-analyzer.nsi
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-artifacts
+          path: |
+            gpx-analyzer-${{ steps.version.outputs.VERSION }}-win-x64.zip
+            gpx-analyzer-setup-${{ steps.version.outputs.VERSION }}-win-x64.exe
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Linux: portable tar.gz + .deb package
+  # ──────────────────────────────────────────────────────────────────────────
+  build-linux:
+    name: Build Linux (linux-x64)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Install Native AOT dependencies
+        run: sudo apt-get install -y clang zlib1g-dev
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION="${{ github.event.inputs.version }}"
+            VERSION="${VERSION:-0.0.0-dev}"
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Publish linux-x64
+        run: |
+          dotnet publish cli/src/GpxAnalyzer.Cli \
+            -c Release \
+            -r linux-x64 \
+            -p:Version=${{ steps.version.outputs.VERSION }} \
+            --output publish/linux-x64
+
+      - name: Create portable tar.gz
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          tar -czf "gpx-analyzer-${VERSION}-linux-x64.tar.gz" \
+            -C publish/linux-x64 gpx-analyzer
+
+      - name: Build .deb package
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          chmod +x installers/linux/build-deb.sh
+          installers/linux/build-deb.sh "$VERSION" "publish/linux-x64/gpx-analyzer"
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-artifacts
+          path: |
+            gpx-analyzer-${{ steps.version.outputs.VERSION }}-linux-x64.tar.gz
+            gpx-analyzer_${{ steps.version.outputs.VERSION }}_amd64.deb
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # macOS: portable tar.gz (native ARM64)
+  # ──────────────────────────────────────────────────────────────────────────
+  build-macos:
+    name: Build macOS (osx-arm64)
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION="${{ github.event.inputs.version }}"
+            VERSION="${VERSION:-0.0.0-dev}"
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Publish osx-arm64
+        run: |
+          dotnet publish cli/src/GpxAnalyzer.Cli \
+            -c Release \
+            -r osx-arm64 \
+            -p:Version=${{ steps.version.outputs.VERSION }} \
+            --output publish/osx-arm64
+
+      - name: Create portable tar.gz
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          tar -czf "gpx-analyzer-${VERSION}-osx-arm64.tar.gz" \
+            -C publish/osx-arm64 gpx-analyzer
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-artifacts
+          path: gpx-analyzer-${{ steps.version.outputs.VERSION }}-osx-arm64.tar.gz
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # GitHub Release — tag push only
+  # ──────────────────────────────────────────────────────────────────────────
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [build-windows, build-linux, build-macos]
+    if: github.ref_type == 'tag'
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          path: release-assets/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: release-assets/*
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # winget — auto-submit PR to microsoft/winget-pkgs on tag push
+  # Requires secret: WINGET_TOKEN (PAT with scope public_repo)
+  # ──────────────────────────────────────────────────────────────────────────
+  submit-winget:
+    name: Submit to winget
+    runs-on: ubuntu-latest
+    needs: release
+    if: github.ref_type == 'tag'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: vedantmgoyal9/winget-releaser@v2
+        with:
+          identifier: GPXAnalyzer.gpx-analyzer
+          version: ${{ github.ref_name }}
+          installers-regex: 'gpx-analyzer-setup-.*-win-x64\.exe$'
+          token: ${{ secrets.WINGET_TOKEN }}
