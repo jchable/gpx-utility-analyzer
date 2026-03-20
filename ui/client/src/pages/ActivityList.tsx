@@ -89,12 +89,24 @@ export default function ActivityList() {
                     </h3>
                     <p className="text-xs text-content-muted mt-1">{formatDate(activity.startTime, i18n.language, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p>
                   </div>
-                  <span
-                    className="text-xs font-bold px-2.5 py-1 rounded-full shrink-0 ml-3"
-                    style={{ backgroundColor: color + '22', color }}
-                  >
-                    {label}
-                  </span>
+                  <div className="flex flex-col items-end gap-1 shrink-0 ml-3">
+                    <span
+                      className="text-xs font-bold px-2.5 py-1 rounded-full"
+                      style={{ backgroundColor: color + '22', color }}
+                    >
+                      {label}
+                    </span>
+                    {activity.detectedSubType && (
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                        {tc(`subType.${activity.detectedSubType}`, { defaultValue: activity.detectedSubType })}
+                      </span>
+                    )}
+                    {activity.sessionType && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-400 border border-purple-500/30">
+                        {tc(`sessionType.${activity.sessionType}`, { defaultValue: activity.sessionType })}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-3">

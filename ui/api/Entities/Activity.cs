@@ -27,4 +27,14 @@ public class Activity
     public string Language { get; set; } = "en";
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    // Enrichissement utilisateur
+    public string? Description { get; set; }
+    public int? PerceivedExertion { get; set; }   // RPE 1-10
+    public string? Tags { get; set; }              // JSON array ["tag1","tag2"]
+    public string? SessionType { get; set; }
+
+    // Calories (calculé au processing)
+    public double? EstimatedCalories { get; set; }
+    public string? CalorieMethod { get; set; }     // "hr" | "met"
 }

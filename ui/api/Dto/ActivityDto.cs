@@ -7,6 +7,9 @@ public class ActivityListDto
     public Guid Id { get; set; }
     public string Name { get; set; } = "";
     public string ActivityType { get; set; } = "";
+    public string? DetectedSubType { get; set; }
+    public string? SessionType { get; set; }
+    public string[]? Tags { get; set; }
     public DateTime StartTime { get; set; }
     public double DistanceKm { get; set; }
     public double ElevationGainM { get; set; }
@@ -29,6 +32,17 @@ public class ActivityDetailDto
     public string Source { get; set; } = "";
     public string Status { get; set; } = "";
     public string? ErrorMessage { get; set; }
+    public string? DetectedSubType { get; set; }
+
+    // Enrichissement utilisateur
+    public string? Description { get; set; }
+    public int? PerceivedExertion { get; set; }
+    public string[]? Tags { get; set; }
+    public string? SessionType { get; set; }
+
+    // Calories
+    public double? EstimatedCalories { get; set; }
+    public string? CalorieMethod { get; set; }
 
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public object? Stats { get; set; }
@@ -44,6 +58,10 @@ public class UpdateActivityDto
 {
     public string? ActivityType { get; set; }
     public string? Name { get; set; }
+    public string? Description { get; set; }
+    public int? PerceivedExertion { get; set; }
+    public string[]? Tags { get; set; }
+    public string? SessionType { get; set; }
 }
 
 public class DashboardSummaryDto

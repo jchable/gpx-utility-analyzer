@@ -134,12 +134,21 @@ export const api = {
     await fetchWithAuth(`/activities/${id}/reanalyze`, { method: 'POST' });
   },
 
-  updateActivity: (id: string, data: { activityType?: string; name?: string }) =>
+  updateActivity: (id: string, data: {
+    activityType?: string;
+    name?: string;
+    description?: string;
+    perceivedExertion?: number | null;
+    tags?: string[];
+    sessionType?: string;
+  }) =>
     fetchJson<{ id: string; activityType: string; name: string }>(`/activities/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     }),
+
+  getTags: () => fetchJson<string[]>('/activities/tags'),
 
   getProfile: (id: string) => fetchJson<ProfilePoint[]>(`/activities/${id}/profile`),
 
@@ -147,7 +156,17 @@ export const api = {
 
   getSplits: (id: string) => fetchJson<SplitsData>(`/activities/${id}/splits`),
 
-  getGpxUrl: (id: string) => `${BASE}/activities/${id}/gpx`,
+  downloadGpx: async (id: string, filename: string): Promise<void> => {
+    const res = await fetchWithAuth(`/activities/${id}/gpx`);
+    if (!res.ok) throw new Error('GPX_NOT_FOUND');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename.endsWith('.gpx') ? filename : `${filename}.gpx`;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
 
   predictRoute: async (file: File): Promise<PredictResult> => {
     const formData = new FormData();

@@ -118,7 +118,7 @@ public static class ComputePipeline
             if (cfg.FixAnomalies && s.AnomalyReport.TotalCount > 0)
             {
                 s.AnomalyReport = AnomalyCorrector.ApplyCorrections(points, s.AnomalyReport);
-                AnomalyCorrector.RecalculateStats(points, s, cfg.MaxReasonableSpeed);
+                AnomalyCorrector.RecalculateStats(points, s);
             }
         }
 

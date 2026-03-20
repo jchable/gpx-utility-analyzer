@@ -48,25 +48,48 @@ public class ActivitiesController : ControllerBase
         if (!string.IsNullOrEmpty(type))
             query = query.Where(a => a.ActivityType == type);
 
-        var activities = await query
+        // Materialize first to allow in-memory JSON deserialization for Tags
+        var rows = await query
             .OrderByDescending(a => a.StartTime)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(a => new ActivityListDto
-            {
-                Id = a.Id,
-                Name = a.Name,
-                ActivityType = a.ActivityType,
-                StartTime = a.StartTime,
-                DistanceKm = a.DistanceKm,
-                ElevationGainM = a.ElevationGainM,
-                MovingTimeSeconds = a.MovingTimeSeconds,
-                Source = a.Source,
-                Status = a.Status.ToString(),
-            })
             .ToListAsync();
 
+        var activities = rows.Select(a => new ActivityListDto
+        {
+            Id = a.Id,
+            Name = a.Name,
+            ActivityType = a.ActivityType,
+            DetectedSubType = a.DetectedSubType,
+            SessionType = a.SessionType,
+            Tags = a.Tags != null ? JsonSerializer.Deserialize<string[]>(a.Tags) : null,
+            StartTime = a.StartTime,
+            DistanceKm = a.DistanceKm,
+            ElevationGainM = a.ElevationGainM,
+            MovingTimeSeconds = a.MovingTimeSeconds,
+            Source = a.Source,
+            Status = a.Status.ToString(),
+        }).ToList();
+
         return activities;
+    }
+
+    [HttpGet("tags")]
+    public async Task<ActionResult<string[]>> GetTags()
+    {
+        var userId = User.GetUserId();
+        var tagsJsonList = await _db.Activities
+            .Where(a => a.UserId == userId && a.Tags != null)
+            .Select(a => a.Tags!)
+            .ToListAsync();
+
+        var allTags = tagsJsonList
+            .SelectMany(t => JsonSerializer.Deserialize<string[]>(t) ?? [])
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(t => t)
+            .ToArray();
+
+        return allTags;
     }
 
     [HttpGet("{id:guid}")]
@@ -80,6 +103,7 @@ public class ActivitiesController : ControllerBase
             Id = activity.Id,
             Name = activity.Name,
             ActivityType = activity.ActivityType,
+            DetectedSubType = activity.DetectedSubType,
             StartTime = activity.StartTime,
             EndTime = activity.EndTime,
             DistanceKm = activity.DistanceKm,
@@ -89,6 +113,12 @@ public class ActivitiesController : ControllerBase
             Source = activity.Source,
             Status = activity.Status.ToString(),
             ErrorMessage = activity.ErrorMessage,
+            Description = activity.Description,
+            PerceivedExertion = activity.PerceivedExertion,
+            Tags = activity.Tags != null ? JsonSerializer.Deserialize<string[]>(activity.Tags) : null,
+            SessionType = activity.SessionType,
+            EstimatedCalories = activity.EstimatedCalories,
+            CalorieMethod = activity.CalorieMethod,
             Stats = activity.StatsJson is not null ? JsonSerializer.Deserialize<object>(activity.StatsJson) : null,
             AiReport = activity.AiReportJson is not null ? JsonSerializer.Deserialize<object>(activity.AiReportJson) : null,
             CreatedAt = activity.CreatedAt,
@@ -215,6 +245,16 @@ public class ActivitiesController : ControllerBase
             activity.ActivityType = dto.ActivityType;
         if (!string.IsNullOrEmpty(dto.Name))
             activity.Name = dto.Name;
+        if (dto.Description is not null)
+            activity.Description = string.IsNullOrEmpty(dto.Description) ? null : dto.Description;
+        if (dto.PerceivedExertion.HasValue)
+            activity.PerceivedExertion = dto.PerceivedExertion.Value is >= 1 and <= 10
+                ? dto.PerceivedExertion.Value
+                : null;
+        if (dto.Tags is not null)
+            activity.Tags = dto.Tags.Length > 0 ? JsonSerializer.Serialize(dto.Tags) : null;
+        if (dto.SessionType is not null)
+            activity.SessionType = string.IsNullOrEmpty(dto.SessionType) ? null : dto.SessionType;
 
         activity.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();

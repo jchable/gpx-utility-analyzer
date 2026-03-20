@@ -154,5 +154,39 @@
     "hint": "Fichiers GPX avec ou sans horodatage acceptés.",
     "analyzing": "Analyse du parcours...",
     "results": "Résultats de l'analyse"
+  },
+  "enrichment": {
+    "title": "Détails de l'activité",
+    "label": {
+      "description": "Description",
+      "perceivedExertion": "Effort perçu (RPE)",
+      "tags": "Tags",
+      "sessionType": "Type de séance",
+      "calories": "Calories estimées",
+      "detectedSubType": "Sous-type détecté"
+    },
+    "placeholder": {
+      "description": "Ajoutez une description pour cette activité...",
+      "tags": "Ajouter des tags (Entrée pour valider)"
+    },
+    "sessionTypeNone": "Aucun",
+    "rpe": {
+      "1": "Très facile",
+      "2": "Facile",
+      "3": "Léger",
+      "4": "Modéré",
+      "5": "Assez dur",
+      "6": "Dur",
+      "7": "Très dur",
+      "8": "Très très dur",
+      "9": "Extrêmement dur",
+      "10": "Effort maximal"
+    },
+    "calorieMethod": {
+      "hr": "Basé sur la fréquence cardiaque",
+      "met": "Estimé (MET)"
+    },
+    "saving": "Enregistrement...",
+    "saved": "Enregistré"
   }
 }

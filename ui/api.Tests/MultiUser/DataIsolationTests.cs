@@ -9,6 +9,7 @@ namespace GpxAnalyzer.Api.Tests.MultiUser;
 /// Integration tests verifying that each user can only see their own data.
 /// Each test gets a fully isolated environment (own factory + own DB).
 /// </summary>
+[Collection("Integration")]
 public class DataIsolationTests : IAsyncLifetime
 {
     private readonly ApiFactory _factory = new();

@@ -10,6 +10,7 @@ namespace GpxAnalyzer.Api.Tests.Auth;
 /// Each test gets its own ApiFactory (and therefore its own isolated SQLite DB)
 /// because xUnit creates a new test class instance per [Fact].
 /// </summary>
+[Collection("Integration")]
 public class AuthApiTests : IAsyncLifetime
 {
     private readonly ApiFactory _factory = new();

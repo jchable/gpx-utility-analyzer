@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -49,6 +49,46 @@ export default function ActivityDetail() {
   const [editingType, setEditingType] = useState(false);
   const [pendingType, setPendingType] = useState<string | null>(null);
   const [isChangingType, setIsChangingType] = useState(false);
+
+  // Enrichment state (description, RPE, tags, sessionType)
+  const [localDesc, setLocalDesc] = useState('');
+  const [localRpe, setLocalRpe] = useState<number | null>(null);
+  const [localSessionType, setLocalSessionType] = useState('');
+  const [localTags, setLocalTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
+  const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
+  const [enrichSaving, setEnrichSaving] = useState(false);
+  const [enrichSaved, setEnrichSaved] = useState(false);
+
+  // Sync enrichment state when activity loads (only on ID change)
+  useEffect(() => {
+    if (activity) {
+      setLocalDesc(activity.description ?? '');
+      setLocalRpe(activity.perceivedExertion ?? null);
+      setLocalSessionType(activity.sessionType ?? '');
+      setLocalTags(activity.tags ?? []);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activity?.id]);
+
+  // Load tag suggestions once
+  useEffect(() => {
+    api.getTags().then(setTagSuggestions).catch(() => {});
+  }, []);
+
+  const saveEnrichment = useCallback(async (patch: Parameters<typeof api.updateActivity>[1]) => {
+    if (!activity) return;
+    setEnrichSaving(true);
+    setEnrichSaved(false);
+    try {
+      await api.updateActivity(activity.id, patch);
+      queryClient.invalidateQueries({ queryKey: ['activity', id] });
+      setEnrichSaved(true);
+      setTimeout(() => setEnrichSaved(false), 2000);
+    } finally {
+      setEnrichSaving(false);
+    }
+  }, [activity, queryClient, id]);
 
   const hasTimestamps = (profileData?.length ?? 0) > 0 && profileData![0].elapsedTime != null;
 
@@ -207,6 +247,11 @@ export default function ActivityDetail() {
                 {tc(`activityType.${activity.activityType}`)}
               </button>
             )}
+            {activity.detectedSubType && (
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                {tc(`subType.${activity.detectedSubType}`, { defaultValue: activity.detectedSubType })}
+              </span>
+            )}
             <div className="flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${statusCfg.bg} ${statusCfg.pulse ? 'animate-pulse' : ''}`} />
               <span className={`text-sm ${statusCfg.color}`}>{tc(`status.${activity.status}`)}</span>
@@ -222,16 +267,15 @@ export default function ActivityDetail() {
 
         {/* Actions */}
         <div className="flex items-center gap-2 flex-wrap">
-          <a
-            href={api.getGpxUrl(activity.id)}
-            download
+          <button
+            onClick={() => api.downloadGpx(activity.id, activity.name)}
             className="px-3 py-2 rounded-lg bg-surface-card border border-border text-content text-sm hover:bg-surface-alt/50 transition-colors flex items-center gap-2"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
             {t('detail.gpx')}
-          </a>
+          </button>
           <button
             onClick={handleEditAsRoute}
             disabled={isCreatingRoute || activity.status !== 'Completed'}
@@ -297,6 +341,15 @@ export default function ActivityDetail() {
             <p className="text-xs text-content-muted mb-1">{t('detail.avgPace')}</p>
             <p className="text-lg font-bold text-content">{stats.avg_moving_pace}</p>
           </div>
+          {activity.estimatedCalories != null && (
+            <div className="bg-surface-card rounded-xl p-4 border border-border">
+              <p className="text-xs text-content-muted mb-1">{t('enrichment.label.calories')}</p>
+              <p className="text-lg font-bold text-orange-400">{Math.round(activity.estimatedCalories)} {tc('unit.kcal')}</p>
+              {activity.calorieMethod && (
+                <p className="text-xs text-content-muted/60 mt-0.5">{t(`enrichment.calorieMethod.${activity.calorieMethod}`)}</p>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -381,6 +434,133 @@ export default function ActivityDetail() {
               </div>
             );
           })()}
+        </div>
+      )}
+
+      {/* Activity Enrichment */}
+      {activity.status === 'Completed' && (
+        <div className="bg-surface-card rounded-2xl p-6 border border-border space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-content">{t('enrichment.title')}</h2>
+            {enrichSaving && <span className="text-xs text-content-muted animate-pulse">{t('enrichment.saving')}</span>}
+            {enrichSaved && !enrichSaving && <span className="text-xs text-green-400">{t('enrichment.saved')}</span>}
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-xs text-content-muted mb-1.5">{t('enrichment.label.description')}</label>
+            <textarea
+              value={localDesc}
+              onChange={(e) => setLocalDesc(e.target.value)}
+              onBlur={() => saveEnrichment({ description: localDesc })}
+              rows={3}
+              placeholder={t('enrichment.placeholder.description')}
+              className="w-full bg-surface-alt border border-border rounded-lg px-3 py-2 text-sm text-content placeholder-content-muted resize-none focus:outline-none focus:ring-1 focus:ring-accent/50"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {/* Session Type */}
+            <div>
+              <label className="block text-xs text-content-muted mb-1.5">{t('enrichment.label.sessionType')}</label>
+              <select
+                value={localSessionType}
+                onChange={(e) => {
+                  setLocalSessionType(e.target.value);
+                  saveEnrichment({ sessionType: e.target.value });
+                }}
+                className="w-full bg-surface-alt border border-border rounded-lg px-3 py-2 text-sm text-content focus:outline-none focus:ring-1 focus:ring-accent/50"
+              >
+                <option value="">{t('enrichment.sessionTypeNone')}</option>
+                {(['long_run', 'race', 'training', 'recovery', 'intervals', 'tempo', 'easy'] as const).map((s) => (
+                  <option key={s} value={s}>{tc(`sessionType.${s}`)}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* RPE */}
+            <div>
+              <label className="block text-xs text-content-muted mb-1.5">
+                {t('enrichment.label.perceivedExertion')}
+                {localRpe && <span className="ml-2 text-accent">— {t(`enrichment.rpe.${localRpe}`)}</span>}
+              </label>
+              <div className="flex gap-1">
+                {[1,2,3,4,5,6,7,8,9,10].map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => {
+                      const newVal = localRpe === n ? null : n;
+                      setLocalRpe(newVal);
+                      saveEnrichment({ perceivedExertion: newVal ?? 0 });
+                    }}
+                    className="flex-1 py-1.5 rounded text-xs font-bold transition-colors"
+                    style={{
+                      backgroundColor: localRpe === n ? `hsl(${120 - (n - 1) * 12}, 70%, 35%)` : 'var(--surface-alt)',
+                      color: localRpe === n ? '#fff' : localRpe && n <= localRpe ? `hsl(${120 - (n - 1) * 12}, 60%, 60%)` : 'var(--content-muted)',
+                      borderWidth: 1,
+                      borderColor: localRpe && n <= localRpe ? `hsl(${120 - (n - 1) * 12}, 50%, 40%)` : 'var(--border)',
+                    }}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Tags */}
+          <div>
+            <label className="block text-xs text-content-muted mb-1.5">{t('enrichment.label.tags')}</label>
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {localTags.map((tag) => (
+                <span
+                  key={tag}
+                  className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-accent/15 text-accent border border-accent/30"
+                >
+                  {tag}
+                  <button
+                    onClick={() => {
+                      const newTags = localTags.filter((t) => t !== tag);
+                      setLocalTags(newTags);
+                      saveEnrichment({ tags: newTags });
+                    }}
+                    className="hover:text-red-400 transition-colors leading-none"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+            <input
+              type="text"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => {
+                if ((e.key === 'Enter' || e.key === ',') && tagInput.trim()) {
+                  e.preventDefault();
+                  const newTag = tagInput.trim().toLowerCase();
+                  if (!localTags.includes(newTag)) {
+                    const newTags = [...localTags, newTag];
+                    setLocalTags(newTags);
+                    saveEnrichment({ tags: newTags });
+                  }
+                  setTagInput('');
+                } else if (e.key === 'Backspace' && !tagInput && localTags.length > 0) {
+                  const newTags = localTags.slice(0, -1);
+                  setLocalTags(newTags);
+                  saveEnrichment({ tags: newTags });
+                }
+              }}
+              list="tag-suggestions"
+              placeholder={t('enrichment.placeholder.tags')}
+              className="w-full bg-surface-alt border border-border rounded-lg px-3 py-2 text-sm text-content placeholder-content-muted focus:outline-none focus:ring-1 focus:ring-accent/50"
+            />
+            <datalist id="tag-suggestions">
+              {tagSuggestions.filter((s) => !localTags.includes(s)).map((s) => (
+                <option key={s} value={s} />
+              ))}
+            </datalist>
+          </div>
         </div>
       )}
 

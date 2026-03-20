@@ -9,6 +9,7 @@ namespace GpxAnalyzer.Api.Tests.Profile;
 /// Integration tests for GET/PUT /api/profile and POST /api/profile/change-password.
 /// Each test class instance gets a fresh isolated SQLite database.
 /// </summary>
+[Collection("Integration")]
 public class ProfileApiTests : IAsyncLifetime
 {
     private readonly ApiFactory _factory = new();

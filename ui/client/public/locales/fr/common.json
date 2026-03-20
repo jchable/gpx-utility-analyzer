@@ -95,5 +95,17 @@
   "language": {
     "en": "English",
     "fr": "Français"
+  },
+  "sessionType": {
+    "long_run": "Sortie longue",
+    "race": "Course / Compétition",
+    "training": "Entraînement",
+    "recovery": "Récupération",
+    "intervals": "Fractionné",
+    "tempo": "Tempo",
+    "easy": "Sortie facile"
+  },
+  "subType": {
+    "backyard": "Backyard Ultra"
   }
 }

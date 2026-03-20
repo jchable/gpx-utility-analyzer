@@ -6,6 +6,7 @@ using GpxAnalyzer.Api.Data;
 using GpxAnalyzer.Api.Entities;
 using GpxAnalyzer.Api.Services.Storage;
 using GpxAnalyzer.Cli.Core.Stats;
+using Microsoft.EntityFrameworkCore;
 
 public class ActivityProcessingService
 {
@@ -167,6 +168,23 @@ public class ActivityProcessingService
                     activity.ActivityType = detection.ActivityType;
                     activity.DetectedSubType = detection.SubType;
                 }
+
+                // Phase C: estimate calories using athlete profile
+                var profile = await _db.AthleteProfiles.FirstOrDefaultAsync(p => p.UserId == userId, ct);
+                var (kcal, method) = CalorieCalculator.Compute(
+                    activity.ActivityType,
+                    stats.MovingTime.Seconds,
+                    stats.ElevationGainM,
+                    stats.TotalDistanceKm,
+                    stats.AvgMovingSpeedKmh,
+                    stats.HeartRate?.AvgBpm,
+                    profile?.WeightKg,
+                    profile?.Sex,
+                    profile?.Age);
+                activity.EstimatedCalories = kcal > 0 ? kcal : null;
+                activity.CalorieMethod = kcal > 0 ? method : null;
+                _logger.LogInformation("[{Id}] Calories estimated: {Kcal:F0} kcal (method={Method})",
+                    activityId, kcal, method);
             }
             finally
             {

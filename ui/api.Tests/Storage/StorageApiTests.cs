@@ -10,6 +10,7 @@ namespace GpxAnalyzer.Api.Tests.Storage;
 /// works correctly end-to-end via the activities API.
 /// Tests use LocalStorageService (backed by a temp directory in ApiFactory).
 /// </summary>
+[Collection("Integration")]
 public class StorageApiTests : IAsyncLifetime
 {
     private readonly ApiFactory _factory = new();

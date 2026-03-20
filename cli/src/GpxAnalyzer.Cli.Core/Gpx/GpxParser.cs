@@ -34,7 +34,6 @@ public static class GpxParser
     {
         Name = trk.Element(ns + "name")?.Value ?? "",
         Desc = trk.Element(ns + "desc")?.Value ?? "",
-        Type = trk.Element(ns + "type")?.Value,
         Segments = trk.Elements(ns + "trkseg").Select(seg => ParseSegment(seg, ns)).ToList()
     };
 
@@ -63,29 +62,6 @@ public static class GpxParser
             ? double.Parse(speedStr, CultureInfo.InvariantCulture)
             : 0.0;
 
-        // GPS quality fields
-        var fix = pt.Element(ns + "fix")?.Value;
-
-        int? satellites = null;
-        var satStr = pt.Element(ns + "sat")?.Value;
-        if (satStr != null && int.TryParse(satStr, out var satVal))
-            satellites = satVal;
-
-        double? hdop = null;
-        var hdopStr = pt.Element(ns + "hdop")?.Value;
-        if (hdopStr != null && double.TryParse(hdopStr, CultureInfo.InvariantCulture, out var hdopVal))
-            hdop = hdopVal;
-
-        double? vdop = null;
-        var vdopStr = pt.Element(ns + "vdop")?.Value;
-        if (vdopStr != null && double.TryParse(vdopStr, CultureInfo.InvariantCulture, out var vdopVal))
-            vdop = vdopVal;
-
-        double? pdop = null;
-        var pdopStr = pt.Element(ns + "pdop")?.Value;
-        if (pdopStr != null && double.TryParse(pdopStr, CultureInfo.InvariantCulture, out var pdopVal))
-            pdop = pdopVal;
-
         // Parse extensions
         var extElem = pt.Element(ns + "extensions");
         string? innerXml = null;
@@ -105,17 +81,10 @@ public static class GpxParser
             Ele = ele,
             Time = time,
             Speed = speed,
-            Fix = fix,
-            Satellites = satellites,
-            Hdop = hdop,
-            Vdop = vdop,
-            Pdop = pdop,
-            DeviceSpeed = ext.DeviceSpeed,
             HeartRate = ext.HeartRate,
             Cadence = ext.Cadence,
             Power = ext.Power,
-            Temperature = ext.Temperature,
-            WaterTemp = ext.WaterTemp
+            Temperature = ext.Temperature
         };
     }
 }

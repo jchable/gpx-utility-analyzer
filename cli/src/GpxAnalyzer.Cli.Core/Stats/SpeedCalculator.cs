@@ -108,63 +108,16 @@ public static class SpeedCalculator
     }
 
     /// <summary>
-    /// Default rolling window for smoothed max speed (seconds).
-    /// 30s is standard for running/hiking; reduces GPS noise while capturing real bursts.
+    /// Returns the maximum calculated speed from enriched points.
     /// </summary>
-    public const int DefaultMaxSpeedWindowS = 30;
-
-    /// <summary>
-    /// Returns the maximum smoothed speed over a rolling time window.
-    /// Uses distance-over-time for each window (not average of instantaneous speeds)
-    /// to correctly handle variable recording intervals.
-    /// Falls back to instantaneous max for very short tracks.
-    /// </summary>
-    public static double MaxSpeedFromPoints(List<TrackPoint> points, int windowSeconds = DefaultMaxSpeedWindowS)
+    public static double MaxSpeedFromPoints(List<TrackPoint> points)
     {
-        if (points.Count < 2)
-            return 0;
-
-        // For very short tracks or window=0, use instantaneous max
-        double trackDuration = (points[^1].Time - points[0].Time).TotalSeconds;
-        if (windowSeconds <= 0 || trackDuration < windowSeconds * 2)
-        {
-            double max = 0;
-            for (int i = 0; i < points.Count; i++)
-            {
-                if (points[i].CalcSpeed > max)
-                    max = points[i].CalcSpeed;
-            }
-            return max;
-        }
-
-        // Sliding window: for each point, find the window [i..j] where
-        // time(j) - time(i) >= windowSeconds, compute distance/time.
-        double maxSmoothed = 0;
-        int j = 0;
-
+        double max = 0;
         for (int i = 0; i < points.Count; i++)
         {
-            // Advance j until window is at least windowSeconds wide
-            while (j < points.Count - 1 &&
-                   (points[j].Time - points[i].Time).TotalSeconds < windowSeconds)
-            {
-                j++;
-            }
-
-            double dt = (points[j].Time - points[i].Time).TotalSeconds;
-            if (dt < windowSeconds * 0.5)
-                continue; // Window too short (e.g., near end of track)
-
-            // Sum distance within window
-            double dist = 0;
-            for (int k = i + 1; k <= j; k++)
-                dist += points[k].DistFromPrev;
-
-            double speed = dist / dt;
-            if (speed > maxSmoothed)
-                maxSmoothed = speed;
+            if (points[i].CalcSpeed > max)
+                max = points[i].CalcSpeed;
         }
-
-        return maxSmoothed;
+        return max;
     }
 }

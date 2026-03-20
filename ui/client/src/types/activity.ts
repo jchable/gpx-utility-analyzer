@@ -2,6 +2,9 @@ export interface ActivityListItem {
   id: string;
   name: string;
   activityType: string;
+  detectedSubType?: string;
+  sessionType?: string;
+  tags?: string[];
   startTime: string;
   distanceKm: number;
   elevationGainM: number;
@@ -23,6 +26,13 @@ export interface ActivityDetail {
   source: string;
   status: string;
   errorMessage?: string;
+  detectedSubType?: string;
+  description?: string;
+  perceivedExertion?: number;
+  tags?: string[];
+  sessionType?: string;
+  estimatedCalories?: number;
+  calorieMethod?: 'hr' | 'met';
   stats?: GpxStats;
   aiReport?: TrackReport;
   createdAt: string;

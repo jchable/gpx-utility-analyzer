@@ -46,13 +46,10 @@ public static class AnomalyCorrector
     /// Recalculates distance and speed stats after corrections were applied.
     /// Does NOT re-run the full pipeline — only updates affected summary fields.
     /// </summary>
-    public static void RecalculateStats(List<TrackPoint> points, Summary s, double maxReasonableSpeed = 0)
+    public static void RecalculateStats(List<TrackPoint> points, Summary s)
     {
         // Re-enrich speeds and distances
         SpeedCalculator.EnrichPoints(points);
-
-        // Re-clamp speed artifacts (EnrichPoints overwrites clamped values)
-        SpeedCalculator.ClampSpeeds(points, maxReasonableSpeed);
 
         // Override DistFromPrev for corrected GPS frozen sections:
         // Linear lat/lon interpolation doesn't recover loop-course distance,
