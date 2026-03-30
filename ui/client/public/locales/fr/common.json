@@ -4,8 +4,9 @@
     "dashboard": "Tableau de bord",
     "activities": "Activités",
     "upload": "Import",
-    "predict": "Planificateur",
     "routes": "Mes Tracés",
+    "racePlans": "Plans de course",
+    "nutritionCatalogue": "Nutrition",
     "integrations": "Intégrations",
     "profile": "Profil",
     "settings": "Paramètres"

@@ -151,15 +151,6 @@
     "recovered": "récupérés",
     "infoHidden": "notices mineures masquées"
   },
-  "predict": {
-    "title": "Planificateur de parcours",
-    "description": "Importez une trace GPX pour obtenir des estimations d'effort sans créer d'activité.",
-    "dropZone": "Déposez un fichier GPX ici ou cliquez pour parcourir",
-    "dropActive": "Déposez le fichier !",
-    "hint": "Fichiers GPX avec ou sans horodatage acceptés.",
-    "analyzing": "Analyse du parcours...",
-    "results": "Résultats de l'analyse"
-  },
   "enrichment": {
     "title": "Détails de l'activité",
     "label": {

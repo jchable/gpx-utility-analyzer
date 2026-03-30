@@ -151,15 +151,6 @@
     "recovered": "recovered",
     "infoHidden": "minor notices hidden"
   },
-  "predict": {
-    "title": "Route Planner",
-    "description": "Upload a GPX route to get effort estimates without creating an activity.",
-    "dropZone": "Drop a GPX file here or click to browse",
-    "dropActive": "Drop the file!",
-    "hint": "GPX files with or without timestamps are supported.",
-    "analyzing": "Analyzing route...",
-    "results": "Analysis Results"
-  },
   "enrichment": {
     "title": "Activity Details",
     "label": {

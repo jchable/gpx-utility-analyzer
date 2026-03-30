@@ -188,12 +188,6 @@ export interface AnomalyItem {
   was_corrected: boolean;
 }
 
-export interface PredictResult {
-  stats: GpxStats;
-  profile: ProfilePoint[] | null;
-  track: { type: string; coordinates: number[][] } | null;
-}
-
 export interface ProfilePoint {
   distance: number;     // km cumulative
   elevation: number;    // metres

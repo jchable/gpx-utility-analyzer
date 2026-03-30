@@ -4,8 +4,9 @@
     "dashboard": "Dashboard",
     "activities": "Activities",
     "upload": "Upload",
-    "predict": "Route Planner",
     "routes": "My Routes",
+    "racePlans": "Race Plans",
+    "nutritionCatalogue": "Nutrition",
     "integrations": "Integrations",
     "profile": "Profile",
     "settings": "Settings"

@@ -4,13 +4,14 @@ import {
   LayoutDashboard,
   Activity,
   Upload,
-  Map,
   Route,
   Link,
   Settings,
   User,
   ChevronLeft,
   ChevronRight,
+  Flag,
+  Apple,
 } from 'lucide-react';
 import { useState } from 'react';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -21,8 +22,9 @@ const navItems = [
   { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard },
   { to: '/activities', labelKey: 'nav.activities', icon: Activity },
   { to: '/upload', labelKey: 'nav.upload', icon: Upload },
-  { to: '/predict', labelKey: 'nav.predict', icon: Map },
   { to: '/routes', labelKey: 'nav.routes', icon: Route },
+  { to: '/race-plans', labelKey: 'nav.racePlans', icon: Flag },
+  { to: '/race-plans/nutrition', labelKey: 'nav.nutritionCatalogue', icon: Apple },
   { to: '/integrations', labelKey: 'nav.integrations', icon: Link },
   { to: '/profile', labelKey: 'nav.profile', icon: User },
   { to: '/settings', labelKey: 'nav.settings', icon: Settings },

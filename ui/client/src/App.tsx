@@ -9,12 +9,16 @@ const ActivityDetail = lazy(() => import('./pages/ActivityDetail'));
 const UploadPage = lazy(() => import('./pages/UploadPage'));
 const Integrations = lazy(() => import('./pages/Integrations'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
-const RoutePlannerPage = lazy(() => import('./pages/RoutePlannerPage'));
 const RoutesPage = lazy(() => import('./pages/RoutesPage'));
 const EditorPage = lazy(() => import('./pages/EditorPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const RacePlansPage = lazy(() => import('./pages/RacePlansPage'));
+const RacePlanDetailPage = lazy(() => import('./pages/RacePlanDetailPage'));
+const RacePlanPrintPage = lazy(() => import('./pages/RacePlanPrintPage'));
+const NutritionCataloguePage = lazy(() => import('./pages/NutritionCataloguePage'));
+const SharedRacePlanPage = lazy(() => import('./pages/SharedRacePlanPage'));
 
 function PageLoader() {
   return (
@@ -31,6 +35,7 @@ export default function App() {
         {/* Public routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/share/race-plan/:token" element={<SharedRacePlanPage />} />
 
         {/* Protected routes */}
         <Route
@@ -44,12 +49,24 @@ export default function App() {
           <Route path="/activities" element={<ActivityList />} />
           <Route path="/activities/:id" element={<ActivityDetail />} />
           <Route path="/upload" element={<UploadPage />} />
-          <Route path="/predict" element={<RoutePlannerPage />} />
           <Route path="/routes" element={<RoutesPage />} />
+          <Route path="/race-plans" element={<RacePlansPage />} />
+          <Route path="/race-plans/nutrition" element={<NutritionCataloguePage />} />
+          <Route path="/race-plans/:id" element={<RacePlanDetailPage />} />
           <Route path="/integrations" element={<Integrations />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
         </Route>
+
+        {/* Print page — full-screen, no Layout wrapper, but still protected */}
+        <Route
+          path="/race-plans/:id/print"
+          element={
+            <ProtectedRoute>
+              <RacePlanPrintPage />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Editor pages — full-screen, no Layout wrapper, but still protected */}
         <Route
