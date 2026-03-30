@@ -42,7 +42,7 @@ function formatImpactTime(seconds: number): string {
   return `${Math.round(abs)}s`;
 }
 
-export default function AnomalyBanner({ report }: { report: AnomalyReport }) {
+export default function AnomalyBanner({ report, onFixAnomalies }: { report: AnomalyReport; onFixAnomalies?: () => void }) {
   const { t } = useTranslation('activities');
   const [expanded, setExpanded] = useState(false);
 
@@ -97,6 +97,21 @@ export default function AnomalyBanner({ report }: { report: AnomalyReport }) {
           {report.correction_applied && (
             <span className="text-green-400">{t('anomaly.corrected')}</span>
           )}
+        </div>
+      )}
+
+      {/* Fix button — shown when critical anomalies exist and not yet corrected */}
+      {onFixAnomalies && report.critical_count > 0 && !report.correction_applied && (
+        <div className="mt-3 ml-8">
+          <button
+            onClick={(e) => { e.stopPropagation(); onFixAnomalies(); }}
+            className="px-3 py-1.5 rounded-lg bg-orange-600/80 hover:bg-orange-500 text-white text-xs font-medium transition-colors flex items-center gap-1.5"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
+            </svg>
+            {t('anomaly.fixButton')}
+          </button>
         </div>
       )}
 

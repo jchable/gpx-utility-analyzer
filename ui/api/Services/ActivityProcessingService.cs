@@ -93,12 +93,22 @@ public class ActivityProcessingService
                     }
                 }
 
+                // Consume fix-anomalies flag (one-shot)
+                bool? fixAnomaliesOverride = null;
+                if (activity.FixAnomaliesOnNextRun)
+                {
+                    fixAnomaliesOverride = true;
+                    activity.FixAnomaliesOnNextRun = false;
+                    await _db.SaveChangesAsync(ct);
+                    _logger.LogInformation("[{Id}] Fix-anomalies requested for this run", activityId);
+                }
+
                 // Create temp export directory for the processed GPX
                 var exportDir = Path.Combine(Path.GetTempPath(), $"gpx-export-{Guid.NewGuid()}");
                 Directory.CreateDirectory(exportDir);
 
                 var stepSw = Stopwatch.StartNew();
-                var stats = await _analysisService.AnalyzeAsync(userId, gpxToAnalyze, activity.ActivityType, exportDir, ct);
+                var stats = await _analysisService.AnalyzeAsync(userId, gpxToAnalyze, activity.ActivityType, exportDir, fixAnomaliesOverride, ct);
                 stepSw.Stop();
 
                 _logger.LogInformation("[{Id}] GPX analysis completed in {Elapsed:F1}s — {Distance:F1} km, D+{Gain:F0}m, D-{Loss:F0}m, moving {MovingTime}",

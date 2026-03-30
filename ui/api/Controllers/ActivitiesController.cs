@@ -287,6 +287,35 @@ public class ActivitiesController : ControllerBase
     }
 
     /// <summary>
+    /// Re-triggers full processing with anomaly correction enabled.
+    /// Sets FixAnomaliesOnNextRun = true so the pipeline runs with --fix-anomalies.
+    /// </summary>
+    [HttpPost("{id:guid}/fix-anomalies")]
+    public async Task<IActionResult> FixAnomalies(Guid id)
+    {
+        var activity = await _db.Activities.FindAsync(id);
+        if (activity is null || activity.UserId != User.GetUserId()) return NotFound();
+
+        var language = Request.Headers.AcceptLanguage.FirstOrDefault()?.Split(',')[0]?.Trim() ?? "en";
+        if (language.Length > 2) language = language[..2];
+
+        activity.FixAnomaliesOnNextRun = true;
+        activity.Status = ProcessingStatus.Pending;
+        activity.ErrorMessage = null;
+        activity.AiReportJson = null;
+        activity.ProfileJson = null;
+        activity.TrackGeoJson = null;
+        activity.SplitsJson = null;
+        activity.Language = language;
+        activity.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        await _processingChannel.Writer.WriteAsync((id, User.GetUserId()));
+
+        return Accepted();
+    }
+
+    /// <summary>
     /// Ephemeral route prediction — analyzes a GPX file without storing it.
     /// Returns stats, effort metrics, profile, and track GeoJSON.
     /// </summary>
@@ -313,7 +342,7 @@ public class ActivitiesController : ControllerBase
             }
 
             // Analyze with enriched export
-            var stats = await _analysisService.AnalyzeAsync(tempFile, exportDir);
+            var stats = await _analysisService.AnalyzeAsync(tempFile, exportDir: exportDir);
 
             // Compute profile from enriched GPX
             var enrichedFile = Directory.GetFiles(exportDir, "*_processed.gpx").FirstOrDefault();

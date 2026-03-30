@@ -29,10 +29,10 @@ public class GpxAnalysisService
         ["swim"] = StopDetector.PresetSwimming,
     };
 
-    public async Task<GpxStats> AnalyzeAsync(string gpxFilePath, string? activityType = null, string? exportDir = null, CancellationToken ct = default)
-        => await AnalyzeAsync(null, gpxFilePath, activityType, exportDir, ct);
+    public async Task<GpxStats> AnalyzeAsync(string gpxFilePath, string? activityType = null, string? exportDir = null, bool? fixAnomaliesOverride = null, CancellationToken ct = default)
+        => await AnalyzeAsync(null, gpxFilePath, activityType, exportDir, fixAnomaliesOverride, ct);
 
-    public async Task<GpxStats> AnalyzeAsync(Guid? userId, string gpxFilePath, string? activityType = null, string? exportDir = null, CancellationToken ct = default)
+    public async Task<GpxStats> AnalyzeAsync(Guid? userId, string gpxFilePath, string? activityType = null, string? exportDir = null, bool? fixAnomaliesOverride = null, CancellationToken ct = default)
     {
         var defaultPreset = userId.HasValue
             ? await _settings.GetAsync(userId.Value, "GpxCli:DefaultPreset", "trail") ?? "trail"
@@ -49,7 +49,7 @@ public class GpxAnalysisService
         var fixAnomaliesStr = userId.HasValue
             ? await _settings.GetAsync(userId.Value, "GpxCli:FixAnomalies")
             : await _settings.GetAsync("GpxCli:FixAnomalies");
-        var fixAnomalies = bool.TryParse(fixAnomaliesStr, out var fa) && fa;
+        var fixAnomalies = fixAnomaliesOverride ?? (bool.TryParse(fixAnomaliesStr, out var fa) && fa);
 
         _logger.LogInformation("Analyzing {File} (preset={Preset}, smoothing={Smoothing}, trackSmoothing={TrackSmoothing})",
             gpxFilePath, preset, smoothing, trackSmoothing);

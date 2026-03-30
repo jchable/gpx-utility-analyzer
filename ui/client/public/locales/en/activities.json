@@ -144,7 +144,8 @@
     "info": "info",
     "distanceImpact": "Distance impact",
     "timeImpact": "Time impact",
-    "corrected": "Corrected"
+    "corrected": "Corrected",
+    "fixButton": "Fix track"
   },
   "predict": {
     "title": "Route Planner",

@@ -177,6 +177,11 @@ export default function ActivityDetail() {
     }
   };
 
+  const handleFixAnomalies = async () => {
+    await api.fixAnomalies(activity.id);
+    await queryClient.invalidateQueries({ queryKey: ['activity', id] });
+  };
+
   const handleEditAsRoute = async () => {
     setIsCreatingRoute(true);
     try {
@@ -311,7 +316,10 @@ export default function ActivityDetail() {
 
       {/* Anomaly Banner */}
       {stats?.anomalies && stats.anomalies.total_count > 0 && (
-        <AnomalyBanner report={stats.anomalies} />
+        <AnomalyBanner
+          report={stats.anomalies}
+          onFixAnomalies={settings?.analysis?.fixAnomalies ? undefined : handleFixAnomalies}
+        />
       )}
 
       {/* Key Stats */}
@@ -368,72 +376,72 @@ export default function ActivityDetail() {
         />
       )}
 
-      {/* Ratio Gauges */}
+      {/* Performance Stats — gauges + stat cards in one unified grid */}
       {stats && (
         <div>
           <h2 className="text-xl font-semibold text-content mb-4">{t('detail.performanceStats')}</h2>
-          <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
+            {/* Radial gauges — span 2 rows on large screens */}
             <RadialStat
               label={t('detail.movingRatio')}
               value={`${movingPct}`}
               unit="%"
               percentage={movingPct}
               color="#aa88ff"
+              className="lg:row-span-2 h-full"
             />
             <ElevationGauge
               gain={stats.elevation_gain_m}
               loss={stats.elevation_loss_m}
               label={t('detail.elevationChange')}
               unitLabel={tc('unit.meters')}
+              className="lg:row-span-2 h-full"
             />
-          </div>
-        </div>
-      )}
 
-      {/* Extended Stats */}
-      {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-surface-card rounded-xl p-4 border border-border">
-            <p className="text-xs text-content-muted mb-1">{t('detail.maxSpeed')}</p>
-            <p className="text-lg font-bold text-content">{stats.max_speed_kmh.toFixed(1)} {tc('unit.kmh')}</p>
-          </div>
-          <div className="bg-surface-card rounded-xl p-4 border border-border">
-            <p className="text-xs text-content-muted mb-1">{t('detail.maxElevation')}</p>
-            <p className="text-lg font-bold text-content">{Math.round(stats.max_elevation_m)} {tc('unit.m')}</p>
-          </div>
-          <div className="bg-surface-card rounded-xl p-4 border border-border">
-            <p className="text-xs text-content-muted mb-1">{t('detail.minElevation')}</p>
-            <p className="text-lg font-bold text-content">{Math.round(stats.min_elevation_m)} {tc('unit.m')}</p>
-          </div>
-          <div className="bg-surface-card rounded-xl p-4 border border-border">
-            <p className="text-xs text-content-muted mb-1">{t('detail.stoppedTime')}</p>
-            <p className="text-lg font-bold text-content">{formatDuration(stats.stopped_time.seconds, tc)}</p>
-          </div>
-          <div className="bg-surface-card rounded-xl p-4 border border-border">
-            <p className="text-xs text-content-muted mb-1">{t('detail.stops')}</p>
-            <p className="text-lg font-bold text-content">{stats.stop_count}</p>
-          </div>
-          <div className="bg-surface-card rounded-xl p-4 border border-border">
-            <p className="text-xs text-content-muted mb-1">{t('detail.pointsPerKm')}</p>
-            <p className="text-lg font-bold text-content">{Math.round(stats.points_per_km)}</p>
-          </div>
-          {stats.power && (
-            <div className="bg-surface-card rounded-xl p-4 border border-border">
-              <p className="text-xs text-content-muted mb-1">{t('detail.avgPower')}</p>
-              <p className="text-lg font-bold text-yellow-400">{Math.round(stats.power.avg_watts)} {tc('unit.watts')}</p>
+            {/* Stat cards — 2 columns × 2 rows on the right */}
+            <div className="bg-surface-card rounded-xl p-4 border border-border flex flex-col justify-center">
+              <p className="text-xs text-content-muted mb-1">{t('detail.maxSpeed')}</p>
+              <p className="text-lg font-bold text-content">{stats.max_speed_kmh.toFixed(1)} {tc('unit.kmh')}</p>
             </div>
-          )}
-          {stats.cadence && (() => {
-            const isFootActivity = ['run', 'trail', 'hike', 'walk'].includes(activity.activityType);
-            const cadenceValue = isFootActivity ? stats.cadence!.avg_rpm * 2 : stats.cadence!.avg_rpm;
-            const cadenceUnit = isFootActivity ? tc('unit.spm') : tc('unit.rpm');
-            return (
-              <div className="bg-surface-card rounded-xl p-4 border border-border">
-                <p className="text-xs text-content-muted mb-1">{t('detail.avgCadence')}</p>
-                <p className="text-lg font-bold text-blue-400">{Math.round(cadenceValue)} {cadenceUnit}</p>
+            <div className="bg-surface-card rounded-xl p-4 border border-border flex flex-col justify-center">
+              <p className="text-xs text-content-muted mb-2">{t('detail.elevationGain')} / {t('detail.minElevation')}</p>
+              <div className="flex flex-col gap-1">
+                <p className="text-sm font-bold text-accent-green">▲ {Math.round(stats.max_elevation_m)} {tc('unit.m')}</p>
+                <p className="text-sm font-bold text-content-muted">▼ {Math.round(stats.min_elevation_m)} {tc('unit.m')}</p>
               </div>
-            );
-          })()}
+            </div>
+            {stats.power ? (
+              <div className="bg-surface-card rounded-xl p-4 border border-border flex flex-col justify-center">
+                <p className="text-xs text-content-muted mb-1">{t('detail.avgPower')}</p>
+                <p className="text-lg font-bold text-yellow-400">{Math.round(stats.power.avg_watts)} {tc('unit.watts')}</p>
+              </div>
+            ) : (
+              <div className="bg-surface-card rounded-xl p-4 border border-border flex flex-col justify-center">
+                <p className="text-xs text-content-muted mb-1">{t('detail.avgHR')}</p>
+                <p className="text-lg font-bold text-rose-400">
+                  {stats.heart_rate ? `${Math.round(stats.heart_rate.avg_bpm)} bpm` : '—'}
+                </p>
+              </div>
+            )}
+            {stats.cadence ? (() => {
+              const isFootActivity = ['run', 'trail', 'hike', 'walk'].includes(activity.activityType);
+              const cadenceValue = isFootActivity ? stats.cadence!.avg_rpm * 2 : stats.cadence!.avg_rpm;
+              const cadenceUnit = isFootActivity ? tc('unit.spm') : tc('unit.rpm');
+              return (
+                <div className="bg-surface-card rounded-xl p-4 border border-border flex flex-col justify-center">
+                  <p className="text-xs text-content-muted mb-1">{t('detail.avgCadence')}</p>
+                  <p className="text-lg font-bold text-blue-400">{Math.round(cadenceValue)} {cadenceUnit}</p>
+                </div>
+              );
+            })() : (
+              <div className="bg-surface-card rounded-xl p-4 border border-border flex flex-col justify-center">
+                <p className="text-xs text-content-muted mb-1">{t('detail.maxHR')}</p>
+                <p className="text-lg font-bold text-rose-300">
+                  {stats.heart_rate ? `${Math.round(stats.heart_rate.max_bpm)} bpm` : '—'}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

@@ -37,4 +37,7 @@ public class Activity
     // Calories (calculé au processing)
     public double? EstimatedCalories { get; set; }
     public string? CalorieMethod { get; set; }     // "hr" | "met"
+
+    // Correction d'anomalies demandée pour le prochain run
+    public bool FixAnomaliesOnNextRun { get; set; }
 }

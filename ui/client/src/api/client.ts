@@ -134,6 +134,10 @@ export const api = {
     await fetchWithAuth(`/activities/${id}/reanalyze`, { method: 'POST' });
   },
 
+  fixAnomalies: async (id: string) => {
+    await fetchWithAuth(`/activities/${id}/fix-anomalies`, { method: 'POST' });
+  },
+
   updateActivity: (id: string, data: {
     activityType?: string;
     name?: string;
