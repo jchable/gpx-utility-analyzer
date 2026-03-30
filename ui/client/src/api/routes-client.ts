@@ -8,13 +8,23 @@ import type {
 } from '../types/route';
 
 const BASE = '/api';
+const TOKEN_KEY = 'gpx_access_token';
 
 function langHeaders(): Record<string, string> {
   return { 'Accept-Language': i18n.language || 'en' };
 }
 
+function authHeaders(): Record<string, string> {
+  const token = localStorage.getItem(TOKEN_KEY);
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+function allHeaders(): Record<string, string> {
+  return { ...langHeaders(), ...authHeaders() };
+}
+
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const headers = { ...langHeaders(), ...init?.headers };
+  const headers = { ...allHeaders(), ...init?.headers };
   const res = await fetch(`${BASE}${url}`, { cache: 'no-cache', ...init, headers });
   if (!res.ok) {
     let code = '';
@@ -55,14 +65,14 @@ export const routesApi = {
   autoSaveRoute: async (id: string, data: RouteAutoSaveRequest): Promise<void> => {
     const res = await fetch(`${BASE}/routes/${id}/autosave`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', ...langHeaders() },
+      headers: { 'Content-Type': 'application/json', ...allHeaders() },
       body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error(`Auto-save failed: ${res.status}`);
   },
 
   deleteRoute: async (id: string): Promise<void> => {
-    const res = await fetch(`${BASE}/routes/${id}`, { method: 'DELETE', headers: langHeaders() });
+    const res = await fetch(`${BASE}/routes/${id}`, { method: 'DELETE', headers: allHeaders() });
     if (!res.ok) throw new Error(`API error ${res.status}`);
   },
 
@@ -74,7 +84,7 @@ export const routesApi = {
     formData.append('file', file);
     const res = await fetch(`${BASE}/routes/import`, {
       method: 'POST',
-      headers: langHeaders(),
+      headers: allHeaders(),
       body: formData,
     });
     if (!res.ok) {

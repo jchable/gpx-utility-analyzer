@@ -245,7 +245,7 @@ export default function ProfilePage() {
               <p className="text-xs text-content-muted mb-3">{t('computed.hint')}</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <ReadOnlyField label={t('age')} value={profile.age} />
-                <ReadOnlyField label={t('bmi')} value={profile.bmi !== undefined ? Number(profile.bmi.toFixed(1)) : undefined} />
+                <ReadOnlyField label={t('bmi')} value={profile.bmi != null ? Number(profile.bmi.toFixed(1)) : undefined} />
                 <ReadOnlyField label={t('estimatedMaxHR')} value={profile.estimatedMaxHR} />
               </div>
             </div>

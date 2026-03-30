@@ -431,3 +431,4 @@ When you need up-to-date documentation for a library or framework (ASP.NET Core,
 - **EF Core migration rules**: NEVER edit migration `.cs` files manually. Always use `dotnet ef migrations add <Name>` to create and `dotnet ef migrations remove` to delete. If parallel branches created conflicting/empty migrations, use `remove` repeatedly to clean up, then re-add. If the dev DB is out of sync, wipe it (`rm data/gpxanalyzer.db`) and run `dotnet ef database update`. Check for pending changes with `dotnet ef migrations has-pending-model-changes`.
 - After changes, redeploy on compose (`docker compose up --build -d`) for the user to test.
 - At the end of a new feature, suggest to tracked only added or modified in this feature and in a second step to commit your work. Propose a commit message without git commit yourself.
+- **Commits**: do NOT add a `Co-Authored-By` trailer. Commit directly without any co-author line.
