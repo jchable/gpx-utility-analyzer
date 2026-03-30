@@ -318,6 +318,7 @@ export default function ActivityDetail() {
       {stats?.anomalies && stats.anomalies.total_count > 0 && (
         <AnomalyBanner
           report={stats.anomalies}
+          activityStatus={activity.status}
           onFixAnomalies={settings?.analysis?.fixAnomalies ? undefined : handleFixAnomalies}
         />
       )}

@@ -145,7 +145,11 @@
     "distanceImpact": "Impact distance",
     "timeImpact": "Impact temps",
     "corrected": "Corrigé",
-    "fixButton": "Corriger la trace"
+    "fixButton": "Corriger la trace",
+    "fixing": "Correction en cours...",
+    "trackCorrected": "Trace corrigée",
+    "recovered": "récupérés",
+    "infoHidden": "notices mineures masquées"
   },
   "predict": {
     "title": "Planificateur de parcours",

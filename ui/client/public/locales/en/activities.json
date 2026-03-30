@@ -145,7 +145,11 @@
     "distanceImpact": "Distance impact",
     "timeImpact": "Time impact",
     "corrected": "Corrected",
-    "fixButton": "Fix track"
+    "fixButton": "Fix track",
+    "fixing": "Fixing...",
+    "trackCorrected": "Track corrected",
+    "recovered": "recovered",
+    "infoHidden": "minor notices hidden"
   },
   "predict": {
     "title": "Route Planner",
