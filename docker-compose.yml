@@ -16,8 +16,8 @@ services:
       - Database__Provider=sqlite
       - Database__ConnectionStrings__Sqlite=Data Source=/app/data/gpxanalyzer.db
       - Storage__GpxDirectory=/app/data/gpx
-      # JWT Authentication
-      - Jwt__Secret=${JWT_SECRET:-REDACTED-JWT-SECRET}
+      # JWT Authentication — must be set in .env (≥32 chars)
+      - Jwt__Secret=${JWT_SECRET:?JWT_SECRET env var is required (≥32 chars)}
       # AI Provider — configure as needed
       - AiProvider__Name=openai
       - AiProvider__ApiKey=${AI_API_KEY:-}

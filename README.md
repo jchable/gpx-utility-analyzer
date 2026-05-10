@@ -50,6 +50,31 @@ REST API that orchestrates GPX analysis and AI reports with background processin
 dotnet run --project ui/api/GpxAnalyzer.Api.csproj    # http://localhost:5000
 ```
 
+##### Local configuration
+
+`appsettings.json` is committed without secrets. For local development, copy the example and fill in your own values:
+
+```bash
+cp ui/api/appsettings.Development.json.example ui/api/appsettings.Development.json
+```
+
+Required values:
+- `Jwt:Secret` — random string ≥32 characters (used to sign JWTs)
+- `AiProvider:ApiKey` — API key for the chosen provider (Gemini, OpenAI, Anthropic, etc.)
+- `Integrations:Strava:ClientId` / `ClientSecret` — only if you use Strava import
+
+`appsettings.Development.json` is gitignored. In production, prefer environment variables (`Jwt__Secret`, `AiProvider__ApiKey`, …) over a file.
+
+For Docker, create a `.env` file at the repo root:
+
+```env
+JWT_SECRET=<random-string-of-at-least-32-characters>
+AI_API_KEY=<your-ai-provider-api-key>
+AI_MODEL=gemini-2.5-flash
+STRAVA_CLIENT_ID=
+STRAVA_CLIENT_SECRET=
+```
+
 #### Client — [ui/client/](ui/client/) (React)
 
 Single-page application built with React 19, TypeScript 5.9, Vite 7 and TailwindCSS v4.

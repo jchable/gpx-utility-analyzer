@@ -21,7 +21,7 @@ All configuration is managed via ASP.NET Core's configuration system (`appsettin
     }
   },
   "Jwt": {
-    "Secret": "REDACTED-JWT-SECRET",
+    "Secret": "<random-string-of-at-least-32-characters>",
     "Issuer": "gpx-analyzer",
     "Audience": "gpx-analyzer-client",
     "AccessTokenExpirationMinutes": 60,
