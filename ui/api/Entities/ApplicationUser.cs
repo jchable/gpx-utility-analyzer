@@ -21,4 +21,6 @@ public class ApplicationUser : IdentityUser<Guid>
     public ICollection<Route> Routes { get; set; } = [];
     public ICollection<Integration> Integrations { get; set; } = [];
     public ICollection<RefreshToken> RefreshTokens { get; set; } = [];
+    public ICollection<RacePlan> RacePlans { get; set; } = [];
+    public ICollection<NutritionProduct> NutritionProducts { get; set; } = [];
 }

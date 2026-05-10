@@ -119,6 +119,8 @@ builder.Services.AddScoped<ProfileComputationService>();
 builder.Services.AddScoped<ActivityProcessingService>();
 builder.Services.AddScoped<RouteService>();
 builder.Services.AddScoped<RouteElevationService>();
+builder.Services.AddScoped<RacePlanService>();
+builder.Services.AddScoped<NutritionProductService>();
 
 // Routing service (ORS or OSRM based on config)
 var routingProvider = builder.Configuration["Routing:Provider"]?.ToLowerInvariant();
