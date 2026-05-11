@@ -7,8 +7,8 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const ActivityList = lazy(() => import('./pages/ActivityList'));
 const ActivityDetail = lazy(() => import('./pages/ActivityDetail'));
 const UploadPage = lazy(() => import('./pages/UploadPage'));
-const Integrations = lazy(() => import('./pages/Integrations'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const SystemSettingsPage = lazy(() => import('./pages/SystemSettingsPage'));
 const RoutesPage = lazy(() => import('./pages/RoutesPage'));
 const EditorPage = lazy(() => import('./pages/EditorPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
@@ -53,8 +53,8 @@ export default function App() {
           <Route path="/race-plans" element={<RacePlansPage />} />
           <Route path="/race-plans/nutrition" element={<NutritionCataloguePage />} />
           <Route path="/race-plans/:id" element={<RacePlanDetailPage />} />
-          <Route path="/integrations" element={<Integrations />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/system-settings" element={<SystemSettingsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
         </Route>
 

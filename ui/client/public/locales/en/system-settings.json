@@ -1,0 +1,31 @@
+{
+  "title": "System Settings",
+  "subtitle": "Platform-level configuration — admin access only.",
+  "integrationCredentials": "Integration Credentials",
+  "integrationCredentialsHint": "Register an OAuth application on each provider's developer portal to obtain these credentials.",
+  "stravaHint": "Create an app at developers.strava.com to get your Client ID and Secret.",
+  "garminHint": "Register an app at developer.garmin.com to get your Consumer Key and Secret.",
+  "clientId": "Client ID",
+  "clientSecret": "Client Secret",
+  "consumerKey": "Consumer Key",
+  "consumerSecret": "Consumer Secret",
+  "configured": "Configured",
+  "aiProvider": "AI Provider",
+  "aiProviderHint": "Configure the AI model used to generate activity analysis reports.",
+  "provider": "Provider",
+  "model": "Model",
+  "apiKey": "API Key",
+  "endpointOptional": "Endpoint (optional)",
+  "selectProvider": "Select provider...",
+  "placeholder": {
+    "stravaClientId": "Enter Strava Client ID",
+    "garminConsumerKey": "Enter Garmin Consumer Key",
+    "newSecret": "Enter new secret to update",
+    "newKey": "Enter new key to update",
+    "endpoint": "Custom endpoint URL"
+  },
+  "saveSettings": "Save Settings",
+  "saving": "Saving...",
+  "savedSuccess": "Settings saved successfully.",
+  "saveFailed": "Failed to save: {{message}}"
+}

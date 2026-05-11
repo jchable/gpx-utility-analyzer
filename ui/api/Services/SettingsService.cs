@@ -17,9 +17,8 @@ public class SettingsService : ISettingsService
 
     public async Task<string?> GetAsync(string key, string? fallback = null)
     {
-        // Global: look up setting where userId is null, then IConfiguration
-        var setting = await _db.Settings
-            .Where(s => s.UserId == null && s.Key == key)
+        var setting = await _db.GlobalSettings
+            .Where(s => s.Key == key)
             .Select(s => s.Value)
             .FirstOrDefaultAsync();
 
@@ -28,7 +27,6 @@ public class SettingsService : ISettingsService
 
     public async Task<string?> GetAsync(Guid userId, string key, string? fallback = null)
     {
-        // Per-user setting
         var userSetting = await _db.Settings
             .Where(s => s.UserId == userId && s.Key == key)
             .Select(s => s.Value)
@@ -36,9 +34,9 @@ public class SettingsService : ISettingsService
 
         if (userSetting is not null) return userSetting;
 
-        // Fall back to global setting (userId = null)
-        var globalSetting = await _db.Settings
-            .Where(s => s.UserId == null && s.Key == key)
+        // Fall back to global settings
+        var globalSetting = await _db.GlobalSettings
+            .Where(s => s.Key == key)
             .Select(s => s.Value)
             .FirstOrDefaultAsync();
 
@@ -59,12 +57,28 @@ public class SettingsService : ISettingsService
             }
             else
             {
-                _db.Settings.Add(new Setting
-                {
-                    UserId = userId,
-                    Key = key,
-                    Value = value,
-                });
+                _db.Settings.Add(new Setting { UserId = userId, Key = key, Value = value });
+            }
+        }
+
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task SetGlobalManyAsync(Dictionary<string, string> settings)
+    {
+        foreach (var (key, value) in settings)
+        {
+            var existing = await _db.GlobalSettings
+                .FirstOrDefaultAsync(s => s.Key == key);
+
+            if (existing is not null)
+            {
+                existing.Value = value;
+                existing.UpdatedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                _db.GlobalSettings.Add(new GlobalSetting { Key = key, Value = value });
             }
         }
 

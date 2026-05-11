@@ -5,8 +5,8 @@ import {
   Activity,
   Upload,
   Route,
-  Link,
   Settings,
+  Settings2,
   User,
   ChevronLeft,
   ChevronRight,
@@ -17,22 +17,26 @@ import { useState } from 'react';
 import LanguageSwitcher from './LanguageSwitcher';
 import ThemeSwitcher from './ThemeSwitcher';
 import UserMenu from './UserMenu';
+import { useAuth } from '../../contexts/AuthContext';
 
 const navItems = [
-  { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard },
-  { to: '/activities', labelKey: 'nav.activities', icon: Activity },
-  { to: '/upload', labelKey: 'nav.upload', icon: Upload },
-  { to: '/routes', labelKey: 'nav.routes', icon: Route },
-  { to: '/race-plans', labelKey: 'nav.racePlans', icon: Flag },
-  { to: '/race-plans/nutrition', labelKey: 'nav.nutritionCatalogue', icon: Apple },
-  { to: '/integrations', labelKey: 'nav.integrations', icon: Link },
-  { to: '/profile', labelKey: 'nav.profile', icon: User },
-  { to: '/settings', labelKey: 'nav.settings', icon: Settings },
+  { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard, adminOnly: false },
+  { to: '/activities', labelKey: 'nav.activities', icon: Activity, adminOnly: false },
+  { to: '/upload', labelKey: 'nav.upload', icon: Upload, adminOnly: false },
+  { to: '/routes', labelKey: 'nav.routes', icon: Route, adminOnly: false },
+  { to: '/race-plans', labelKey: 'nav.racePlans', icon: Flag, adminOnly: false },
+  { to: '/race-plans/nutrition', labelKey: 'nav.nutritionCatalogue', icon: Apple, adminOnly: false },
+  { to: '/profile', labelKey: 'nav.profile', icon: User, adminOnly: false },
+  { to: '/settings', labelKey: 'nav.settings', icon: Settings, adminOnly: false },
+  { to: '/system-settings', labelKey: 'nav.systemSettings', icon: Settings2, adminOnly: true },
 ];
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const { t } = useTranslation();
+  const { isAdmin } = useAuth();
+
+  const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin);
 
   return (
     <>
@@ -60,7 +64,7 @@ export default function Sidebar() {
 
         {/* Navigation links */}
         <nav className="flex-1 flex flex-col gap-1 px-2 py-4">
-          {navItems.map(({ to, labelKey, icon: Icon }) => (
+          {visibleItems.map(({ to, labelKey, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
@@ -102,7 +106,7 @@ export default function Sidebar() {
 
       {/* Mobile bottom navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-surface border-t border-border flex items-center justify-around px-2 py-1.5 safe-bottom">
-        {navItems.map(({ to, labelKey, icon: Icon }) => (
+        {visibleItems.map(({ to, labelKey, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}

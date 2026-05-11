@@ -21,6 +21,8 @@ public class SettingsController : ControllerBase
         _registry = registry;
     }
 
+    // ── User settings (analysis preferences) ────────────────────────────────
+
     [HttpGet]
     public async Task<ActionResult<AppSettingsDto>> GetSettings()
     {
@@ -36,27 +38,6 @@ public class SettingsController : ControllerBase
                 FixAnomalies = bool.TryParse(await _settings.GetAsync(userId, "GpxCli:FixAnomalies"), out var fix) && fix,
                 AutoDetectActivityType = bool.TryParse(await _settings.GetAsync(userId, "GpxCli:AutoDetectActivityType"), out var autoDetect) && autoDetect,
             },
-            AiProvider = new AiProviderSettingsDto
-            {
-                Name = await _settings.GetAsync(userId, "AiProvider:Name") ?? "",
-                HasApiKey = !string.IsNullOrEmpty(await _settings.GetAsync(userId, "AiProvider:ApiKey")),
-                Model = await _settings.GetAsync(userId, "AiProvider:Model") ?? "",
-                Endpoint = await _settings.GetAsync(userId, "AiProvider:Endpoint") ?? "",
-                AvailableProviders = _registry.AvailableProviders.ToList(),
-            },
-            Integrations = new IntegrationCredentialsDto
-            {
-                Strava = new StravaCredentialsDto
-                {
-                    ClientId = await _settings.GetAsync(userId, "Integrations:Strava:ClientId") ?? "",
-                    HasClientSecret = !string.IsNullOrEmpty(await _settings.GetAsync(userId, "Integrations:Strava:ClientSecret")),
-                },
-                Garmin = new GarminCredentialsDto
-                {
-                    ConsumerKey = await _settings.GetAsync(userId, "Integrations:Garmin:ConsumerKey") ?? "",
-                    HasConsumerSecret = !string.IsNullOrEmpty(await _settings.GetAsync(userId, "Integrations:Garmin:ConsumerSecret")),
-                },
-            },
         };
 
         return dto;
@@ -66,15 +47,59 @@ public class SettingsController : ControllerBase
     public async Task<IActionResult> UpdateSettings([FromBody] AppSettingsDto dto)
     {
         var userId = User.GetUserId();
-        var updates = new Dictionary<string, string>();
+        var updates = new Dictionary<string, string>
+        {
+            ["GpxCli:DefaultPreset"] = dto.Analysis.Preset,
+            ["GpxCli:DefaultSmoothing"] = dto.Analysis.Smoothing,
+            ["GpxCli:DefaultTrackSmoothing"] = dto.Analysis.TrackSmoothing,
+            ["GpxCli:ElevationAlgorithm"] = dto.Analysis.ElevationAlgorithm,
+            ["GpxCli:FixAnomalies"] = dto.Analysis.FixAnomalies.ToString().ToLowerInvariant(),
+            ["GpxCli:AutoDetectActivityType"] = dto.Analysis.AutoDetectActivityType.ToString().ToLowerInvariant(),
+        };
 
-        // Analysis settings
-        updates["GpxCli:DefaultPreset"] = dto.Analysis.Preset;
-        updates["GpxCli:DefaultSmoothing"] = dto.Analysis.Smoothing;
-        updates["GpxCli:DefaultTrackSmoothing"] = dto.Analysis.TrackSmoothing;
-        updates["GpxCli:ElevationAlgorithm"] = dto.Analysis.ElevationAlgorithm;
-        updates["GpxCli:FixAnomalies"] = dto.Analysis.FixAnomalies.ToString().ToLowerInvariant();
-        updates["GpxCli:AutoDetectActivityType"] = dto.Analysis.AutoDetectActivityType.ToString().ToLowerInvariant();
+        await _settings.SetManyAsync(userId, updates);
+        return NoContent();
+    }
+
+    // ── Global settings (admin only) ─────────────────────────────────────────
+
+    [HttpGet("global")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<GlobalSettingsDto>> GetGlobalSettings()
+    {
+        var dto = new GlobalSettingsDto
+        {
+            AiProvider = new AiProviderSettingsDto
+            {
+                Name = await _settings.GetAsync("AiProvider:Name") ?? "",
+                HasApiKey = !string.IsNullOrEmpty(await _settings.GetAsync("AiProvider:ApiKey")),
+                Model = await _settings.GetAsync("AiProvider:Model") ?? "",
+                Endpoint = await _settings.GetAsync("AiProvider:Endpoint") ?? "",
+                AvailableProviders = _registry.AvailableProviders.ToList(),
+            },
+            Integrations = new IntegrationCredentialsDto
+            {
+                Strava = new StravaCredentialsDto
+                {
+                    ClientId = await _settings.GetAsync("Integrations:Strava:ClientId") ?? "",
+                    HasClientSecret = !string.IsNullOrEmpty(await _settings.GetAsync("Integrations:Strava:ClientSecret")),
+                },
+                Garmin = new GarminCredentialsDto
+                {
+                    ConsumerKey = await _settings.GetAsync("Integrations:Garmin:ConsumerKey") ?? "",
+                    HasConsumerSecret = !string.IsNullOrEmpty(await _settings.GetAsync("Integrations:Garmin:ConsumerSecret")),
+                },
+            },
+        };
+
+        return dto;
+    }
+
+    [HttpPut("global")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> UpdateGlobalSettings([FromBody] GlobalSettingsDto dto)
+    {
+        var updates = new Dictionary<string, string>();
 
         // AI Provider
         if (!string.IsNullOrEmpty(dto.AiProvider.Name))
@@ -85,7 +110,7 @@ public class SettingsController : ControllerBase
             updates["AiProvider:Model"] = dto.AiProvider.Model;
         updates["AiProvider:Endpoint"] = dto.AiProvider.Endpoint;
 
-        // Strava credentials (write secret only if non-empty)
+        // Strava credentials
         if (!string.IsNullOrEmpty(dto.Integrations.Strava.ClientId))
             updates["Integrations:Strava:ClientId"] = dto.Integrations.Strava.ClientId;
         if (!string.IsNullOrEmpty(dto.Integrations.Strava.ClientSecret))
@@ -97,8 +122,7 @@ public class SettingsController : ControllerBase
         if (!string.IsNullOrEmpty(dto.Integrations.Garmin.ConsumerSecret))
             updates["Integrations:Garmin:ConsumerSecret"] = dto.Integrations.Garmin.ConsumerSecret;
 
-        await _settings.SetManyAsync(userId, updates);
-
+        await _settings.SetGlobalManyAsync(updates);
         return NoContent();
     }
 

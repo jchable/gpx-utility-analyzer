@@ -7,9 +7,9 @@
     "routes": "Mes Tracés",
     "racePlans": "Plans de course",
     "nutritionCatalogue": "Nutrition",
-    "integrations": "Intégrations",
     "profile": "Profil",
-    "settings": "Paramètres"
+    "settings": "Paramètres",
+    "systemSettings": "Paramètres système"
   },
   "sidebar": {
     "expand": "Développer la barre latérale",

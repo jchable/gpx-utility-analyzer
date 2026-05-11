@@ -231,9 +231,12 @@ export interface AthleteSettings {
 
 export interface AppSettings {
   analysis: AnalysisSettings;
+  athlete?: AthleteSettings;
+}
+
+export interface GlobalAppSettings {
   aiProvider: AiProviderSettings;
   integrations: IntegrationCredentials;
-  athlete?: AthleteSettings;
 }
 
 export interface AnalysisSettings {

@@ -1,5 +1,5 @@
 import i18n from '../i18n';
-import type { ActivityListItem, ActivityDetail, DashboardSummary, IntegrationInfo, AppSettings, ProfilePoint, SplitsData, UserProfile, UpdateProfile } from '../types/activity';
+import type { ActivityListItem, ActivityDetail, DashboardSummary, IntegrationInfo, AppSettings, GlobalAppSettings, ProfilePoint, SplitsData, UserProfile, UpdateProfile } from '../types/activity';
 
 const BASE = '/api';
 
@@ -187,7 +187,7 @@ export const api = {
     await fetchWithAuth(`/integrations/${provider}`, { method: 'DELETE' });
   },
 
-  // Settings
+  // Settings (user-scoped: analysis preferences)
   getSettings: async (): Promise<AppSettings> => {
     const [settings, profile] = await Promise.all([
       fetchJson<AppSettings>('/settings'),
@@ -207,6 +207,21 @@ export const api = {
 
   updateSettings: async (settings: AppSettings): Promise<void> => {
     const res = await fetchWithAuth('/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(settings),
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`API error ${res.status}: ${text}`);
+    }
+  },
+
+  // Global settings (admin only: AI provider + integration credentials)
+  getGlobalSettings: () => fetchJson<GlobalAppSettings>('/settings/global'),
+
+  updateGlobalSettings: async (settings: GlobalAppSettings): Promise<void> => {
+    const res = await fetchWithAuth('/settings/global', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(settings),

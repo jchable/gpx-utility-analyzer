@@ -7,9 +7,9 @@
     "routes": "My Routes",
     "racePlans": "Race Plans",
     "nutritionCatalogue": "Nutrition",
-    "integrations": "Integrations",
     "profile": "Profile",
-    "settings": "Settings"
+    "settings": "Settings",
+    "systemSettings": "System Settings"
   },
   "sidebar": {
     "expand": "Expand sidebar",

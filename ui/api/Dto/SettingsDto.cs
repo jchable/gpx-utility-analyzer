@@ -1,8 +1,14 @@
 namespace GpxAnalyzer.Api.Dto;
 
+/// <summary>User-scoped settings (analysis preferences).</summary>
 public class AppSettingsDto
 {
     public AnalysisSettingsDto Analysis { get; set; } = new();
+}
+
+/// <summary>Global settings (admin only): AI provider + integration credentials.</summary>
+public class GlobalSettingsDto
+{
     public AiProviderSettingsDto AiProvider { get; set; } = new();
     public IntegrationCredentialsDto Integrations { get; set; } = new();
 }

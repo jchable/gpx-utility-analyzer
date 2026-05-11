@@ -9,4 +9,6 @@ public interface ISettingsService
     Task<string?> GetAsync(Guid userId, string key, string? fallback = null);
 
     Task SetManyAsync(Guid userId, Dictionary<string, string> settings);
+
+    Task SetGlobalManyAsync(Dictionary<string, string> settings);
 }

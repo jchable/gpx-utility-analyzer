@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
-import type { AppSettings, UpdateProfile } from '../types/activity';
+import type { AppSettings, GlobalAppSettings, UpdateProfile } from '../types/activity';
 
 export function useDashboard() {
   return useQuery({
@@ -75,6 +75,23 @@ export function useUpdateSettings() {
     mutationFn: (settings: AppSettings) => api.updateSettings(settings),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings'] });
+    },
+  });
+}
+
+export function useGlobalSettings() {
+  return useQuery({
+    queryKey: ['settings', 'global'],
+    queryFn: api.getGlobalSettings,
+  });
+}
+
+export function useUpdateGlobalSettings() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (settings: GlobalAppSettings) => api.updateGlobalSettings(settings),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['settings', 'global'] });
     },
   });
 }
