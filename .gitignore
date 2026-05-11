@@ -17,6 +17,7 @@ Desktop.ini
 
 .idea/
 .vscode/
+.claude/settings.local.json
 *.swp
 *.swo
 *~.nib
