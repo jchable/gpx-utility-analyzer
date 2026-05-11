@@ -1,0 +1,22 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Debug",
+      "Microsoft.AspNetCore": "Information"
+    }
+  },
+  "AiProvider": {
+    "Name": "gemini",
+    "ApiKey": "<your-ai-provider-api-key>",
+    "Model": "gemini-2.5-flash"
+  },
+  "Jwt": {
+    "Secret": "<random-string-of-at-least-32-characters>"
+  },
+  "Integrations": {
+    "Strava": {
+      "ClientId": "<your-strava-client-id>",
+      "ClientSecret": "<your-strava-client-secret>"
+    }
+  }
+}

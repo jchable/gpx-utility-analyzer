@@ -1,18 +1,16 @@
 namespace GpxAnalyzer.Api.Dto;
 
+/// <summary>User-scoped settings (analysis preferences).</summary>
 public class AppSettingsDto
 {
-    public AthleteSettingsDto Athlete { get; set; } = new();
     public AnalysisSettingsDto Analysis { get; set; } = new();
-    public AiProviderSettingsDto AiProvider { get; set; } = new();
-    public IntegrationCredentialsDto Integrations { get; set; } = new();
 }
 
-public class AthleteSettingsDto
+/// <summary>Global settings (admin only): AI provider + integration credentials.</summary>
+public class GlobalSettingsDto
 {
-    public int? MaxHeartRate { get; set; }
-    public int? Age { get; set; }
-    public int? Ftp { get; set; }
+    public AiProviderSettingsDto AiProvider { get; set; } = new();
+    public IntegrationCredentialsDto Integrations { get; set; } = new();
 }
 
 public class AnalysisSettingsDto
@@ -21,6 +19,8 @@ public class AnalysisSettingsDto
     public string Smoothing { get; set; } = "medium";
     public string TrackSmoothing { get; set; } = "medium";
     public string ElevationAlgorithm { get; set; } = "threshold";
+    public bool FixAnomalies { get; set; }
+    public bool AutoDetectActivityType { get; set; }
 }
 
 public class AiProviderSettingsDto

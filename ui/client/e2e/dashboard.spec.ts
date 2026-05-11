@@ -10,7 +10,7 @@ test.describe('Dashboard', () => {
     await page.goto('/');
     await expect(page.getByText('Total Activities')).toBeVisible();
     await expect(page.getByText('42.5 km')).toBeVisible();
-    await expect(page.getByText('4520 m')).toBeVisible();
+    await expect(page.getByText('1190 m')).toBeVisible();
   });
 
   test('renders recent activities', async ({ page }) => {

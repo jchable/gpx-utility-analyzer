@@ -3,51 +3,53 @@ namespace GpxAnalyzer.Api.Services;
 using GpxAnalyzer.Api.Data;
 using GpxAnalyzer.Api.Entities;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 
 public class SettingsService : ISettingsService
 {
-    private const string CacheKey = "settings:all";
-    private static readonly TimeSpan CacheDuration = TimeSpan.FromSeconds(60);
-
-    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly AppDbContext _db;
     private readonly IConfiguration _configuration;
-    private readonly IMemoryCache _cache;
 
-    public SettingsService(
-        IServiceScopeFactory scopeFactory,
-        IConfiguration configuration,
-        IMemoryCache cache)
+    public SettingsService(AppDbContext db, IConfiguration configuration)
     {
-        _scopeFactory = scopeFactory;
+        _db = db;
         _configuration = configuration;
-        _cache = cache;
     }
 
     public async Task<string?> GetAsync(string key, string? fallback = null)
     {
-        var all = await GetAllFromDbAsync();
-        if (all.TryGetValue(key, out var value))
-            return value;
+        var setting = await _db.GlobalSettings
+            .Where(s => s.Key == key)
+            .Select(s => s.Value)
+            .FirstOrDefaultAsync();
 
-        // Fall back to IConfiguration (appsettings.json)
-        var configValue = _configuration[key];
-        return configValue ?? fallback;
+        return setting ?? _configuration[key] ?? fallback;
     }
 
-    public async Task SetAsync(string key, string value)
+    public async Task<string?> GetAsync(Guid userId, string key, string? fallback = null)
     {
-        await SetManyAsync(new Dictionary<string, string> { [key] = value });
+        var userSetting = await _db.Settings
+            .Where(s => s.UserId == userId && s.Key == key)
+            .Select(s => s.Value)
+            .FirstOrDefaultAsync();
+
+        if (userSetting is not null) return userSetting;
+
+        // Fall back to global settings
+        var globalSetting = await _db.GlobalSettings
+            .Where(s => s.Key == key)
+            .Select(s => s.Value)
+            .FirstOrDefaultAsync();
+
+        return globalSetting ?? _configuration[key] ?? fallback;
     }
 
-    public async Task SetManyAsync(Dictionary<string, string> settings)
+    public async Task SetManyAsync(Guid userId, Dictionary<string, string> settings)
     {
-        using var scope = _scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
         foreach (var (key, value) in settings)
         {
-            var existing = await db.Settings.FindAsync(key);
+            var existing = await _db.Settings
+                .FirstOrDefaultAsync(s => s.UserId == userId && s.Key == key);
+
             if (existing is not null)
             {
                 existing.Value = value;
@@ -55,34 +57,31 @@ public class SettingsService : ISettingsService
             }
             else
             {
-                db.Settings.Add(new Setting
-                {
-                    Key = key,
-                    Value = value,
-                });
+                _db.Settings.Add(new Setting { UserId = userId, Key = key, Value = value });
             }
         }
 
-        await db.SaveChangesAsync();
-        _cache.Remove(CacheKey);
+        await _db.SaveChangesAsync();
     }
 
-    public async Task<Dictionary<string, string>> GetAllAsync()
+    public async Task SetGlobalManyAsync(Dictionary<string, string> settings)
     {
-        return await GetAllFromDbAsync();
-    }
+        foreach (var (key, value) in settings)
+        {
+            var existing = await _db.GlobalSettings
+                .FirstOrDefaultAsync(s => s.Key == key);
 
-    private async Task<Dictionary<string, string>> GetAllFromDbAsync()
-    {
-        if (_cache.TryGetValue(CacheKey, out Dictionary<string, string>? cached) && cached is not null)
-            return cached;
+            if (existing is not null)
+            {
+                existing.Value = value;
+                existing.UpdatedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                _db.GlobalSettings.Add(new GlobalSetting { Key = key, Value = value });
+            }
+        }
 
-        using var scope = _scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-        var settings = await db.Settings.ToDictionaryAsync(s => s.Key, s => s.Value);
-
-        _cache.Set(CacheKey, settings, CacheDuration);
-        return settings;
+        await _db.SaveChangesAsync();
     }
 }

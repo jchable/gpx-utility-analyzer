@@ -1,0 +1,21 @@
+{
+  "id": "test-user-id",
+  "email": "test@gpx-analyzer.test",
+  "displayName": "Test User",
+  "bio": "Trail runner and hiker",
+  "city": "Chamonix",
+  "preferredUnits": "metric",
+  "language": "en",
+  "profilePhotoPath": null,
+  "weightKg": 70,
+  "heightCm": 175,
+  "sex": "male",
+  "dateOfBirth": "1990-05-15",
+  "maxHeartRate": 185,
+  "restingHeartRate": 52,
+  "ftp": 250,
+  "vo2Max": 55,
+  "age": 35,
+  "estimatedMaxHR": 183,
+  "bmi": 22.9
+}

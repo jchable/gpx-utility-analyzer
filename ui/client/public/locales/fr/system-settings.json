@@ -1,0 +1,31 @@
+{
+  "title": "Paramètres système",
+  "subtitle": "Configuration de la plateforme — accès administrateur uniquement.",
+  "integrationCredentials": "Identifiants d'intégration",
+  "integrationCredentialsHint": "Enregistrez une application OAuth sur le portail développeur de chaque fournisseur pour obtenir ces identifiants.",
+  "stravaHint": "Créez une app sur developers.strava.com pour obtenir votre Client ID et Secret.",
+  "garminHint": "Enregistrez une app sur developer.garmin.com pour obtenir votre Consumer Key et Secret.",
+  "clientId": "Client ID",
+  "clientSecret": "Client Secret",
+  "consumerKey": "Consumer Key",
+  "consumerSecret": "Consumer Secret",
+  "configured": "Configuré",
+  "aiProvider": "Fournisseur IA",
+  "aiProviderHint": "Configurez le modèle IA utilisé pour générer les rapports d'analyse d'activités.",
+  "provider": "Fournisseur",
+  "model": "Modèle",
+  "apiKey": "Clé API",
+  "endpointOptional": "Endpoint (optionnel)",
+  "selectProvider": "Sélectionner un fournisseur...",
+  "placeholder": {
+    "stravaClientId": "Entrez le Client ID Strava",
+    "garminConsumerKey": "Entrez la Consumer Key Garmin",
+    "newSecret": "Entrez un nouveau secret",
+    "newKey": "Entrez une nouvelle clé",
+    "endpoint": "URL du endpoint personnalisé"
+  },
+  "saveSettings": "Enregistrer les paramètres",
+  "saving": "Enregistrement...",
+  "savedSuccess": "Paramètres enregistrés avec succès.",
+  "saveFailed": "Échec de l'enregistrement : {{message}}"
+}

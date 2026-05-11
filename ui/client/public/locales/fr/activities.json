@@ -15,6 +15,8 @@
     "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cette activité ?",
     "gpx": "GPX",
     "reanalyze": "Réanalyser",
+    "changeTypeTitle": "Changer le type d'activité",
+    "changeTypeConfirm": "Changer le type en « {{type}} » relancera l'analyse. Continuer ?",
     "reanalyzing": "Réanalyse...",
     "deleting": "Suppression...",
     "performanceStats": "Statistiques de performance",
@@ -134,13 +136,53 @@
     "steepRatio": "Sections raides",
     "elevPerKm": "D+ / km"
   },
-  "predict": {
-    "title": "Planificateur de parcours",
-    "description": "Importez une trace GPX pour obtenir des estimations d'effort sans créer d'activité.",
-    "dropZone": "Déposez un fichier GPX ici ou cliquez pour parcourir",
-    "dropActive": "Déposez le fichier !",
-    "hint": "Fichiers GPX avec ou sans horodatage acceptés.",
-    "analyzing": "Analyse du parcours...",
-    "results": "Résultats de l'analyse"
+  "anomaly": {
+    "title": "Qualité des données",
+    "qualityScore": "Qualité des données",
+    "critical": "critique(s)",
+    "warning": "avertissement(s)",
+    "info": "info",
+    "distanceImpact": "Impact distance",
+    "timeImpact": "Impact temps",
+    "corrected": "Corrigé",
+    "fixButton": "Corriger la trace",
+    "fixing": "Correction en cours...",
+    "trackCorrected": "Trace corrigée",
+    "recovered": "récupérés",
+    "infoHidden": "notices mineures masquées"
+  },
+  "enrichment": {
+    "title": "Détails de l'activité",
+    "label": {
+      "description": "Description",
+      "perceivedExertion": "Effort perçu (RPE)",
+      "tags": "Tags",
+      "sessionType": "Type de séance",
+      "calories": "Calories estimées",
+      "detectedSubType": "Sous-type détecté"
+    },
+    "placeholder": {
+      "description": "Ajoutez une description pour cette activité...",
+      "tags": "Ajouter des tags (Entrée pour valider)"
+    },
+    "sessionTypeNone": "Aucun",
+    "rpe": {
+      "1": "Très facile",
+      "2": "Facile",
+      "3": "Léger",
+      "4": "Modéré",
+      "5": "Assez dur",
+      "6": "Dur",
+      "7": "Très dur",
+      "8": "Très très dur",
+      "9": "Extrêmement dur",
+      "10": "Effort maximal"
+    },
+    "calorieMethod": {
+      "hr": "Basé sur la fréquence cardiaque",
+      "met": "Estimé (MET)"
+    },
+    "saving": "Enregistrement...",
+    "saved": "Enregistré"
   }
 }

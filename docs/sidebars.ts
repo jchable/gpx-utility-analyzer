@@ -22,6 +22,7 @@ const sidebars: SidebarsConfig = {
         },
         'cli/elevation',
         'cli/biometrics',
+        'cli/anomalies',
         'cli/recipes',
       ],
     },
@@ -31,6 +32,16 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: [
         'ai-analyzer/index',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Web App (ASP.NET + React)',
+      collapsed: true,
+      items: [
+        'web-app/index',
+        'web-app/deployment',
+        'web-app/configuration',
       ],
     },
   ],

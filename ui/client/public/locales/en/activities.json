@@ -15,6 +15,8 @@
     "deleteConfirm": "Are you sure you want to delete this activity?",
     "gpx": "GPX",
     "reanalyze": "Reanalyze",
+    "changeTypeTitle": "Change Activity Type",
+    "changeTypeConfirm": "Changing the type to \"{{type}}\" will re-analyze the activity. Continue?",
     "reanalyzing": "Reanalyzing...",
     "deleting": "Deleting...",
     "performanceStats": "Performance Stats",
@@ -134,13 +136,53 @@
     "steepRatio": "Steep Sections",
     "elevPerKm": "D+ / km"
   },
-  "predict": {
-    "title": "Route Planner",
-    "description": "Upload a GPX route to get effort estimates without creating an activity.",
-    "dropZone": "Drop a GPX file here or click to browse",
-    "dropActive": "Drop the file!",
-    "hint": "GPX files with or without timestamps are supported.",
-    "analyzing": "Analyzing route...",
-    "results": "Analysis Results"
+  "anomaly": {
+    "title": "Data Quality",
+    "qualityScore": "Data Quality",
+    "critical": "critical",
+    "warning": "warnings",
+    "info": "info",
+    "distanceImpact": "Distance impact",
+    "timeImpact": "Time impact",
+    "corrected": "Corrected",
+    "fixButton": "Fix track",
+    "fixing": "Fixing...",
+    "trackCorrected": "Track corrected",
+    "recovered": "recovered",
+    "infoHidden": "minor notices hidden"
+  },
+  "enrichment": {
+    "title": "Activity Details",
+    "label": {
+      "description": "Description",
+      "perceivedExertion": "Perceived Exertion (RPE)",
+      "tags": "Tags",
+      "sessionType": "Session Type",
+      "calories": "Estimated Calories",
+      "detectedSubType": "Detected Sub-type"
+    },
+    "placeholder": {
+      "description": "Add a description for this activity...",
+      "tags": "Add tags (press Enter)"
+    },
+    "sessionTypeNone": "None",
+    "rpe": {
+      "1": "Very easy",
+      "2": "Easy",
+      "3": "Light",
+      "4": "Moderate",
+      "5": "Somewhat hard",
+      "6": "Hard",
+      "7": "Very hard",
+      "8": "Very very hard",
+      "9": "Extremely hard",
+      "10": "Max effort"
+    },
+    "calorieMethod": {
+      "hr": "Heart rate based",
+      "met": "Estimated (MET)"
+    },
+    "saving": "Saving...",
+    "saved": "Saved"
   }
 }

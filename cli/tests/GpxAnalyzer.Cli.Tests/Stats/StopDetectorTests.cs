@@ -73,11 +73,174 @@ public class StopDetectorTests
     }
 
     [Fact]
-    public void Presets_ContainAllThree()
+    public void Presets_ContainAllSix()
     {
         Assert.True(StopDetector.Presets.ContainsKey("hiking"));
         Assert.True(StopDetector.Presets.ContainsKey("trail"));
         Assert.True(StopDetector.Presets.ContainsKey("cycling"));
+        Assert.True(StopDetector.Presets.ContainsKey("running"));
+        Assert.True(StopDetector.Presets.ContainsKey("swimming"));
+        Assert.True(StopDetector.Presets.ContainsKey("walking"));
+    }
+
+    [Theory]
+    [InlineData("hiking", 0.2, 180, 30)]
+    [InlineData("trail", 0.3, 120, 50)]
+    [InlineData("cycling", 1.0, 30, 100)]
+    [InlineData("running", 0.5, 300, 150)]
+    [InlineData("swimming", 0.15, 120, 100)]
+    [InlineData("walking", 0.2, 180, 30)]
+    public void Presets_HaveExpectedValues(string preset, double maxSpeed, double minDurationSec, double maxDistance)
+    {
+        var cfg = StopDetector.Presets[preset];
+        Assert.Equal(maxSpeed, cfg.MaxSpeed);
+        Assert.Equal(TimeSpan.FromSeconds(minDurationSec), cfg.MinDuration);
+        Assert.Equal(maxDistance, cfg.MaxDistance);
+    }
+
+    [Fact]
+    public void DetectStops_RunningPreset_IgnoresShortPauses()
+    {
+        var points = new List<TrackPoint>();
+        var baseTime = new DateTime(2024, 1, 1, 10, 0, 0, DateTimeKind.Utc);
+
+        // Moving
+        for (int i = 0; i < 5; i++)
+            points.Add(new TrackPoint { Lat = 48.0 + i * 0.001, Lon = 2.0, CalcSpeed = 3.0, Time = baseTime.AddMinutes(i) });
+
+        // Short pause (3 min) — should NOT be detected with running preset (MinDuration=5min)
+        for (int i = 0; i < 4; i++)
+            points.Add(new TrackPoint { Lat = 48.004, Lon = 2.0, CalcSpeed = 0.05, Time = baseTime.AddMinutes(5 + i) });
+
+        // Resume
+        for (int i = 0; i < 3; i++)
+            points.Add(new TrackPoint { Lat = 48.004 + (i + 1) * 0.001, Lon = 2.0, CalcSpeed = 3.0, Time = baseTime.AddMinutes(9 + i) });
+
+        var cfg = StopDetector.Presets["running"];
+        var stops = StopDetector.DetectStops(points, cfg);
+        Assert.Empty(stops); // 3 min pause is below running's 5 min threshold
+    }
+
+    [Fact]
+    public void DetectStops_GracePeriod_BridgesShortSpike()
+    {
+        var points = new List<TrackPoint>();
+        var baseTime = new DateTime(2024, 1, 1, 10, 0, 0, DateTimeKind.Utc);
+
+        // Moving (3 points)
+        for (int i = 0; i < 3; i++)
+            points.Add(new TrackPoint { Lat = 48.0 + i * 0.001, Lon = 2.0, CalcSpeed = 3.0, Time = baseTime.AddSeconds(i * 10) });
+
+        // Stopped for 5 min (every 10s = 30 points)
+        for (int i = 0; i < 30; i++)
+            points.Add(new TrackPoint { Lat = 48.003, Lon = 2.0, CalcSpeed = 0.05, Time = baseTime.AddSeconds(30 + i * 10) });
+
+        // GPS spike for 15s (2 points within 30s grace — last slow was at 30+290=320s)
+        points.Add(new TrackPoint { Lat = 48.003, Lon = 2.0, CalcSpeed = 0.5, Time = baseTime.AddSeconds(335) });
+        points.Add(new TrackPoint { Lat = 48.003, Lon = 2.0, CalcSpeed = 0.5, Time = baseTime.AddSeconds(345) });
+
+        // Stopped again for 5 min (every 10s = 30 points)
+        for (int i = 0; i < 30; i++)
+            points.Add(new TrackPoint { Lat = 48.003, Lon = 2.0, CalcSpeed = 0.05, Time = baseTime.AddSeconds(350 + i * 10) });
+
+        // Resume moving
+        for (int i = 0; i < 3; i++)
+            points.Add(new TrackPoint { Lat = 48.003 + (i + 1) * 0.001, Lon = 2.0, CalcSpeed = 3.0, Time = baseTime.AddSeconds(650 + i * 10) });
+
+        var cfg = new StopConfig { MaxSpeed = 0.3, MinDuration = TimeSpan.FromMinutes(5), MaxDistance = 150, GracePeriod = TimeSpan.FromSeconds(30) };
+        var stops = StopDetector.DetectStops(points, cfg);
+
+        // Should detect ONE stop (spike bridged by grace period), spanning ~10 minutes
+        Assert.Single(stops);
+        Assert.True(stops[0].Duration >= TimeSpan.FromMinutes(8));
+    }
+
+    [Fact]
+    public void DetectStops_GracePeriod_SplitsOnLongGap()
+    {
+        var points = new List<TrackPoint>();
+        var baseTime = new DateTime(2024, 1, 1, 10, 0, 0, DateTimeKind.Utc);
+
+        // Moving
+        for (int i = 0; i < 3; i++)
+            points.Add(new TrackPoint { Lat = 48.0 + i * 0.001, Lon = 2.0, CalcSpeed = 3.0, Time = baseTime.AddMinutes(i) });
+
+        // Stopped for 4 min
+        for (int i = 0; i < 5; i++)
+            points.Add(new TrackPoint { Lat = 48.003, Lon = 2.0, CalcSpeed = 0.05, Time = baseTime.AddMinutes(3 + i) });
+
+        // Fast movement for 60s (exceeds 30s grace period)
+        points.Add(new TrackPoint { Lat = 48.003, Lon = 2.0, CalcSpeed = 2.0, Time = baseTime.AddMinutes(8) });
+        points.Add(new TrackPoint { Lat = 48.004, Lon = 2.0, CalcSpeed = 2.0, Time = baseTime.AddMinutes(9) });
+
+        // Stopped again for 4 min
+        for (int i = 0; i < 5; i++)
+            points.Add(new TrackPoint { Lat = 48.004, Lon = 2.0, CalcSpeed = 0.05, Time = baseTime.AddMinutes(10 + i) });
+
+        // Resume moving
+        for (int i = 0; i < 3; i++)
+            points.Add(new TrackPoint { Lat = 48.004 + (i + 1) * 0.001, Lon = 2.0, CalcSpeed = 3.0, Time = baseTime.AddMinutes(15 + i) });
+
+        var cfg = new StopConfig { MaxSpeed = 0.3, MinDuration = TimeSpan.FromMinutes(3), MaxDistance = 150, GracePeriod = TimeSpan.FromSeconds(30) };
+        var stops = StopDetector.DetectStops(points, cfg);
+
+        // Should detect TWO stops (gap > grace period)
+        Assert.Equal(2, stops.Count);
+    }
+
+    [Fact]
+    public void MergeStops_MergesNearbyStops()
+    {
+        var points = new List<TrackPoint>();
+        var baseTime = new DateTime(2024, 1, 1, 10, 0, 0, DateTimeKind.Utc);
+
+        // Build points spanning 20 min
+        for (int i = 0; i <= 20; i++)
+            points.Add(new TrackPoint { Lat = 48.0, Lon = 2.0, CalcSpeed = 0, Time = baseTime.AddMinutes(i) });
+
+        var stops = new List<Stop>
+        {
+            new() { StartTime = baseTime, EndTime = baseTime.AddMinutes(5), Duration = TimeSpan.FromMinutes(5), Lat = 48.0, Lon = 2.0 },
+            new() { StartTime = baseTime.AddMinutes(6), EndTime = baseTime.AddMinutes(10), Duration = TimeSpan.FromMinutes(4), Lat = 48.0, Lon = 2.0 },
+        };
+        var cfg = new StopConfig { MaxSpeed = 0.3, MinDuration = TimeSpan.FromMinutes(3), MaxDistance = 150, MergeGap = TimeSpan.FromSeconds(90) };
+        var merged = StopDetector.MergeStops(stops, points, cfg);
+
+        Assert.Single(merged);
+        Assert.Equal(baseTime, merged[0].StartTime);
+        Assert.Equal(baseTime.AddMinutes(10), merged[0].EndTime);
+        Assert.Equal(TimeSpan.FromMinutes(10), merged[0].Duration);
+    }
+
+    [Fact]
+    public void MergeStops_KeepsDistantStopsSeparate()
+    {
+        var points = new List<TrackPoint>();
+        var baseTime = new DateTime(2024, 1, 1, 10, 0, 0, DateTimeKind.Utc);
+
+        for (int i = 0; i <= 20; i++)
+            points.Add(new TrackPoint { Lat = 48.0, Lon = 2.0, CalcSpeed = 0, Time = baseTime.AddMinutes(i) });
+
+        var stops = new List<Stop>
+        {
+            new() { StartTime = baseTime, EndTime = baseTime.AddMinutes(5), Duration = TimeSpan.FromMinutes(5), Lat = 48.0, Lon = 2.0 },
+            new() { StartTime = baseTime.AddMinutes(8), EndTime = baseTime.AddMinutes(15), Duration = TimeSpan.FromMinutes(7), Lat = 48.0, Lon = 2.0 },
+        };
+        var cfg = new StopConfig { MaxSpeed = 0.3, MinDuration = TimeSpan.FromMinutes(3), MaxDistance = 150, MergeGap = TimeSpan.FromSeconds(90) };
+        var merged = StopDetector.MergeStops(stops, points, cfg);
+
+        // Gap = 3 min > 90s → stays separate
+        Assert.Equal(2, merged.Count);
+    }
+
+    [Fact]
+    public void Presets_HaveDefaultGracePeriodAndMergeGap()
+    {
+        foreach (var (name, cfg) in StopDetector.Presets)
+        {
+            Assert.Equal(TimeSpan.FromSeconds(30), cfg.GracePeriod);
+            Assert.Equal(TimeSpan.FromSeconds(90), cfg.MergeGap);
+        }
     }
 
     [Fact]

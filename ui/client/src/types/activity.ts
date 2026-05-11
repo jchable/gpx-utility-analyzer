@@ -2,6 +2,9 @@ export interface ActivityListItem {
   id: string;
   name: string;
   activityType: string;
+  detectedSubType?: string;
+  sessionType?: string;
+  tags?: string[];
   startTime: string;
   distanceKm: number;
   elevationGainM: number;
@@ -23,6 +26,13 @@ export interface ActivityDetail {
   source: string;
   status: string;
   errorMessage?: string;
+  detectedSubType?: string;
+  description?: string;
+  perceivedExertion?: number;
+  tags?: string[];
+  sessionType?: string;
+  estimatedCalories?: number;
+  calorieMethod?: 'hr' | 'met';
   stats?: GpxStats;
   aiReport?: TrackReport;
   createdAt: string;
@@ -61,6 +71,7 @@ export interface GpxStats {
   cadence?: CadenceStats;
   temperature?: TemperatureStats;
   effort?: EffortStats;
+  anomalies?: AnomalyReport;
 }
 
 export interface DurationValue {
@@ -151,10 +162,30 @@ export interface TerrainDifficulty {
   elevation_per_km: number;
 }
 
-export interface PredictResult {
-  stats: GpxStats;
-  profile: ProfilePoint[] | null;
-  track: { type: string; coordinates: number[][] } | null;
+export interface AnomalyReport {
+  quality_score: number;
+  total_count: number;
+  info_count: number;
+  warning_count: number;
+  critical_count: number;
+  distance_impact_m: number;
+  time_impact_s: number;
+  correction_applied: boolean;
+  anomalies?: AnomalyItem[];
+}
+
+export interface AnomalyItem {
+  type: string;
+  category: string;
+  severity: string;
+  start_index: number;
+  end_index: number;
+  start_time?: string;
+  end_time?: string;
+  distance_impact_m: number;
+  time_impact_s: number;
+  description: string;
+  was_corrected: boolean;
 }
 
 export interface ProfilePoint {
@@ -177,6 +208,8 @@ export interface DashboardSummary {
   totalMovingTimeSeconds: number;
   activitiesThisMonth: number;
   distanceThisMonthKm: number;
+  elevationGainThisMonthM: number;
+  movingTimeThisMonthSeconds: number;
   recentActivities: ActivityListItem[];
   activityTypeBreakdown: Record<string, number>;
 }
@@ -188,17 +221,22 @@ export interface IntegrationInfo {
   connectedAt?: string;
 }
 
-export interface AppSettings {
-  athlete: AthleteSettings;
-  analysis: AnalysisSettings;
-  aiProvider: AiProviderSettings;
-  integrations: IntegrationCredentials;
-}
-
 export interface AthleteSettings {
   maxHeartRate?: number;
-  age?: number;
+  restingHeartRate?: number;
   ftp?: number;
+  vo2Max?: number;
+  age?: number;
+}
+
+export interface AppSettings {
+  analysis: AnalysisSettings;
+  athlete?: AthleteSettings;
+}
+
+export interface GlobalAppSettings {
+  aiProvider: AiProviderSettings;
+  integrations: IntegrationCredentials;
 }
 
 export interface AnalysisSettings {
@@ -206,6 +244,8 @@ export interface AnalysisSettings {
   smoothing: string;
   trackSmoothing: string;
   elevationAlgorithm: string;
+  fixAnomalies: boolean;
+  autoDetectActivityType: boolean;
 }
 
 export interface AiProviderSettings {
@@ -267,6 +307,44 @@ export interface ComputedZone {
   maxValue: number;
   durationSeconds: number;
   color: string;
+}
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  displayName: string;
+  bio?: string;
+  city?: string;
+  preferredUnits?: string;
+  language?: string;
+  profilePhotoPath?: string;
+  weightKg?: number;
+  heightCm?: number;
+  sex?: string;
+  dateOfBirth?: string;
+  maxHeartRate?: number;
+  restingHeartRate?: number;
+  ftp?: number;
+  vo2Max?: number;
+  age?: number;
+  estimatedMaxHR?: number;
+  bmi?: number;
+}
+
+export interface UpdateProfile {
+  displayName?: string;
+  bio?: string;
+  city?: string;
+  preferredUnits?: string;
+  language?: string;
+  weightKg?: number;
+  heightCm?: number;
+  sex?: string;
+  dateOfBirth?: string;
+  maxHeartRate?: number;
+  restingHeartRate?: number;
+  ftp?: number;
+  vo2Max?: number;
 }
 
 export const ACTIVITY_COLORS: Record<string, string> = {

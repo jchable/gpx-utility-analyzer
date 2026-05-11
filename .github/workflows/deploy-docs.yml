@@ -48,6 +48,21 @@ jobs:
       - name: Build website
         run: npm run build
 
+      - name: Checkout apt-repo branch
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          ref: apt-repo
+          path: apt-repo-content
+
+      - name: Include APT repo in deployment
+        working-directory: ${{ github.workspace }}
+        run: |
+          if [ -d apt-repo-content ]; then
+            mkdir -p docs/build/apt
+            cp -r apt-repo-content/. docs/build/apt/
+          fi
+
       - name: Upload Build Artifact
         uses: actions/upload-pages-artifact@v3
         with:

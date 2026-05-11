@@ -9,6 +9,63 @@ public static class GpxWriter
     private const string GpxaNs = "http://gpx-analyzer.io/extensions/v1";
     private const string GpxtpxNs = "http://www.garmin.com/xmlschemas/TrackPointExtension/v1";
 
+    /// <summary>
+    /// Writes a route GPX with track points and optional waypoints (POIs as &lt;wpt&gt;).
+    /// </summary>
+    public static void WriteRoute(Stream stream, string trackName, double[][] coordinates,
+        IReadOnlyList<(string Name, double Lon, double Lat, string? Type)>? waypoints = null)
+    {
+        var settings = new XmlWriterSettings
+        {
+            Indent = true,
+            IndentChars = "  ",
+            CloseOutput = false
+        };
+
+        using var w = XmlWriter.Create(stream, settings);
+
+        w.WriteStartDocument();
+        w.WriteStartElement("gpx", GpxNs);
+        w.WriteAttributeString("version", "1.1");
+        w.WriteAttributeString("creator", "gpx-analyzer");
+
+        // Waypoints (POIs)
+        if (waypoints is not null)
+        {
+            foreach (var wp in waypoints)
+            {
+                w.WriteStartElement("wpt", GpxNs);
+                w.WriteAttributeString("lat", wp.Lat.ToString(CultureInfo.InvariantCulture));
+                w.WriteAttributeString("lon", wp.Lon.ToString(CultureInfo.InvariantCulture));
+                w.WriteElementString("name", GpxNs, wp.Name);
+                if (wp.Type is not null)
+                    w.WriteElementString("type", GpxNs, wp.Type);
+                w.WriteEndElement(); // wpt
+            }
+        }
+
+        // Track
+        w.WriteStartElement("trk", GpxNs);
+        w.WriteElementString("name", GpxNs, trackName);
+
+        w.WriteStartElement("trkseg", GpxNs);
+
+        foreach (var coord in coordinates)
+        {
+            w.WriteStartElement("trkpt", GpxNs);
+            w.WriteAttributeString("lat", coord[1].ToString(CultureInfo.InvariantCulture));
+            w.WriteAttributeString("lon", coord[0].ToString(CultureInfo.InvariantCulture));
+            if (coord.Length > 2)
+                w.WriteElementString("ele", GpxNs, coord[2].ToString(CultureInfo.InvariantCulture));
+            w.WriteEndElement(); // trkpt
+        }
+
+        w.WriteEndElement(); // trkseg
+        w.WriteEndElement(); // trk
+        w.WriteEndElement(); // gpx
+        w.WriteEndDocument();
+    }
+
     public static void Write(string path, List<TrackPoint> points, string trackName)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path) ?? ".");

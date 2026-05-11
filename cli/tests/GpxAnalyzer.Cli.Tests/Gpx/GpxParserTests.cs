@@ -71,4 +71,68 @@ public class GpxParserTests
     {
         Assert.Throws<FileNotFoundException>(() => GpxParser.ParseFile("nonexistent.gpx"));
     }
+
+    [Fact]
+    public void ParseFile_WithTrackType_ParsesType()
+    {
+        var doc = GpxParser.ParseFile(TestDataPath("with-gps-quality.gpx"));
+        Assert.Equal("running", doc.Tracks[0].Type);
+    }
+
+    [Fact]
+    public void ParseFile_SmallGpx_TrackTypeIsNull()
+    {
+        var doc = GpxParser.ParseFile(TestDataPath("small.gpx"));
+        Assert.Null(doc.Tracks[0].Type);
+    }
+
+    [Fact]
+    public void ParseFile_WithGpsQuality_ParsesFix()
+    {
+        var doc = GpxParser.ParseFile(TestDataPath("with-gps-quality.gpx"));
+        var points = doc.AllPoints();
+        Assert.Equal("3d", points[0].Fix);
+        Assert.Equal("2d", points[2].Fix);
+    }
+
+    [Fact]
+    public void ParseFile_WithGpsQuality_ParsesSatellites()
+    {
+        var doc = GpxParser.ParseFile(TestDataPath("with-gps-quality.gpx"));
+        var points = doc.AllPoints();
+        Assert.Equal(12, points[0].Satellites);
+        Assert.Equal(4, points[2].Satellites);
+    }
+
+    [Fact]
+    public void ParseFile_WithGpsQuality_ParsesHdop()
+    {
+        var doc = GpxParser.ParseFile(TestDataPath("with-gps-quality.gpx"));
+        var points = doc.AllPoints();
+        Assert.Equal(0.8, points[0].Hdop);
+        Assert.Equal(8.0, points[2].Hdop);
+    }
+
+    [Fact]
+    public void ParseFile_WithGpsQuality_ParsesVdopAndPdop()
+    {
+        var doc = GpxParser.ParseFile(TestDataPath("with-gps-quality.gpx"));
+        var points = doc.AllPoints();
+        Assert.Equal(1.2, points[0].Vdop);
+        Assert.Equal(1.4, points[0].Pdop);
+        Assert.Null(points[2].Vdop);
+        Assert.Null(points[2].Pdop);
+    }
+
+    [Fact]
+    public void ParseFile_SmallGpx_GpsQualityFieldsAreNull()
+    {
+        var doc = GpxParser.ParseFile(TestDataPath("small.gpx"));
+        var points = doc.AllPoints();
+        Assert.Null(points[0].Fix);
+        Assert.Null(points[0].Satellites);
+        Assert.Null(points[0].Hdop);
+        Assert.Null(points[0].Vdop);
+        Assert.Null(points[0].Pdop);
+    }
 }

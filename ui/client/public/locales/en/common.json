@@ -4,9 +4,12 @@
     "dashboard": "Dashboard",
     "activities": "Activities",
     "upload": "Upload",
-    "predict": "Route Planner",
-    "integrations": "Integrations",
-    "settings": "Settings"
+    "routes": "My Routes",
+    "racePlans": "Race Plans",
+    "nutritionCatalogue": "Nutrition",
+    "profile": "Profile",
+    "settings": "Settings",
+    "systemSettings": "System Settings"
   },
   "sidebar": {
     "expand": "Expand sidebar",
@@ -36,6 +39,7 @@
     "bpm": "bpm",
     "watts": "W",
     "rpm": "rpm",
+    "spm": "spm",
     "kcal": "kcal",
     "minPerKm": "min/km",
     "kb": "KB"
@@ -50,7 +54,8 @@
     "next": "Next",
     "view": "View",
     "connect": "Connect",
-    "disconnect": "Disconnect"
+    "disconnect": "Disconnect",
+    "confirm": "Confirm"
   },
   "error": {
     "loadFailed": "Failed to load: {{message}}",
@@ -63,7 +68,8 @@
     "UNKNOWN_PROVIDER": "Unknown provider.",
     "MISSING_OAUTH_PARAMS": "Missing OAuth callback parameters.",
     "AI_PROVIDER_NOT_CONFIGURED": "AI provider not configured.",
-    "SPLITS_NOT_AVAILABLE": "Splits data not available. Reanalyze to compute."
+    "SPLITS_NOT_AVAILABLE": "Splits data not available. Reanalyze to compute.",
+    "EMPTY_GPX_FILE": "The GPX file is empty or contains no track points."
   },
   "duration": {
     "d": "d",
@@ -82,8 +88,25 @@
     "topo2d": "Topo 2D",
     "loadingTrack": "Loading track..."
   },
+  "theme": {
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark"
+  },
   "language": {
     "en": "English",
     "fr": "Français"
+  },
+  "sessionType": {
+    "long_run": "Long run",
+    "race": "Race",
+    "training": "Training",
+    "recovery": "Recovery",
+    "intervals": "Intervals",
+    "tempo": "Tempo",
+    "easy": "Easy run"
+  },
+  "subType": {
+    "backyard": "Backyard Ultra"
   }
 }

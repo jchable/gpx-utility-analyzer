@@ -1,3 +1,5 @@
+using GpxAnalyzer.Cli.Core.Anomaly;
+
 namespace GpxAnalyzer.Cli.Core.Stats;
 
 /// <summary>
@@ -40,4 +42,7 @@ public sealed class Summary
 
     // Effort metrics
     public EffortMetrics Effort { get; set; } = new();
+
+    // Anomaly report
+    public AnomalyReport? AnomalyReport { get; set; }
 }

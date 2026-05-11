@@ -8,7 +8,8 @@ WORKDIR /src
 COPY ai-analyzer/src/GpxAiAnalyzer.Core/GpxAiAnalyzer.Core.csproj ai-analyzer/src/GpxAiAnalyzer.Core/
 COPY cli/src/GpxAnalyzer.Cli.Core/GpxAnalyzer.Cli.Core.csproj cli/src/GpxAnalyzer.Cli.Core/
 COPY ui/api/GpxAnalyzer.Api.csproj ui/api/
-RUN dotnet restore ui/api/GpxAnalyzer.Api.csproj
+RUN --mount=type=cache,id=nuget,target=/root/.nuget/packages \
+    dotnet restore ui/api/GpxAnalyzer.Api.csproj
 
 # Copy source code
 COPY ai-analyzer/src/GpxAiAnalyzer.Core/ ai-analyzer/src/GpxAiAnalyzer.Core/
@@ -16,7 +17,8 @@ COPY cli/src/GpxAnalyzer.Cli.Core/ cli/src/GpxAnalyzer.Cli.Core/
 COPY ui/api/ ui/api/
 
 # Publish
-RUN dotnet publish ui/api/GpxAnalyzer.Api.csproj -c Release -o /app/publish --no-restore
+RUN --mount=type=cache,id=nuget,target=/root/.nuget/packages \
+    dotnet publish ui/api/GpxAnalyzer.Api.csproj -c Release -o /app/publish --no-restore
 
 # ============================================
 # Stage 2: Runtime

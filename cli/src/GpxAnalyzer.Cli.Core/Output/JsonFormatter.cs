@@ -1,10 +1,19 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
+using GpxAnalyzer.Cli.Core.Anomaly;
 using GpxAnalyzer.Cli.Core.Stats;
 
 namespace GpxAnalyzer.Cli.Core.Output;
 
 public sealed class JsonFormatter : IFormatter
 {
+    private readonly JsonSerializerOptions? _options;
+
+    public JsonFormatter(JsonSerializerOptions? options = null)
+    {
+        _options = options;
+    }
+
     public void Format(TextWriter writer, string filename, Summary s, StopConfig config)
     {
         var js = new JsonSummary
@@ -41,9 +50,11 @@ public sealed class JsonFormatter : IFormatter
             Cadence = MapCadence(s.Biometrics.Cadence),
             Temperature = MapTemperature(s.Biometrics.Temperature),
             Effort = MapEffort(s.Effort),
+            Anomalies = MapAnomalyReport(s.AnomalyReport),
         };
 
-        string json = JsonSerializer.Serialize(js, new JsonSerializerOptions { WriteIndented = true });
+        var opts = _options ?? new JsonSerializerOptions { WriteIndented = true };
+        string json = JsonSerializer.Serialize(js, opts);
         writer.WriteLine(json);
     }
 
@@ -102,6 +113,39 @@ public sealed class JsonFormatter : IFormatter
         if (temp == null) return null;
         return new JsonTemperature { AvgCelsius = temp.Avg, MinCelsius = temp.Min, MaxCelsius = temp.Max };
     }
+
+    private static JsonAnomalyReport? MapAnomalyReport(AnomalyReport? r)
+    {
+        if (r == null || r.IsClean) return null;
+        return new JsonAnomalyReport
+        {
+            QualityScore = r.QualityScore,
+            TotalCount = r.TotalCount,
+            InfoCount = r.InfoCount,
+            WarningCount = r.WarningCount,
+            CriticalCount = r.CriticalCount,
+            DistanceImpactM = r.TotalDistanceImpactM,
+            TimeImpactS = r.TotalTimeImpactS,
+            CorrectionApplied = r.CorrectionApplied,
+            Anomalies = r.Anomalies.Select(a => new JsonAnomaly
+            {
+                Type = ToSnakeCase(a.Type.ToString()),
+                Category = ToSnakeCase(a.Category.ToString()),
+                Severity = ToSnakeCase(a.Severity.ToString()),
+                StartIndex = a.StartIndex,
+                EndIndex = a.EndIndex,
+                StartTime = a.StartTime?.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                EndTime = a.EndTime?.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                DistanceImpactM = a.DistanceImpactM,
+                TimeImpactS = a.TimeImpactS,
+                Description = a.Description,
+                WasCorrected = a.WasCorrected,
+            }).ToList(),
+        };
+    }
+
+    internal static string ToSnakeCase(string name) =>
+        Regex.Replace(name, "(?<!^)([A-Z])", "_$1").ToLowerInvariant();
 
     private static JsonEffortMetrics MapEffort(EffortMetrics e) => new()
     {

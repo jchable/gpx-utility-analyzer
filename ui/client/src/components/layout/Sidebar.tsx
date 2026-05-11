@@ -4,46 +4,58 @@ import {
   LayoutDashboard,
   Activity,
   Upload,
-  Map,
-  Link,
+  Route,
   Settings,
+  Settings2,
+  User,
   ChevronLeft,
   ChevronRight,
+  Flag,
+  Apple,
 } from 'lucide-react';
 import { useState } from 'react';
 import LanguageSwitcher from './LanguageSwitcher';
+import ThemeSwitcher from './ThemeSwitcher';
+import UserMenu from './UserMenu';
+import { useAuth } from '../../contexts/AuthContext';
 
 const navItems = [
-  { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard },
-  { to: '/activities', labelKey: 'nav.activities', icon: Activity },
-  { to: '/upload', labelKey: 'nav.upload', icon: Upload },
-  { to: '/predict', labelKey: 'nav.predict', icon: Map },
-  { to: '/integrations', labelKey: 'nav.integrations', icon: Link },
-  { to: '/settings', labelKey: 'nav.settings', icon: Settings },
+  { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard, adminOnly: false },
+  { to: '/activities', labelKey: 'nav.activities', icon: Activity, adminOnly: false },
+  { to: '/upload', labelKey: 'nav.upload', icon: Upload, adminOnly: false },
+  { to: '/routes', labelKey: 'nav.routes', icon: Route, adminOnly: false },
+  { to: '/race-plans', labelKey: 'nav.racePlans', icon: Flag, adminOnly: false },
+  { to: '/race-plans/nutrition', labelKey: 'nav.nutritionCatalogue', icon: Apple, adminOnly: false },
+  { to: '/profile', labelKey: 'nav.profile', icon: User, adminOnly: false },
+  { to: '/settings', labelKey: 'nav.settings', icon: Settings, adminOnly: false },
+  { to: '/system-settings', labelKey: 'nav.systemSettings', icon: Settings2, adminOnly: true },
 ];
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const { t } = useTranslation();
+  const { isAdmin } = useAuth();
+
+  const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin);
 
   return (
     <>
       {/* Desktop sidebar */}
       <aside
-        className={`hidden md:flex flex-col bg-[#0f0f1a] border-r border-white/5 transition-all duration-300 ${
+        className={`hidden md:flex flex-col bg-surface border-r border-border transition-all duration-300 ${
           collapsed ? 'w-16' : 'w-64'
         } h-full`}
       >
         {/* Logo / brand */}
-        <div className="flex items-center justify-between h-16 px-4 border-b border-white/5">
+        <div className="flex items-center justify-between h-16 px-4 border-b border-border">
           {!collapsed && (
-            <span className="text-lg font-bold tracking-tight text-[#00d4ff]">
+            <span className="text-lg font-bold tracking-tight text-accent">
               {t('appName')}
             </span>
           )}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="p-1.5 rounded-lg text-[#a0a0b0] hover:text-white hover:bg-white/5 transition-colors"
+            className="p-1.5 rounded-lg text-content-muted hover:text-content hover:bg-surface-alt/50 transition-colors"
             aria-label={collapsed ? t('sidebar.expand') : t('sidebar.collapse')}
           >
             {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
@@ -52,7 +64,7 @@ export default function Sidebar() {
 
         {/* Navigation links */}
         <nav className="flex-1 flex flex-col gap-1 px-2 py-4">
-          {navItems.map(({ to, labelKey, icon: Icon }) => (
+          {visibleItems.map(({ to, labelKey, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
@@ -60,8 +72,8 @@ export default function Sidebar() {
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   isActive
-                    ? 'bg-[#00d4ff]/10 text-[#00d4ff]'
-                    : 'text-[#a0a0b0] hover:text-white hover:bg-white/5'
+                    ? 'bg-accent/10 text-accent'
+                    : 'text-content-muted hover:text-content hover:bg-surface-alt/50'
                 } ${collapsed ? 'justify-center' : ''}`
               }
             >
@@ -69,11 +81,11 @@ export default function Sidebar() {
                 <>
                   <Icon
                     size={20}
-                    className={isActive ? 'text-[#00d4ff]' : ''}
+                    className={isActive ? 'text-accent' : ''}
                   />
                   {!collapsed && <span>{t(labelKey)}</span>}
                   {isActive && !collapsed && (
-                    <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#00d4ff]" />
+                    <span className="ml-auto w-1.5 h-1.5 rounded-full bg-accent" />
                   )}
                 </>
               )}
@@ -82,17 +94,19 @@ export default function Sidebar() {
         </nav>
 
         {/* Footer */}
-        <div className="px-2 py-2 border-t border-white/5">
+        <div className="px-2 py-2 border-t border-border">
+          <UserMenu collapsed={collapsed} />
+          <ThemeSwitcher collapsed={collapsed} />
           <LanguageSwitcher collapsed={collapsed} />
           {!collapsed && (
-            <p className="text-xs text-[#a0a0b0]/60 px-3 py-1">v0.1.0</p>
+            <p className="text-xs text-content-muted/60 px-3 py-1">v0.1.0</p>
           )}
         </div>
       </aside>
 
       {/* Mobile bottom navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0f0f1a] border-t border-white/5 flex items-center justify-around px-2 py-1.5 safe-bottom">
-        {navItems.map(({ to, labelKey, icon: Icon }) => (
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-surface border-t border-border flex items-center justify-around px-2 py-1.5 safe-bottom">
+        {visibleItems.map(({ to, labelKey, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
@@ -100,8 +114,8 @@ export default function Sidebar() {
             className={({ isActive }) =>
               `flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 isActive
-                  ? 'text-[#00d4ff]'
-                  : 'text-[#a0a0b0] hover:text-white'
+                  ? 'text-accent'
+                  : 'text-content-muted hover:text-content'
               }`
             }
           >
@@ -109,13 +123,14 @@ export default function Sidebar() {
               <>
                 <Icon
                   size={20}
-                  className={isActive ? 'text-[#00d4ff]' : ''}
+                  className={isActive ? 'text-accent' : ''}
                 />
                 <span>{t(labelKey)}</span>
               </>
             )}
           </NavLink>
         ))}
+        <ThemeSwitcher mobile />
         <LanguageSwitcher mobile />
       </nav>
     </>

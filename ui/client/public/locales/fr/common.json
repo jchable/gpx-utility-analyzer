@@ -4,9 +4,12 @@
     "dashboard": "Tableau de bord",
     "activities": "Activités",
     "upload": "Import",
-    "predict": "Planificateur",
-    "integrations": "Intégrations",
-    "settings": "Paramètres"
+    "routes": "Mes Tracés",
+    "racePlans": "Plans de course",
+    "nutritionCatalogue": "Nutrition",
+    "profile": "Profil",
+    "settings": "Paramètres",
+    "systemSettings": "Paramètres système"
   },
   "sidebar": {
     "expand": "Développer la barre latérale",
@@ -36,6 +39,7 @@
     "bpm": "bpm",
     "watts": "W",
     "rpm": "rpm",
+    "spm": "pas/min",
     "kcal": "kcal",
     "minPerKm": "min/km",
     "kb": "Ko"
@@ -50,7 +54,8 @@
     "next": "Suivant",
     "view": "Voir",
     "connect": "Connecter",
-    "disconnect": "Déconnecter"
+    "disconnect": "Déconnecter",
+    "confirm": "Confirmer"
   },
   "error": {
     "loadFailed": "Échec du chargement : {{message}}",
@@ -63,7 +68,8 @@
     "UNKNOWN_PROVIDER": "Fournisseur inconnu.",
     "MISSING_OAUTH_PARAMS": "Paramètres OAuth manquants.",
     "AI_PROVIDER_NOT_CONFIGURED": "Fournisseur IA non configuré.",
-    "SPLITS_NOT_AVAILABLE": "Données de splits non disponibles. Relancez l'analyse."
+    "SPLITS_NOT_AVAILABLE": "Données de splits non disponibles. Relancez l'analyse.",
+    "EMPTY_GPX_FILE": "Le fichier GPX est vide ou ne contient aucun point."
   },
   "duration": {
     "d": "j",
@@ -82,8 +88,25 @@
     "topo2d": "Topo 2D",
     "loadingTrack": "Chargement du tracé..."
   },
+  "theme": {
+    "system": "Système",
+    "light": "Clair",
+    "dark": "Sombre"
+  },
   "language": {
     "en": "English",
     "fr": "Français"
+  },
+  "sessionType": {
+    "long_run": "Sortie longue",
+    "race": "Course / Compétition",
+    "training": "Entraînement",
+    "recovery": "Récupération",
+    "intervals": "Fractionné",
+    "tempo": "Tempo",
+    "easy": "Sortie facile"
+  },
+  "subType": {
+    "backyard": "Backyard Ultra"
   }
 }

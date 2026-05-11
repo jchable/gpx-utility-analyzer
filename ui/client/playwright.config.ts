@@ -4,6 +4,7 @@ export default defineConfig({
   testDir: './e2e',
   outputDir: './e2e-results',
   fullyParallel: true,
+  workers: 2,
   retries: 0,
   reporter: [['list'], ['html', { outputFolder: 'e2e-report', open: 'never' }]],
   use: {

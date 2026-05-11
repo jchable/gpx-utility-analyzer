@@ -14,6 +14,14 @@ import { Mountain, Clock } from 'lucide-react';
 import type { ProfilePoint } from '../../types/activity';
 import type { StopInfo } from '../../types/activity';
 import { formatDuration } from '../../utils/format';
+import {
+  CHART_COLORS,
+  TOOLTIP_STYLE,
+  AXIS_TICK,
+  AXIS_LINE,
+  GRID_PROPS,
+  TOOLTIP_CURSOR,
+} from '../../constants/chart-theme';
 
 interface ElevationProfileChartProps {
   data: ProfilePoint[];
@@ -22,19 +30,6 @@ interface ElevationProfileChartProps {
   hasTimestamps?: boolean;
   activityStartTime?: string;
 }
-
-const COLORS = {
-  elevation: '#00d4ff',
-  speed: '#ff8800',
-  gap: '#00ff88',
-  hr: '#ef4444',
-  power: '#eab308',
-  tobler: '#9333ea',
-  text: '#a0a0b0',
-  grid: 'rgba(255,255,255,0.05)',
-  axisLine: 'rgba(255,255,255,0.08)',
-  tooltipBg: '#0f0f1a',
-} as const;
 
 type OverlayMode = 'speed' | 'hr' | 'power';
 
@@ -129,10 +124,10 @@ export default function ElevationProfileChart({
 
   if (loading) {
     return (
-      <div className="bg-[#16213e] rounded-2xl border border-slate-700/50 p-4 h-[340px] flex items-center justify-center">
+      <div className="bg-surface-card rounded-2xl border border-border p-4 h-[340px] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-[#00d4ff] border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm text-[#a0a0b0]">{t('elevation.computing')}</span>
+          <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm text-content-muted">{t('elevation.computing')}</span>
         </div>
       </div>
     );
@@ -140,32 +135,32 @@ export default function ElevationProfileChart({
 
   if (data.length === 0) {
     return (
-      <div className="bg-[#16213e] rounded-2xl border border-slate-700/50 p-4 h-[340px] flex items-center justify-center">
-        <span className="text-sm text-[#a0a0b0]">{t('elevation.noData')}</span>
+      <div className="bg-surface-card rounded-2xl border border-border p-4 h-[340px] flex items-center justify-center">
+        <span className="text-sm text-content-muted">{t('elevation.noData')}</span>
       </div>
     );
   }
 
   return (
-    <div className="bg-[#16213e] rounded-2xl border border-slate-700/50 p-4">
+    <div className="bg-surface-card rounded-2xl border border-border p-4">
       {/* Header + legend */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
         <div className="flex items-center gap-2">
-          <Mountain size={18} className="text-[#00d4ff]" />
-          <h3 className="text-sm font-semibold text-white">{t('elevation.profile')}</h3>
+          <Mountain size={18} className="text-accent" />
+          <h3 className="text-sm font-semibold text-content">{t('elevation.profile')}</h3>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
           {/* Distance / Time toggle */}
           {hasTimestamps && (
-            <div className="flex items-center bg-slate-800/60 rounded-lg p-0.5">
+            <div className="flex items-center bg-surface-alt/50 rounded-lg p-0.5">
               <button
                 type="button"
                 onClick={() => setXMode('distance')}
                 className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-colors ${
                   xMode === 'distance'
-                    ? 'bg-slate-700 text-white'
-                    : 'text-slate-400 hover:text-slate-300'
+                    ? 'bg-surface-alt/50 text-content'
+                    : 'text-content-muted hover:text-content'
                 }`}
               >
                 <Mountain size={12} />
@@ -176,8 +171,8 @@ export default function ElevationProfileChart({
                 onClick={() => setXMode('time')}
                 className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-colors ${
                   xMode === 'time'
-                    ? 'bg-slate-700 text-white'
-                    : 'text-slate-400 hover:text-slate-300'
+                    ? 'bg-surface-alt/50 text-content'
+                    : 'text-content-muted hover:text-content'
                 }`}
               >
                 <Clock size={12} />
@@ -186,17 +181,17 @@ export default function ElevationProfileChart({
             </div>
           )}
 
-          <LegendItem label={t('elevation.elevation')} color={COLORS.elevation} active={true} dashed={false} />
+          <LegendItem label={t('elevation.elevation')} color={CHART_COLORS.elevation} active={true} dashed={false} />
 
           {/* Overlay mode selector */}
           {(hasSpeed || hasHR || hasPower) && (
-            <div className="flex items-center bg-slate-800/60 rounded-lg p-0.5">
+            <div className="flex items-center bg-surface-alt/50 rounded-lg p-0.5">
               {hasSpeed && (
                 <button
                   type="button"
                   onClick={() => setOverlayMode('speed')}
                   className={`px-2 py-1 rounded-md text-xs transition-colors ${
-                    overlayMode === 'speed' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-300'
+                    overlayMode === 'speed' ? 'bg-surface-alt/50 text-content' : 'text-content-muted hover:text-content'
                   }`}
                 >
                   {t('elevation.overlaySpeed')}
@@ -207,7 +202,7 @@ export default function ElevationProfileChart({
                   type="button"
                   onClick={() => setOverlayMode('hr')}
                   className={`px-2 py-1 rounded-md text-xs transition-colors ${
-                    overlayMode === 'hr' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-300'
+                    overlayMode === 'hr' ? 'bg-surface-alt/50 text-content' : 'text-content-muted hover:text-content'
                   }`}
                 >
                   {t('elevation.overlayHR')}
@@ -218,7 +213,7 @@ export default function ElevationProfileChart({
                   type="button"
                   onClick={() => setOverlayMode('power')}
                   className={`px-2 py-1 rounded-md text-xs transition-colors ${
-                    overlayMode === 'power' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-300'
+                    overlayMode === 'power' ? 'bg-surface-alt/50 text-content' : 'text-content-muted hover:text-content'
                   }`}
                 >
                   {t('elevation.overlayPower')}
@@ -232,14 +227,14 @@ export default function ElevationProfileChart({
             <>
               <LegendItem
                 label={t('elevation.speed')}
-                color={COLORS.speed}
+                color={CHART_COLORS.speed}
                 active={showSpeed}
                 dashed={false}
                 onClick={() => setShowSpeed((v) => !v)}
               />
               <LegendItem
                 label={t('elevation.gap')}
-                color={COLORS.gap}
+                color={CHART_COLORS.gap}
                 active={showGap}
                 dashed={true}
                 onClick={() => setShowGap((v) => !v)}
@@ -247,7 +242,7 @@ export default function ElevationProfileChart({
               {hasTobler && (
                 <LegendItem
                   label="Tobler"
-                  color={COLORS.tobler}
+                  color={CHART_COLORS.tobler}
                   active={showTobler}
                   dashed={true}
                   onClick={() => setShowTobler((v) => !v)}
@@ -256,10 +251,10 @@ export default function ElevationProfileChart({
             </>
           )}
           {overlayMode === 'hr' && hasHR && (
-            <LegendItem label={t('elevation.overlayHR')} color={COLORS.hr} active={true} dashed={false} />
+            <LegendItem label={t('elevation.overlayHR')} color={CHART_COLORS.hr} active={true} dashed={false} />
           )}
           {overlayMode === 'power' && hasPower && (
-            <LegendItem label={t('elevation.overlayPower')} color={COLORS.power} active={true} dashed={false} />
+            <LegendItem label={t('elevation.overlayPower')} color={CHART_COLORS.power} active={true} dashed={false} />
           )}
         </div>
       </div>
@@ -268,17 +263,17 @@ export default function ElevationProfileChart({
         <ComposedChart data={data} margin={{ top: 8, right: 8, bottom: 4, left: 0 }}>
           <defs>
             <linearGradient id="elevGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={COLORS.elevation} stopOpacity={0.35} />
-              <stop offset="100%" stopColor={COLORS.elevation} stopOpacity={0} />
+              <stop offset="0%" stopColor={CHART_COLORS.elevation} stopOpacity={0.35} />
+              <stop offset="100%" stopColor={CHART_COLORS.elevation} stopOpacity={0} />
             </linearGradient>
           </defs>
 
-          <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} vertical={false} />
+          <CartesianGrid {...GRID_PROPS} />
 
           <XAxis
             dataKey={xDataKey}
-            tick={{ fill: COLORS.text, fontSize: 11 }}
-            axisLine={{ stroke: COLORS.axisLine }}
+            tick={AXIS_TICK}
+            axisLine={AXIS_LINE}
             tickLine={false}
             tickFormatter={(v: number) =>
               xMode === 'time' ? formatElapsedTime(v) : v.toFixed(1)
@@ -289,7 +284,7 @@ export default function ElevationProfileChart({
                     value: 'km',
                     position: 'insideBottomRight',
                     offset: -4,
-                    fill: COLORS.text,
+                    fill: CHART_COLORS.text,
                     fontSize: 10,
                   }
                 : undefined
@@ -300,7 +295,7 @@ export default function ElevationProfileChart({
             yAxisId="elevation"
             orientation="left"
             domain={elevDomain}
-            tick={{ fill: COLORS.text, fontSize: 11 }}
+            tick={AXIS_TICK}
             axisLine={false}
             tickLine={false}
             width={50}
@@ -312,7 +307,7 @@ export default function ElevationProfileChart({
               yAxisId="right"
               orientation="right"
               domain={rightDomain}
-              tick={{ fill: COLORS.text, fontSize: 11 }}
+              tick={AXIS_TICK}
               axisLine={false}
               tickLine={false}
               width={55}
@@ -321,21 +316,15 @@ export default function ElevationProfileChart({
                 value: rightLabel,
                 position: 'insideTopRight',
                 offset: -10,
-                fill: COLORS.text,
+                fill: CHART_COLORS.text,
                 fontSize: 10,
               }}
             />
           )}
 
           <Tooltip
-            contentStyle={{
-              backgroundColor: COLORS.tooltipBg,
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '8px',
-              color: '#e0e0e0',
-              fontSize: '12px',
-            }}
-            cursor={{ stroke: 'rgba(255,255,255,0.15)' }}
+            contentStyle={TOOLTIP_STYLE}
+            cursor={TOOLTIP_CURSOR}
             labelFormatter={(v) =>
               xMode === 'time'
                 ? formatElapsedTime(Number(v))
@@ -359,7 +348,7 @@ export default function ElevationProfileChart({
             yAxisId="elevation"
             type="monotone"
             dataKey="elevation"
-            stroke={COLORS.elevation}
+            stroke={CHART_COLORS.elevation}
             strokeWidth={1.5}
             fill="url(#elevGradient)"
             dot={false}
@@ -373,7 +362,7 @@ export default function ElevationProfileChart({
               yAxisId="right"
               type="monotone"
               dataKey="speed"
-              stroke={COLORS.speed}
+              stroke={CHART_COLORS.speed}
               strokeWidth={1.5}
               dot={false}
               activeDot={false}
@@ -387,7 +376,7 @@ export default function ElevationProfileChart({
               yAxisId="right"
               type="monotone"
               dataKey="gap"
-              stroke={COLORS.gap}
+              stroke={CHART_COLORS.gap}
               strokeWidth={1.5}
               strokeDasharray="4 2"
               dot={false}
@@ -402,7 +391,7 @@ export default function ElevationProfileChart({
               yAxisId="right"
               type="monotone"
               dataKey="toblerSpeed"
-              stroke={COLORS.tobler}
+              stroke={CHART_COLORS.tobler}
               strokeWidth={1.5}
               strokeDasharray="6 3"
               dot={false}
@@ -418,7 +407,7 @@ export default function ElevationProfileChart({
               yAxisId="right"
               type="monotone"
               dataKey="heartRate"
-              stroke={COLORS.hr}
+              stroke={CHART_COLORS.hr}
               strokeWidth={1.5}
               dot={false}
               activeDot={false}
@@ -433,7 +422,7 @@ export default function ElevationProfileChart({
               yAxisId="right"
               type="monotone"
               dataKey="power"
-              stroke={COLORS.power}
+              stroke={CHART_COLORS.power}
               strokeWidth={1.5}
               dot={false}
               activeDot={false}
@@ -448,8 +437,8 @@ export default function ElevationProfileChart({
       {/* Stop timeline band — index-based to match categorical chart */}
       {stopAreas.length > 0 && data.length > 1 && (
         <div className="flex items-center mt-1" style={{ paddingLeft: 50, paddingRight: (hasSpeed || hasHR || hasPower) ? 63 : 8 }}>
-          <span className="text-[10px] text-slate-500 shrink-0 -ml-[50px] w-[50px] text-right pr-2">{t('elevation.stops')}</span>
-          <div className="relative h-2.5 w-full bg-slate-800/40 rounded-sm overflow-hidden">
+          <span className="text-[10px] text-content-muted shrink-0 -ml-[50px] w-[50px] text-right pr-2">{t('elevation.stops')}</span>
+          <div className="relative h-2.5 w-full bg-surface-alt/50 rounded-sm overflow-hidden">
             {stopAreas.map((stop, i) => {
               const total = data.length - 1;
               return (

@@ -16,6 +16,8 @@ services:
       - Database__Provider=sqlite
       - Database__ConnectionStrings__Sqlite=Data Source=/app/data/gpxanalyzer.db
       - Storage__GpxDirectory=/app/data/gpx
+      # JWT Authentication — must be set in .env (≥32 chars)
+      - Jwt__Secret=${JWT_SECRET:?JWT_SECRET env var is required (≥32 chars)}
       # AI Provider — configure as needed
       - AiProvider__Name=openai
       - AiProvider__ApiKey=${AI_API_KEY:-}
@@ -23,6 +25,15 @@ services:
       # Integrations — configure as needed
       - Integrations__Strava__ClientId=${STRAVA_CLIENT_ID:-}
       - Integrations__Strava__ClientSecret=${STRAVA_CLIENT_SECRET:-}
+      # DEM elevation data directory
+      - Storage__DemDirectory=/app/data/dem
+      # Routing — uncomment and configure for route editing
+      # - Routing__Provider=ors
+      # - Routing__Ors__ApiKey=${ORS_API_KEY:-}
+      # - Routing__Ors__BaseUrl=https://api.openrouteservice.org
+      # For self-hosted OSRM, uncomment the osrm service below and use:
+      # - Routing__Provider=osrm
+      # - Routing__Osrm__BaseUrl=http://osrm:5000
     restart: unless-stopped
 
   client:
@@ -31,10 +42,51 @@ services:
       dockerfile: ui/client/Dockerfile
     container_name: gpx-client
     ports:
-      - "8080:80"
+      - "8081:80"
     depends_on:
       - api
     restart: unless-stopped
 
+  # --- RustFS object storage (optional, enables S3-compatible storage) ---
+  # High-performance S3-compatible object storage written in Rust.
+  # To switch the API to use RustFS, add these env vars to the api service:
+  #   - Storage__Type=s3
+  #   - Storage__S3__Endpoint=http://rustfs:9000
+  #   - Storage__S3__AccessKey=rustfsadmin
+  #   - Storage__S3__SecretKey=rustfsadmin
+  #   - Storage__S3__BucketName=gpx-files
+  rustfs:
+    image: rustfs/rustfs:latest
+    container_name: gpx-rustfs
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Web console (rustfsadmin / rustfsadmin)
+    environment:
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:-rustfsadmin}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:-rustfsadmin}
+    volumes:
+      - rustfs-data:/data
+      - rustfs-logs:/logs
+    restart: unless-stopped
+
+  # --- OSRM routing service (optional, uncomment to enable) ---
+  # To use OSRM, download an OSM extract and preprocess it:
+  #   docker run -t -v osrm-data:/data ghcr.io/project-osrm/osrm-backend osrm-extract -p /opt/foot.lua /data/region.osm.pbf
+  #   docker run -t -v osrm-data:/data ghcr.io/project-osrm/osrm-backend osrm-partition /data/region.osrm
+  #   docker run -t -v osrm-data:/data ghcr.io/project-osrm/osrm-backend osrm-customize /data/region.osrm
+  # Then uncomment the service below:
+  # osrm:
+  #   image: ghcr.io/project-osrm/osrm-backend
+  #   container_name: gpx-osrm
+  #   command: osrm-routed --algorithm mld /data/region.osrm
+  #   volumes:
+  #     - osrm-data:/data
+  #   ports:
+  #     - "5001:5000"
+  #   restart: unless-stopped
+
 volumes:
   api-data:
+  rustfs-data:
+  rustfs-logs:
+  # osrm-data:

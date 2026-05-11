@@ -26,6 +26,9 @@ public static class SpeedCalculator
         [StopDetector.PresetHiking] = 4.0,
         [StopDetector.PresetTrail] = 7.0,
         [StopDetector.PresetCycling] = 25.0,
+        [StopDetector.PresetRunning] = 7.0,
+        [StopDetector.PresetSwimming] = 3.0,
+        [StopDetector.PresetWalking] = 4.0,
     };
 
     /// <summary>

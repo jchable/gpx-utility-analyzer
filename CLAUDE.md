@@ -108,6 +108,12 @@ dotnet build ai-analyzer/src/GpxAiAnalyzer/GpxAiAnalyzer.csproj
 dotnet test ai-analyzer/tests/GpxAiAnalyzer.Tests/
 ```
 
+### API Integration Tests
+
+```bash
+dotnet test ui/api.Tests/GpxAnalyzer.Api.Tests.csproj   # 27 tests (auth + multi-user isolation)
+```
+
 Requires .NET 9.0+.
 
 ### .NET Architecture
@@ -329,15 +335,39 @@ Deployed to GitHub Pages (`jchable.github.io/gpx-utility-analyzer/`) via GitHub 
 
 ## Docker
 
-**Dev** (SQLite): `docker compose up --build`
+**Dev** (SQLite + local storage): `docker compose up --build`
 - `api` service — multi-stage build: .NET publish → ASP.NET runtime (port 5000)
-- `client` service — Node build → nginx (port 8080)
+- `client` service — Node build → nginx (port 8081)
+- `rustfs` service — RustFS S3-compatible storage, ports 9000 (S3) + 9001 (console)
 
 **Prod** (PostgreSQL): `docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d`
 - Adds `db` service (PostgreSQL 17 Alpine)
 - Client on port 80
 
 API Dockerfile is a 2-stage build: .NET SDK publish → ASP.NET runtime.
+
+### Storage Architecture
+
+Two storage backends are supported via `IStorageService`:
+- `LocalStorageService` — filesystem (`Storage:GpxDirectory`), used by default and in tests
+- `S3StorageService` — RustFS/MinIO/AWS S3 compatible, activated by `Storage:Type=s3`
+
+`GpxStorageService` provides the higher-level GPX-specific API (archive as zip, extract to temp, replace with processed) and delegates raw I/O to `IStorageService`. All its methods are async and use `LocalFileLease` for temp file management.
+
+To switch to RustFS in Docker, add to the `api` service:
+```yaml
+- Storage__Type=s3
+- Storage__S3__Endpoint=http://rustfs:9000
+- Storage__S3__AccessKey=${RUSTFS_ACCESS_KEY:-rustfsadmin}
+- Storage__S3__SecretKey=${RUSTFS_SECRET_KEY:-rustfsadmin}
+- Storage__S3__BucketName=gpx-files
+```
+
+### Email Architecture
+
+Two email backends via `IEmailService`:
+- `NoOpEmailService` — logs to console (default, no SMTP needed)
+- `SmtpEmailService` — MailKit SMTP client, activated by `Email:Type=smtp`
 
 ## Known Pitfalls
 
@@ -388,10 +418,17 @@ ui/client/e2e/
 
 Run `npm run e2e` after significant UI modifications to catch regressions. If a test fails, check the screenshot in `e2e-results/` and the HTML report via `npm run e2e:report`.
 
+## Technical Documentation Research
+
+When you need up-to-date documentation for a library or framework (ASP.NET Core, Entity Framework, React, Vite, Tailwind, AWSSDK, MailKit, MapLibre GL, etc.), use the **context7** MCP tool (`/context7` or `resolve-library-id` + `get-library-docs`) to fetch the latest official docs. This is more reliable than relying on training data for version-specific APIs.
+
 ## Environment
 
 - .NET 9.0, Node 22+, React 19, Vite 7, TypeScript 5.9
 - For local scripts and system operations, use **PowerShell** (Python is not installed)
 - After a modification or an addition on the source code, rebuild and test the modified component.
 - After a modification in the backend, use ef core migrations for database changes, and apply it to the current compose deployment once the feature finished
-- At the end of a new feature, suggest to tracked only added or modified in this feature and in a second step to commit your work.
+- **EF Core migration rules**: NEVER edit migration `.cs` files manually. Always use `dotnet ef migrations add <Name>` to create and `dotnet ef migrations remove` to delete. If parallel branches created conflicting/empty migrations, use `remove` repeatedly to clean up, then re-add. If the dev DB is out of sync, wipe it (`rm data/gpxanalyzer.db`) and run `dotnet ef database update`. Check for pending changes with `dotnet ef migrations has-pending-model-changes`.
+- After changes, redeploy on compose (`docker compose up --build -d`) for the user to test.
+- At the end of a new feature, suggest to tracked only added or modified in this feature and in a second step to commit your work. Propose a commit message without git commit yourself.
+- **Commits**: do NOT add a `Co-Authored-By` trailer. Commit directly without any co-author line.

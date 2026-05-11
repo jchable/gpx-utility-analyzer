@@ -4,6 +4,7 @@ using GpxAnalyzer.Cli.Core.Dem;
 using GpxAnalyzer.Cli.Core.Elevation;
 using GpxAnalyzer.Cli.Core.Gpx;
 using GpxAnalyzer.Cli.Core.Output;
+using GpxAnalyzer.Cli.Core.Anomaly;
 using GpxAnalyzer.Cli.Core.Stats;
 using GpxAiAnalyzer.Core.Models;
 
@@ -18,11 +19,37 @@ public class GpxAnalysisService
         _logger = logger;
     }
 
-    public async Task<GpxStats> AnalyzeAsync(string gpxFilePath, string? exportDir = null, CancellationToken ct = default)
+    private static readonly Dictionary<string, string> ActivityTypeToPreset = new()
     {
-        var preset = await _settings.GetAsync("GpxCli:DefaultPreset", "trail") ?? "trail";
-        var smoothing = await _settings.GetAsync("GpxCli:DefaultSmoothing", "medium") ?? "medium";
-        var trackSmoothing = await _settings.GetAsync("GpxCli:DefaultTrackSmoothing", "medium") ?? "medium";
+        ["run"] = StopDetector.PresetRunning,
+        ["walk"] = StopDetector.PresetWalking,
+        ["trail"] = StopDetector.PresetTrail,
+        ["hike"] = StopDetector.PresetHiking,
+        ["cycle"] = StopDetector.PresetCycling,
+        ["swim"] = StopDetector.PresetSwimming,
+    };
+
+    public async Task<GpxStats> AnalyzeAsync(string gpxFilePath, string? activityType = null, string? exportDir = null, bool? fixAnomaliesOverride = null, CancellationToken ct = default)
+        => await AnalyzeAsync(null, gpxFilePath, activityType, exportDir, fixAnomaliesOverride, ct);
+
+    public async Task<GpxStats> AnalyzeAsync(Guid? userId, string gpxFilePath, string? activityType = null, string? exportDir = null, bool? fixAnomaliesOverride = null, CancellationToken ct = default)
+    {
+        var defaultPreset = userId.HasValue
+            ? await _settings.GetAsync(userId.Value, "GpxCli:DefaultPreset", "trail") ?? "trail"
+            : await _settings.GetAsync("GpxCli:DefaultPreset", "trail") ?? "trail";
+        var preset = activityType != null && ActivityTypeToPreset.TryGetValue(activityType, out var mapped)
+            ? mapped
+            : defaultPreset;
+        var smoothing = userId.HasValue
+            ? await _settings.GetAsync(userId.Value, "GpxCli:DefaultSmoothing", "medium") ?? "medium"
+            : await _settings.GetAsync("GpxCli:DefaultSmoothing", "medium") ?? "medium";
+        var trackSmoothing = userId.HasValue
+            ? await _settings.GetAsync(userId.Value, "GpxCli:DefaultTrackSmoothing", "medium") ?? "medium"
+            : await _settings.GetAsync("GpxCli:DefaultTrackSmoothing", "medium") ?? "medium";
+        var fixAnomaliesStr = userId.HasValue
+            ? await _settings.GetAsync(userId.Value, "GpxCli:FixAnomalies")
+            : await _settings.GetAsync("GpxCli:FixAnomalies");
+        var fixAnomalies = fixAnomaliesOverride ?? (bool.TryParse(fixAnomaliesStr, out var fa) && fa);
 
         _logger.LogInformation("Analyzing {File} (preset={Preset}, smoothing={Smoothing}, trackSmoothing={TrackSmoothing})",
             gpxFilePath, preset, smoothing, trackSmoothing);
@@ -32,7 +59,7 @@ public class GpxAnalysisService
         var points = doc.AllPoints();
 
         // 2. Build ComputeConfig
-        var cfg = BuildConfig(preset, smoothing, trackSmoothing);
+        var cfg = BuildConfig(preset, smoothing, trackSmoothing, fixAnomalies);
 
         // 3. Run pipeline
         var (summary, processed) = ComputePipeline.Compute(points, doc.SegmentCount(), cfg);
@@ -54,7 +81,16 @@ public class GpxAnalysisService
         return SummaryMapper.ToGpxStats(gpxFilePath, summary);
     }
 
-    private static ComputeConfig BuildConfig(string preset, string smoothing, string trackSmoothing)
+    /// <summary>
+    /// Extracts the track type from GPX metadata without running full analysis.
+    /// </summary>
+    public static string? ExtractGpxType(string gpxFilePath)
+    {
+        var doc = GpxParser.ParseFile(gpxFilePath);
+        return doc.Tracks.FirstOrDefault()?.Type;
+    }
+
+    private static ComputeConfig BuildConfig(string preset, string smoothing, string trackSmoothing, bool fixAnomalies = false)
     {
         if (!StopDetector.Presets.TryGetValue(preset, out var stopCfg))
             stopCfg = StopDetector.Presets[StopDetector.PresetTrail];
@@ -83,6 +119,8 @@ public class GpxAnalysisService
             },
             TrackSmoothing = trackSmoothing,
             MaxReasonableSpeed = maxReasonable,
+            AnomalyConfig = AnomalyConfig.Default(),
+            FixAnomalies = fixAnomalies,
         };
     }
 }

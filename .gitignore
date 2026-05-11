@@ -17,6 +17,7 @@ Desktop.ini
 
 .idea/
 .vscode/
+.claude/settings.local.json
 *.swp
 *.swo
 *~.nib
@@ -31,10 +32,45 @@ Desktop.ini
 .env.production.local
 .env.local
 appsettings.Development.json
+appsettings.Production.json
+appsettings.Staging.json
 
 # ============================================================
-# Playwright
+# Local data / databases
+# ============================================================
+
+data/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# ============================================================
+# .NET build artifacts
+# ============================================================
+
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# ============================================================
+# Playwright / test outputs
 # ============================================================
 
 ui/client/e2e-results/
 ui/client/e2e-report/
+ui/client/test-results/
+
+# ============================================================
+# Temp / local files
+# ============================================================
+
+nul
+sample/
+*_result.json
+*_result2.json
+*_fix.json
+profile_tmp.json

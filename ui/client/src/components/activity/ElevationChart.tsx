@@ -10,6 +10,12 @@ import {
 } from 'recharts';
 import { Mountain } from 'lucide-react';
 import type { GpxStats } from '../../types/activity';
+import {
+  TOOLTIP_STYLE,
+  AXIS_TICK,
+  AXIS_LINE,
+  GRID_PROPS,
+} from '../../constants/chart-theme';
 
 interface ElevationChartProps {
   stats: GpxStats;
@@ -23,59 +29,49 @@ interface ElevationBarEntry {
 
 export default function ElevationChart({ stats }: ElevationChartProps) {
   const data: ElevationBarEntry[] = [
-    { name: 'Min Elev.', value: Math.round(stats.min_elevation_m), color: '#00d4ff' },
-    { name: 'Max Elev.', value: Math.round(stats.max_elevation_m), color: '#00ff88' },
-    { name: 'Gain', value: Math.round(stats.elevation_gain_m), color: '#ff8800' },
-    { name: 'Loss', value: Math.round(stats.elevation_loss_m), color: '#ff4444' },
+    { name: 'Min Elev.', value: Math.round(stats.min_elevation_m), color: 'var(--accent)' },
+    { name: 'Max Elev.', value: Math.round(stats.max_elevation_m), color: 'var(--accent-green)' },
+    { name: 'Gain', value: Math.round(stats.elevation_gain_m), color: 'var(--accent-orange)' },
+    { name: 'Loss', value: Math.round(stats.elevation_loss_m), color: 'var(--accent-red)' },
   ];
 
   return (
     <div className="flex flex-col gap-3">
       {/* Header */}
       <div className="flex items-center gap-2">
-        <Mountain size={18} className="text-[#00d4ff]" />
-        <h4 className="text-sm font-semibold text-white">Elevation Profile</h4>
+        <Mountain size={18} className="text-accent" />
+        <h4 className="text-sm font-semibold text-content">Elevation Profile</h4>
       </div>
 
       {/* Summary chips */}
       <div className="flex flex-wrap gap-2">
-        <ElevationChip label="Min" value={`${Math.round(stats.min_elevation_m)} m`} color="#00d4ff" />
-        <ElevationChip label="Max" value={`${Math.round(stats.max_elevation_m)} m`} color="#00ff88" />
-        <ElevationChip label="Gain" value={`+${Math.round(stats.elevation_gain_m)} m`} color="#ff8800" />
-        <ElevationChip label="Loss" value={`-${Math.round(stats.elevation_loss_m)} m`} color="#ff4444" />
+        <ElevationChip label="Min" value={`${Math.round(stats.min_elevation_m)} m`} color="var(--accent)" />
+        <ElevationChip label="Max" value={`${Math.round(stats.max_elevation_m)} m`} color="var(--accent-green)" />
+        <ElevationChip label="Gain" value={`+${Math.round(stats.elevation_gain_m)} m`} color="var(--accent-orange)" />
+        <ElevationChip label="Loss" value={`-${Math.round(stats.elevation_loss_m)} m`} color="var(--accent-red)" />
       </div>
 
       {/* Bar chart */}
-      <div className="bg-[#16213e] rounded-xl border border-white/5 p-4">
+      <div className="bg-surface-card rounded-xl border border-border p-4">
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={data} margin={{ top: 8, right: 8, bottom: 4, left: 0 }}>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="rgba(255,255,255,0.05)"
-              vertical={false}
-            />
+            <CartesianGrid {...GRID_PROPS} />
             <XAxis
               dataKey="name"
-              tick={{ fill: '#a0a0b0', fontSize: 11 }}
-              axisLine={{ stroke: 'rgba(255,255,255,0.08)' }}
+              tick={AXIS_TICK}
+              axisLine={AXIS_LINE}
               tickLine={false}
             />
             <YAxis
-              tick={{ fill: '#a0a0b0', fontSize: 11 }}
+              tick={AXIS_TICK}
               axisLine={false}
               tickLine={false}
               width={50}
               tickFormatter={(v: number) => `${v} m`}
             />
             <Tooltip
-              contentStyle={{
-                backgroundColor: '#0f0f1a',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '8px',
-                color: '#e0e0e0',
-                fontSize: '12px',
-              }}
-              cursor={{ fill: 'rgba(255,255,255,0.03)' }}
+              contentStyle={TOOLTIP_STYLE}
+              cursor={{ fill: 'var(--chart-cursor)' }}
               formatter={(value: number | undefined) => [`${value ?? 0} m`, 'Elevation']}
             />
             <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={48}>
@@ -108,7 +104,7 @@ function ElevationChip({
         borderColor: `${color}25`,
       }}
     >
-      <span className="text-[#a0a0b0]">{label}</span>
+      <span className="text-content-muted">{label}</span>
       <span>{value}</span>
     </div>
   );

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDashboard } from '../hooks/useActivities';
 import { ACTIVITY_COLORS } from '../types/activity';
+import { formatPageDuration, formatDate } from '../utils/format';
 
 export default function Dashboard() {
   const { t } = useTranslation('dashboard');
@@ -9,25 +10,10 @@ export default function Dashboard() {
   const { i18n } = useTranslation();
   const { data, isLoading, error } = useDashboard();
 
-  function formatDuration(seconds: number): string {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    if (h > 0) return tc('format.durationHM', { h, m });
-    return tc('format.durationM', { m });
-  }
-
-  function formatDate(iso: string): string {
-    return new Date(iso).toLocaleDateString(i18n.language, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  }
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-400" />
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent" />
       </div>
     );
   }
@@ -47,11 +33,11 @@ export default function Dashboard() {
       label: t('totalActivities'),
       value: data.totalActivities.toString(),
       icon: (
-        <svg className="w-8 h-8 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-8 h-8 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
         </svg>
       ),
-      accent: 'text-cyan-400',
+      accent: 'text-accent',
     },
     {
       label: t('distanceThisMonth'),
@@ -65,7 +51,7 @@ export default function Dashboard() {
     },
     {
       label: t('elevationThisMonth'),
-      value: `${Math.round(data.totalElevationGainM)} ${tc('unit.m')}`,
+      value: `${Math.round(data.elevationGainThisMonthM)} ${tc('unit.m')}`,
       icon: (
         <svg className="w-8 h-8 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
@@ -75,7 +61,7 @@ export default function Dashboard() {
     },
     {
       label: t('timeThisMonth'),
-      value: formatDuration(data.totalMovingTimeSeconds),
+      value: formatPageDuration(data.movingTimeThisMonthSeconds, tc),
       icon: (
         <svg className="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -102,18 +88,18 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-white tracking-tight">{t('title')}</h1>
-        <p className="text-slate-400 mt-1">{t('subtitle')}</p>
+        <h1 className="text-3xl font-bold text-content tracking-tight">{t('title')}</h1>
+        <p className="text-content-muted mt-1">{t('subtitle')}</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {statWidgets.map((widget) => (
           <div
             key={widget.label}
-            className="bg-[#16213e] rounded-2xl p-6 border border-slate-700/50 hover:border-slate-600 transition-colors"
+            className="bg-surface-card rounded-2xl p-6 border border-border hover:border-content-muted/30 transition-colors"
           >
             <div className="flex items-center justify-between mb-4">
-              <span className="text-slate-400 text-sm font-medium">{widget.label}</span>
+              <span className="text-content-muted text-sm font-medium">{widget.label}</span>
               {widget.icon}
             </div>
             <p className={`text-3xl font-bold ${widget.accent}`}>{widget.value}</p>
@@ -122,18 +108,18 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-[#16213e] rounded-2xl p-6 border border-slate-700/50">
-          <h2 className="text-lg font-semibold text-white mb-6">{t('activityBreakdown')}</h2>
+        <div className="bg-surface-card rounded-2xl p-6 border border-border">
+          <h2 className="text-lg font-semibold text-content mb-6">{t('activityBreakdown')}</h2>
           <div className="flex flex-col items-center gap-6">
             <div className="relative w-40 h-40 shrink-0">
               <div
                 className="w-full h-full rounded-full"
-                style={{ background: totalBreakdown > 0 ? conicGradient : '#334155' }}
+                style={{ background: totalBreakdown > 0 ? conicGradient : 'var(--ring-track)' }}
               />
-              <div className="absolute inset-5 bg-[#16213e] rounded-full flex items-center justify-center">
+              <div className="absolute inset-5 bg-surface-card rounded-full flex items-center justify-center">
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-white">{totalBreakdown}</p>
-                  <p className="text-xs text-slate-400">{t('total')}</p>
+                  <p className="text-2xl font-bold text-content">{totalBreakdown}</p>
+                  <p className="text-xs text-content-muted">{t('total')}</p>
                 </div>
               </div>
             </div>
@@ -147,13 +133,13 @@ export default function Dashboard() {
                         className="w-3 h-3 rounded-full shrink-0"
                         style={{ backgroundColor: ACTIVITY_COLORS[type] || ACTIVITY_COLORS.other }}
                       />
-                      <span className="text-sm text-slate-300">
+                      <span className="text-sm text-content">
                         {tc(`activityType.${type}`, { defaultValue: type })}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-white">{count}</span>
-                      <span className="text-xs text-slate-500">({pct}%)</span>
+                      <span className="text-sm font-medium text-content">{count}</span>
+                      <span className="text-xs text-content-muted">({pct}%)</span>
                     </div>
                   </div>
                 );
@@ -162,19 +148,19 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="lg:col-span-2 bg-[#16213e] rounded-2xl p-6 border border-slate-700/50">
+        <div className="lg:col-span-2 bg-surface-card rounded-2xl p-6 border border-border">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-white">{t('recentActivities')}</h2>
+            <h2 className="text-lg font-semibold text-content">{t('recentActivities')}</h2>
             <Link
               to="/activities"
-              className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
+              className="text-sm text-accent hover:text-accent transition-colors"
             >
               {t('viewAll')}
             </Link>
           </div>
           <div className="space-y-2">
             {data.recentActivities.length === 0 && (
-              <p className="text-slate-500 text-center py-8">
+              <p className="text-content-muted text-center py-8">
                 {t('emptyState')}
               </p>
             )}
@@ -182,7 +168,7 @@ export default function Dashboard() {
               <Link
                 key={activity.id}
                 to={`/activities/${activity.id}`}
-                className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-700/30 transition-colors group"
+                className="flex items-center justify-between p-3 rounded-xl hover:bg-surface-alt/50 transition-colors group"
               >
                 <div className="flex items-center gap-4 min-w-0">
                   <div
@@ -198,16 +184,16 @@ export default function Dashboard() {
                       .toUpperCase()}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-white font-medium group-hover:text-cyan-300 transition-colors truncate">
+                    <p className="text-content font-medium group-hover:text-accent transition-colors truncate">
                       {activity.name}
                     </p>
-                    <p className="text-xs text-slate-500">{formatDate(activity.startTime)}</p>
+                    <p className="text-xs text-content-muted">{formatDate(activity.startTime, i18n.language)}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-6 text-sm text-slate-400 shrink-0 ml-4">
+                <div className="flex items-center gap-6 text-sm text-content-muted shrink-0 ml-4">
                   <span>{activity.distanceKm.toFixed(1)} {tc('unit.km')}</span>
                   <span className="hidden sm:inline">{activity.elevationGainM} {tc('unit.m')} D+</span>
-                  <span className="hidden md:inline">{formatDuration(activity.movingTimeSeconds)}</span>
+                  <span className="hidden md:inline">{formatPageDuration(activity.movingTimeSeconds, tc)}</span>
                 </div>
               </Link>
             ))}

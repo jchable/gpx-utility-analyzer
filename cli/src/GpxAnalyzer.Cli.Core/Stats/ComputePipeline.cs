@@ -1,3 +1,4 @@
+using GpxAnalyzer.Cli.Core.Anomaly;
 using GpxAnalyzer.Cli.Core.Dem;
 using GpxAnalyzer.Cli.Core.Elevation;
 using GpxAnalyzer.Cli.Core.Gpx;
@@ -28,7 +29,13 @@ public static class ComputePipeline
         // Step 1: Track smoothing (lat/lon)
         TrackSmoother.SmoothTrack(points, cfg.TrackSmoothing);
 
+        // Step 1.5: Capture raw elevations before DEM/smoothing (for anomaly detection)
+        List<double>? rawElevations = null;
+        if (cfg.AnomalyConfig != null)
+            rawElevations = points.Select(p => p.Ele).ToList();
+
         // Step 2: DEM preload + correction
+        bool hasDemCorrection = false;
         if (cfg.DemSource != null)
         {
             if (cfg.DemSource is IElevationPreloader preloader)
@@ -37,7 +44,7 @@ public static class ComputePipeline
             for (int i = 0; i < points.Count; i++)
             {
                 var (ele, ok) = cfg.DemSource.GetElevation(points[i].Lat, points[i].Lon);
-                if (ok) points[i].Ele = ele;
+                if (ok) { points[i].Ele = ele; hasDemCorrection = true; }
             }
         }
 
@@ -48,7 +55,7 @@ public static class ComputePipeline
         SpeedCalculator.EnrichPoints(points);
 
         // Step 5: Clamp remaining speed artifacts
-        SpeedCalculator.ClampSpeeds(points, cfg.MaxReasonableSpeed);
+        int clampedCount = SpeedCalculator.ClampSpeeds(points, cfg.MaxReasonableSpeed);
 
         // Step 6-7: Distance
         for (int i = 1; i < points.Count; i++)
@@ -99,6 +106,21 @@ public static class ComputePipeline
 
         // Step 15: Effort metrics
         s.Effort = EffortCalculator.ComputeAll(points, s);
+
+        // Step 16: Anomaly detection
+        if (cfg.AnomalyConfig != null)
+        {
+            s.AnomalyReport = AnomalyDetector.Detect(
+                points, s.Stops, cfg.MaxReasonableSpeed, s.TotalDistance,
+                clampedCount, hasDemCorrection, rawElevations, cfg.AnomalyConfig);
+
+            // Step 17: Apply corrections if requested
+            if (cfg.FixAnomalies && s.AnomalyReport.TotalCount > 0)
+            {
+                s.AnomalyReport = AnomalyCorrector.ApplyCorrections(points, s.AnomalyReport);
+                AnomalyCorrector.RecalculateStats(points, s);
+            }
+        }
 
         return (s, points);
     }

@@ -19,7 +19,7 @@ export default function LanguageSwitcher({ collapsed, mobile }: { collapsed?: bo
     return (
       <button
         onClick={handleToggle}
-        className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg text-xs font-medium text-[#a0a0b0] hover:text-white transition-colors"
+        className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg text-xs font-medium text-content-muted hover:text-content transition-colors"
         title={`Switch to ${next.code.toUpperCase()}`}
       >
         <Globe size={20} />
@@ -31,7 +31,7 @@ export default function LanguageSwitcher({ collapsed, mobile }: { collapsed?: bo
   return (
     <button
       onClick={handleToggle}
-      className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-[#a0a0b0] hover:text-white hover:bg-white/5 transition-colors w-full"
+      className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-content-muted hover:text-content hover:bg-surface-alt/50 transition-colors w-full"
       title={`Switch to ${next.code.toUpperCase()}`}
     >
       <Globe size={18} />

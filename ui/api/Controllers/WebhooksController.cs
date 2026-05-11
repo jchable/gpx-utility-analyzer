@@ -5,24 +5,26 @@ using GpxAnalyzer.Api.Data;
 using GpxAnalyzer.Api.Entities;
 using GpxAnalyzer.Api.Services;
 using GpxAnalyzer.Api.Services.Integrations;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 [ApiController]
+[AllowAnonymous]
 [Route("api/[controller]")]
 public class WebhooksController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly GpxStorageService _storage;
     private readonly IEnumerable<IActivityImporter> _importers;
-    private readonly Channel<Guid> _processingChannel;
+    private readonly Channel<(Guid ActivityId, Guid UserId)> _processingChannel;
     private readonly ILogger<WebhooksController> _logger;
 
     public WebhooksController(
         AppDbContext db,
         GpxStorageService storage,
         IEnumerable<IActivityImporter> importers,
-        Channel<Guid> processingChannel,
+        Channel<(Guid ActivityId, Guid UserId)> processingChannel,
         ILogger<WebhooksController> logger)
     {
         _db = db;
@@ -103,6 +105,7 @@ public class WebhooksController : ControllerBase
             var activity = new Activity
             {
                 Id = Guid.NewGuid(),
+                UserId = integration.UserId,
                 Name = imported.Name,
                 ActivityType = imported.ActivityType,
                 GpxFilePath = relativePath,
@@ -114,9 +117,9 @@ public class WebhooksController : ControllerBase
             _db.Activities.Add(activity);
             await _db.SaveChangesAsync();
 
-            await _processingChannel.Writer.WriteAsync(activity.Id);
+            await _processingChannel.Writer.WriteAsync((activity.Id, integration.UserId));
 
-            _logger.LogInformation("Imported activity {ExternalId} from {Provider} as {Id}", externalId, provider, activity.Id);
+            _logger.LogInformation("Imported activity {ExternalId} from {Provider} as {Id} for user {UserId}", externalId, provider, activity.Id, integration.UserId);
         }
         catch (Exception ex)
         {

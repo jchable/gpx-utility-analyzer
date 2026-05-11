@@ -1,29 +1,10 @@
 {
   "title": "Settings",
-  "integrationCredentials": "Integration Credentials",
-  "strava": "Strava",
-  "garminConnect": "Garmin Connect",
-  "clientId": "Client ID",
-  "clientSecret": "Client Secret",
-  "consumerKey": "Consumer Key",
-  "consumerSecret": "Consumer Secret",
-  "configured": "Configured",
-  "athleteProfile": "Athlete Profile",
-  "maxHeartRate": "Max Heart Rate (bpm)",
-  "age": "Age",
-  "ftp": "FTP (watts)",
-  "athleteHint": "Max HR and age are used for heart rate zone calculation. If both are set, max HR takes priority. FTP is used for power zone analysis.",
+  "integrations": "Integrations",
+  "serviceConnectionHint": "Connect your personal account to automatically sync new activities via webhook.",
+  "connect": "Connect",
+  "disconnect": "Disconnect",
   "placeholder": {
-    "stravaClientId": "Enter Strava Client ID",
-    "stravaClientSecret": "Enter new secret to update",
-    "newSecret": "Enter new secret to update",
-    "garminConsumerKey": "Enter Garmin Consumer Key",
-    "garminConsumerSecret": "Enter new secret to update",
-    "model": "e.g. gemini-2.5-flash",
-    "newKey": "Enter new key to update",
-    "apiKey": "Enter new key to update",
-    "endpoint": "Custom endpoint URL"
-  },
   "analysisPreferences": "Analysis Preferences",
   "defaultPreset": "Default Preset",
   "smoothing": "Smoothing",
@@ -32,7 +13,10 @@
   "preset": {
     "trail": "Trail",
     "hiking": "Hiking",
-    "cycling": "Cycling"
+    "cycling": "Cycling",
+    "running": "Running",
+    "walking": "Walking",
+    "swimming": "Swimming"
   },
   "smoothingLevel": {
     "none": "None",
@@ -45,6 +29,10 @@
     "douglas-peucker": "Douglas-Peucker",
     "segments": "Segments"
   },
+  "fixAnomalies": "Fix Anomalies",
+  "fixAnomaliesHint": "Automatically correct GPS frozen positions, drift during stops, and other track anomalies during analysis.",
+  "autoDetectActivityType": "Auto-detect Activity Type",
+  "autoDetectHint": "Automatically classify activities (run, trail, hike, cycle, walk, swim) based on GPS data patterns during analysis.",
   "aiProvider": "AI Provider",
   "provider": "Provider",
   "model": "Model",

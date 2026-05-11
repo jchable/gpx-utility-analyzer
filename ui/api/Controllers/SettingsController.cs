@@ -1,11 +1,14 @@
 namespace GpxAnalyzer.Api.Controllers;
 
+using GpxAnalyzer.Api.Auth;
 using GpxAnalyzer.Api.Dto;
 using GpxAnalyzer.Api.Services;
 using GpxAiAnalyzer.Core.Providers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class SettingsController : ControllerBase
 {
@@ -18,24 +21,54 @@ public class SettingsController : ControllerBase
         _registry = registry;
     }
 
+    // ── User settings (analysis preferences) ────────────────────────────────
+
     [HttpGet]
     public async Task<ActionResult<AppSettingsDto>> GetSettings()
     {
+        var userId = User.GetUserId();
         var dto = new AppSettingsDto
         {
-            Athlete = new AthleteSettingsDto
-            {
-                MaxHeartRate = int.TryParse(await _settings.GetAsync("Athlete:MaxHR"), out var mhr) ? mhr : null,
-                Age = int.TryParse(await _settings.GetAsync("Athlete:Age"), out var age) ? age : null,
-                Ftp = int.TryParse(await _settings.GetAsync("Athlete:FTP"), out var ftp) ? ftp : null,
-            },
             Analysis = new AnalysisSettingsDto
             {
-                Preset = await _settings.GetAsync("GpxCli:DefaultPreset", "trail") ?? "trail",
-                Smoothing = await _settings.GetAsync("GpxCli:DefaultSmoothing", "medium") ?? "medium",
-                TrackSmoothing = await _settings.GetAsync("GpxCli:DefaultTrackSmoothing", "medium") ?? "medium",
-                ElevationAlgorithm = await _settings.GetAsync("GpxCli:ElevationAlgorithm", "threshold") ?? "threshold",
+                Preset = await _settings.GetAsync(userId, "GpxCli:DefaultPreset", "trail") ?? "trail",
+                Smoothing = await _settings.GetAsync(userId, "GpxCli:DefaultSmoothing", "medium") ?? "medium",
+                TrackSmoothing = await _settings.GetAsync(userId, "GpxCli:DefaultTrackSmoothing", "medium") ?? "medium",
+                ElevationAlgorithm = await _settings.GetAsync(userId, "GpxCli:ElevationAlgorithm", "threshold") ?? "threshold",
+                FixAnomalies = bool.TryParse(await _settings.GetAsync(userId, "GpxCli:FixAnomalies"), out var fix) && fix,
+                AutoDetectActivityType = bool.TryParse(await _settings.GetAsync(userId, "GpxCli:AutoDetectActivityType"), out var autoDetect) && autoDetect,
             },
+        };
+
+        return dto;
+    }
+
+    [HttpPut]
+    public async Task<IActionResult> UpdateSettings([FromBody] AppSettingsDto dto)
+    {
+        var userId = User.GetUserId();
+        var updates = new Dictionary<string, string>
+        {
+            ["GpxCli:DefaultPreset"] = dto.Analysis.Preset,
+            ["GpxCli:DefaultSmoothing"] = dto.Analysis.Smoothing,
+            ["GpxCli:DefaultTrackSmoothing"] = dto.Analysis.TrackSmoothing,
+            ["GpxCli:ElevationAlgorithm"] = dto.Analysis.ElevationAlgorithm,
+            ["GpxCli:FixAnomalies"] = dto.Analysis.FixAnomalies.ToString().ToLowerInvariant(),
+            ["GpxCli:AutoDetectActivityType"] = dto.Analysis.AutoDetectActivityType.ToString().ToLowerInvariant(),
+        };
+
+        await _settings.SetManyAsync(userId, updates);
+        return NoContent();
+    }
+
+    // ── Global settings (admin only) ─────────────────────────────────────────
+
+    [HttpGet("global")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<GlobalSettingsDto>> GetGlobalSettings()
+    {
+        var dto = new GlobalSettingsDto
+        {
             AiProvider = new AiProviderSettingsDto
             {
                 Name = await _settings.GetAsync("AiProvider:Name") ?? "",
@@ -62,24 +95,11 @@ public class SettingsController : ControllerBase
         return dto;
     }
 
-    [HttpPut]
-    public async Task<IActionResult> UpdateSettings([FromBody] AppSettingsDto dto)
+    [HttpPut("global")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> UpdateGlobalSettings([FromBody] GlobalSettingsDto dto)
     {
         var updates = new Dictionary<string, string>();
-
-        // Athlete settings
-        if (dto.Athlete.MaxHeartRate.HasValue)
-            updates["Athlete:MaxHR"] = dto.Athlete.MaxHeartRate.Value.ToString();
-        if (dto.Athlete.Age.HasValue)
-            updates["Athlete:Age"] = dto.Athlete.Age.Value.ToString();
-        if (dto.Athlete.Ftp.HasValue)
-            updates["Athlete:FTP"] = dto.Athlete.Ftp.Value.ToString();
-
-        // Analysis settings
-        updates["GpxCli:DefaultPreset"] = dto.Analysis.Preset;
-        updates["GpxCli:DefaultSmoothing"] = dto.Analysis.Smoothing;
-        updates["GpxCli:DefaultTrackSmoothing"] = dto.Analysis.TrackSmoothing;
-        updates["GpxCli:ElevationAlgorithm"] = dto.Analysis.ElevationAlgorithm;
 
         // AI Provider
         if (!string.IsNullOrEmpty(dto.AiProvider.Name))
@@ -90,7 +110,7 @@ public class SettingsController : ControllerBase
             updates["AiProvider:Model"] = dto.AiProvider.Model;
         updates["AiProvider:Endpoint"] = dto.AiProvider.Endpoint;
 
-        // Strava credentials (write secret only if non-empty)
+        // Strava credentials
         if (!string.IsNullOrEmpty(dto.Integrations.Strava.ClientId))
             updates["Integrations:Strava:ClientId"] = dto.Integrations.Strava.ClientId;
         if (!string.IsNullOrEmpty(dto.Integrations.Strava.ClientSecret))
@@ -102,8 +122,7 @@ public class SettingsController : ControllerBase
         if (!string.IsNullOrEmpty(dto.Integrations.Garmin.ConsumerSecret))
             updates["Integrations:Garmin:ConsumerSecret"] = dto.Integrations.Garmin.ConsumerSecret;
 
-        await _settings.SetManyAsync(updates);
-
+        await _settings.SetGlobalManyAsync(updates);
         return NoContent();
     }
 

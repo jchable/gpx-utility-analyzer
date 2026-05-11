@@ -3,7 +3,9 @@
     "preset": "trail",
     "smoothing": "medium",
     "trackSmoothing": "light",
-    "elevationAlgorithm": "threshold"
+    "elevationAlgorithm": "threshold",
+    "fixAnomalies": false,
+    "autoDetectActivityType": false
   },
   "aiProvider": {
     "name": "openai",

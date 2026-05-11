@@ -1,12 +1,14 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSettings, useUpdateSettings } from '../hooks/useActivities';
-import type { AppSettings } from '../types/activity';
+import { useSettings, useUpdateSettings, useIntegrations } from '../hooks/useActivities';
+import { api } from '../api/client';
+import type { AppSettings, IntegrationInfo } from '../types/activity';
+import { BRAND_COLORS } from '../constants/brands';
 
 function SectionCard({ title, id, children }: { title: string; id?: string; children: React.ReactNode }) {
   return (
-    <div id={id} className="bg-[#16213e] rounded-xl border border-slate-700/50 p-6 scroll-mt-6">
-      <h2 className="text-lg font-semibold text-white mb-4">{title}</h2>
+    <div id={id} className="bg-surface-card rounded-xl border border-border p-6 scroll-mt-6">
+      <h2 className="text-lg font-semibold text-content mb-4">{title}</h2>
       {children}
     </div>
   );
@@ -15,7 +17,7 @@ function SectionCard({ title, id, children }: { title: string; id?: string; chil
 function FieldGroup({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="mb-4 last:mb-0">
-      <label className="block text-sm font-medium text-[#a0a0b0] mb-1.5">{label}</label>
+      <label className="block text-sm font-medium text-content-muted mb-1.5">{label}</label>
       {children}
     </div>
   );
@@ -34,7 +36,7 @@ function SelectInput({
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full bg-[#0d1b2a] border border-slate-700/50 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500/50"
+      className="w-full bg-surface-input border border-border rounded-lg px-3 py-2 text-content text-sm focus:outline-none focus:border-blue-500/50"
     >
       {options.map((opt) => (
         <option key={opt.value} value={opt.value}>
@@ -45,60 +47,111 @@ function SelectInput({
   );
 }
 
-function TextInput({
-  value,
-  onChange,
-  placeholder,
-  type = 'text',
+// ── Integration connect/disconnect ───────────────────────────────────────────
+
+const PROVIDER_STYLE: Record<string, { color: string; icon: string }> = {
+  strava: { color: BRAND_COLORS.strava, icon: 'S' },
+  garmin: { color: BRAND_COLORS.garmin, icon: 'G' },
+};
+
+function IntegrationCard({
+  integration,
+  onConnect,
+  onDisconnect,
 }: {
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  type?: 'text' | 'password' | 'number';
+  integration: IntegrationInfo;
+  onConnect: () => void;
+  onDisconnect: () => void;
 }) {
+  const [loading, setLoading] = useState(false);
+  const { t: ti } = useTranslation('integrations');
+  const { t: ts } = useTranslation('settings');
+  const { i18n } = useTranslation();
+
+  const style = PROVIDER_STYLE[integration.provider] ?? {
+    color: '#888888',
+    icon: integration.provider.charAt(0).toUpperCase(),
+  };
+
+  const providerName = ti(`provider.${integration.provider}.name`, { defaultValue: integration.provider });
+
+  const handleAction = async () => {
+    setLoading(true);
+    try {
+      if (integration.isConnected) {
+        await onDisconnect();
+      } else {
+        await onConnect();
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <input
-      type={type}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className="w-full bg-[#0d1b2a] border border-slate-700/50 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500/50 placeholder-slate-600"
-    />
+    <div className="rounded-xl border border-border bg-surface-alt/30 p-4">
+      <div className="flex items-center gap-3 mb-2">
+        <div
+          className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold shrink-0"
+          style={{ backgroundColor: style.color + '33', color: style.color }}
+        >
+          {style.icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-content">{providerName}</span>
+            {integration.isConnected && (
+              <span className="text-xs font-medium px-1.5 py-0.5 rounded-full bg-green-500/20 text-green-400">
+                {ti('connected')}
+              </span>
+            )}
+          </div>
+          {integration.isConnected && integration.externalUserId && (
+            <p className="text-xs text-content-muted mt-0.5">
+              {ti('account', { userId: integration.externalUserId })}
+              {integration.connectedAt && (
+                <> — {new Date(integration.connectedAt).toLocaleDateString(i18n.language)}</>
+              )}
+            </p>
+          )}
+          {!integration.isConnected && (
+            <p className="text-xs text-content-muted mt-0.5">{ts('serviceConnectionHint')}</p>
+          )}
+        </div>
+        <button
+          onClick={handleAction}
+          disabled={loading}
+          className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${
+            integration.isConnected
+              ? 'bg-red-600/20 border border-red-800 text-red-400 hover:bg-red-600/30'
+              : 'text-white hover:opacity-90'
+          }`}
+          style={!integration.isConnected ? { backgroundColor: style.color } : undefined}
+        >
+          {loading ? ti('processing') : integration.isConnected ? ts('disconnect') : ts('connect')}
+        </button>
+      </div>
+    </div>
   );
 }
 
-function ConfiguredBadge({ label }: { label: string }) {
-  if (!label) return null;
-  return (
-    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/20 text-emerald-400">
-      {label}
-    </span>
-  );
-}
+// ── Main page ────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
   const { t } = useTranslation('settings');
   const { data: settings, isLoading } = useSettings();
   const updateMutation = useUpdateSettings();
+  const { data: integrations, refetch: refetchIntegrations } = useIntegrations();
 
-  // Derive initial form from settings (secrets blanked for editing)
   const baseForm = useMemo((): AppSettings | null => {
     if (!settings) return null;
-    return {
-      ...settings,
-      aiProvider: { ...settings.aiProvider, apiKey: '' },
-      integrations: {
-        strava: { ...settings.integrations.strava, clientSecret: '' },
-        garmin: { ...settings.integrations.garmin, consumerSecret: '' },
-      },
-    };
+    return { ...settings, analysis: { ...settings.analysis } };
   }, [settings]);
 
   const [formEdits, setFormEdits] = useState<AppSettings | null>(null);
   const form = formEdits ?? baseForm;
   const [saved, setSaved] = useState(false);
 
-  // Wrap setForm so first edit copies from baseForm
   const setForm = useCallback(
     (updater: (prev: AppSettings | null) => AppSettings | null) => {
       setFormEdits((prev) => updater(prev ?? baseForm));
@@ -106,18 +159,14 @@ export default function SettingsPage() {
     [baseForm],
   );
 
-  // Scroll to anchor section (e.g. #athlete-profile) on mount
   const scrollToHash = useCallback(() => {
     const hash = window.location.hash;
     if (hash) {
       const el = document.querySelector(hash);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, []);
 
-  // Scroll to hash after form loads (DOM ready)
   useEffect(() => {
     if (form) {
       const timer = setTimeout(scrollToHash, 100);
@@ -140,62 +189,26 @@ export default function SettingsPage() {
     setTimeout(() => setSaved(false), 3000);
   };
 
-  const updateAnalysis = (field: string, value: string) => {
+  const updateAnalysis = (field: string, value: string | boolean) => {
     setForm((f) => f ? { ...f, analysis: { ...f.analysis, [field]: value } } : f);
   };
 
-  const updateAiProvider = (field: string, value: string) => {
-    setForm((f) => f ? { ...f, aiProvider: { ...f.aiProvider, [field]: value } } : f);
+  const handleConnect = async (provider: string) => {
+    await api.connectIntegration(provider);
   };
 
-  const updateStrava = (field: string, value: string) => {
-    setForm((f) =>
-      f
-        ? {
-            ...f,
-            integrations: {
-              ...f.integrations,
-              strava: { ...f.integrations.strava, [field]: value },
-            },
-          }
-        : f,
-    );
+  const handleDisconnect = async (provider: string) => {
+    await api.disconnectIntegration(provider);
+    refetchIntegrations();
   };
-
-  const updateGarmin = (field: string, value: string) => {
-    setForm((f) =>
-      f
-        ? {
-            ...f,
-            integrations: {
-              ...f.integrations,
-              garmin: { ...f.integrations.garmin, [field]: value },
-            },
-          }
-        : f,
-    );
-  };
-
-  const updateAthlete = (field: string, value: string) => {
-    setForm((f) =>
-      f
-        ? {
-            ...f,
-            athlete: { ...f.athlete, [field]: value === '' ? undefined : Number(value) },
-          }
-        : f,
-    );
-  };
-
-  const providerOptions = (settings?.aiProvider.availableProviders ?? []).map((p) => ({
-    value: p,
-    label: p.charAt(0).toUpperCase() + p.slice(1),
-  }));
 
   const presetOptions = [
     { value: 'trail', label: t('preset.trail') },
     { value: 'hiking', label: t('preset.hiking') },
     { value: 'cycling', label: t('preset.cycling') },
+    { value: 'running', label: t('preset.running') },
+    { value: 'walking', label: t('preset.walking') },
+    { value: 'swimming', label: t('preset.swimming') },
   ];
 
   const smoothingOptions = [
@@ -213,102 +226,25 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-white mb-6">{t('title')}</h1>
+      <h1 className="text-2xl font-bold text-content mb-6">{t('title')}</h1>
 
-      <div className="space-y-6 max-w-2xl">
-        {/* Athlete Profile */}
-        <SectionCard title={t('athleteProfile')} id="athlete-profile">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <FieldGroup label={t('maxHeartRate')}>
-              <TextInput
-                value={form.athlete?.maxHeartRate?.toString() ?? ''}
-                onChange={(v) => updateAthlete('maxHeartRate', v)}
-                placeholder="185"
-                type="number"
-              />
-            </FieldGroup>
-            <FieldGroup label={t('age')}>
-              <TextInput
-                value={form.athlete?.age?.toString() ?? ''}
-                onChange={(v) => updateAthlete('age', v)}
-                placeholder="35"
-                type="number"
-              />
-            </FieldGroup>
-            <FieldGroup label={t('ftp')}>
-              <TextInput
-                value={form.athlete?.ftp?.toString() ?? ''}
-                onChange={(v) => updateAthlete('ftp', v)}
-                placeholder="250"
-                type="number"
-              />
-            </FieldGroup>
-          </div>
-          <p className="text-xs text-slate-500 mt-3">{t('athleteHint')}</p>
-        </SectionCard>
-
-        {/* Integration Credentials */}
-        <SectionCard title={t('integrationCredentials')}>
-          <div className="space-y-5">
-            <div>
-              <h3 className="text-sm font-semibold text-white mb-3 flex items-center">
-                <span
-                  className="inline-flex items-center justify-center w-5 h-5 rounded text-xs font-bold mr-2"
-                  style={{ backgroundColor: '#FC4C02', color: 'white' }}
-                >
-                  S
-                </span>
-                {t('strava')}
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FieldGroup label={t('clientId')}>
-                  <TextInput
-                    value={form.integrations.strava.clientId}
-                    onChange={(v) => updateStrava('clientId', v)}
-                    placeholder={t('placeholder.stravaClientId')}
-                  />
-                </FieldGroup>
-                <FieldGroup label={<>{t('clientSecret')}{(settings?.integrations.strava.hasClientSecret ?? false) && <ConfiguredBadge label={t('configured')} />}</>}>
-                  <TextInput
-                    value={form.integrations.strava.clientSecret}
-                    onChange={(v) => updateStrava('clientSecret', v)}
-                    placeholder={t('placeholder.stravaClientSecret')}
-                    type="password"
-                  />
-                </FieldGroup>
-              </div>
+      <div className="space-y-6">
+        {/* Integrations — connect/disconnect */}
+        {integrations && integrations.length > 0 && (
+          <SectionCard title={t('integrations')}>
+            <p className="text-sm text-content-muted mb-4">{t('serviceConnectionHint')}</p>
+            <div className="space-y-3">
+              {integrations.map((integration) => (
+                <IntegrationCard
+                  key={integration.provider}
+                  integration={integration}
+                  onConnect={() => handleConnect(integration.provider)}
+                  onDisconnect={() => handleDisconnect(integration.provider)}
+                />
+              ))}
             </div>
-
-            <div className="border-t border-slate-700/50 pt-5">
-              <h3 className="text-sm font-semibold text-white mb-3 flex items-center">
-                <span
-                  className="inline-flex items-center justify-center w-5 h-5 rounded text-xs font-bold mr-2"
-                  style={{ backgroundColor: '#007CC3', color: 'white' }}
-                >
-                  G
-                </span>
-                {t('garminConnect')}
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FieldGroup label={t('consumerKey')}>
-                  <TextInput
-                    value={form.integrations.garmin.consumerKey}
-                    onChange={(v) => updateGarmin('consumerKey', v)}
-                    placeholder={t('placeholder.garminConsumerKey')}
-                  />
-                </FieldGroup>
-                <FieldGroup label={<>{t('consumerSecret')}{(settings?.integrations.garmin.hasConsumerSecret ?? false) && <ConfiguredBadge label={t('configured')} />}</>}>
-                  <TextInput
-                    value={form.integrations.garmin.consumerSecret}
-                    onChange={(v) => updateGarmin('consumerSecret', v)}
-                    placeholder={t('placeholder.garminConsumerSecret')}
-                    type="password"
-                  />
-                </FieldGroup>
-              </div>
-            </div>
-          </div>
-        </SectionCard>
+          </SectionCard>
+        )}
 
         {/* Analysis Preferences */}
         <SectionCard title={t('analysisPreferences')}>
@@ -341,41 +277,40 @@ export default function SettingsPage() {
                 options={elevationAlgorithmOptions}
               />
             </FieldGroup>
-          </div>
-        </SectionCard>
-
-        {/* AI Provider */}
-        <SectionCard title={t('aiProvider')}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FieldGroup label={t('provider')}>
-              <SelectInput
-                value={form.aiProvider.name}
-                onChange={(v) => updateAiProvider('name', v)}
-                options={[{ value: '', label: t('selectProvider') }, ...providerOptions]}
-              />
-            </FieldGroup>
-            <FieldGroup label={t('model')}>
-              <TextInput
-                value={form.aiProvider.model}
-                onChange={(v) => updateAiProvider('model', v)}
-                placeholder="e.g. gemini-2.5-flash"
-              />
-            </FieldGroup>
-            <FieldGroup label={<>{t('apiKey')}{(settings?.aiProvider.hasApiKey ?? false) && <ConfiguredBadge label={t('configured')} />}</>}>
-              <TextInput
-                value={form.aiProvider.apiKey}
-                onChange={(v) => updateAiProvider('apiKey', v)}
-                placeholder={t('placeholder.apiKey')}
-                type="password"
-              />
-            </FieldGroup>
-            <FieldGroup label={t('endpointOptional')}>
-              <TextInput
-                value={form.aiProvider.endpoint}
-                onChange={(v) => updateAiProvider('endpoint', v)}
-                placeholder={t('placeholder.endpoint')}
-              />
-            </FieldGroup>
+            <div className="col-span-full flex items-start gap-3 pt-2">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={form.analysis.fixAnomalies}
+                onClick={() => updateAnalysis('fixAnomalies', !form.analysis.fixAnomalies)}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-surface-card ${form.analysis.fixAnomalies ? 'bg-blue-600' : 'bg-surface-alt'}`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${form.analysis.fixAnomalies ? 'translate-x-5' : 'translate-x-0'}`}
+                />
+              </button>
+              <div>
+                <span className="text-sm font-medium text-content-muted">{t('fixAnomalies')}</span>
+                <p className="text-xs text-content-muted mt-0.5">{t('fixAnomaliesHint')}</p>
+              </div>
+            </div>
+            <div className="col-span-full flex items-start gap-3 pt-2">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={form.analysis.autoDetectActivityType}
+                onClick={() => updateAnalysis('autoDetectActivityType', !form.analysis.autoDetectActivityType)}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-surface-card ${form.analysis.autoDetectActivityType ? 'bg-blue-600' : 'bg-surface-alt'}`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${form.analysis.autoDetectActivityType ? 'translate-x-5' : 'translate-x-0'}`}
+                />
+              </button>
+              <div>
+                <span className="text-sm font-medium text-content-muted">{t('autoDetectActivityType')}</span>
+                <p className="text-xs text-content-muted mt-0.5">{t('autoDetectHint')}</p>
+              </div>
+            </div>
           </div>
         </SectionCard>
 

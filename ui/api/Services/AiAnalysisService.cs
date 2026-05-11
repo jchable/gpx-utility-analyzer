@@ -20,16 +20,31 @@ public class AiAnalysisService
         _logger = logger;
     }
 
-    public async Task<TrackReport> AnalyzeAsync(GpxStats stats, string language = "en", CancellationToken ct = default)
+    public async Task<TrackReport?> AnalyzeAsync(GpxStats stats, string language = "en", CancellationToken ct = default)
+        => await AnalyzeAsync(null, stats, language, ct);
+
+    public async Task<TrackReport?> AnalyzeAsync(Guid? userId, GpxStats stats, string language = "en", CancellationToken ct = default)
     {
-        var providerName = await _settings.GetAsync("AiProvider:Name")
-            ?? throw new InvalidOperationException("AI provider not configured. Set AiProvider:Name in settings.");
+        var providerName = userId.HasValue
+            ? await _settings.GetAsync(userId.Value, "AiProvider:Name")
+            : await _settings.GetAsync("AiProvider:Name");
+        if (string.IsNullOrWhiteSpace(providerName))
+        {
+            _logger.LogInformation("AI analysis skipped — no provider configured.");
+            return null;
+        }
 
         var options = new ProviderOptions
         {
-            ApiKey = await _settings.GetAsync("AiProvider:ApiKey"),
-            Endpoint = await _settings.GetAsync("AiProvider:Endpoint"),
-            Model = await _settings.GetAsync("AiProvider:Model"),
+            ApiKey = userId.HasValue
+                ? await _settings.GetAsync(userId.Value, "AiProvider:ApiKey")
+                : await _settings.GetAsync("AiProvider:ApiKey"),
+            Endpoint = userId.HasValue
+                ? await _settings.GetAsync(userId.Value, "AiProvider:Endpoint")
+                : await _settings.GetAsync("AiProvider:Endpoint"),
+            Model = userId.HasValue
+                ? await _settings.GetAsync(userId.Value, "AiProvider:Model")
+                : await _settings.GetAsync("AiProvider:Model"),
         };
 
         _logger.LogInformation("Running AI analysis with provider={Provider}, model={Model}",

@@ -1,0 +1,92 @@
+{
+  "title": "My Routes",
+  "subtitle": "Create, edit and manage your routes",
+  "newRoute": "New Route",
+  "importGpx": "Import GPX",
+  "allTypes": "All types",
+  "empty": "No routes yet. Create your first route!",
+  "confirmDelete": "Delete this route? This action cannot be undone.",
+  "editor": {
+    "title": "Route Editor",
+    "newRouteHint": "Place points on the map to start creating your route",
+    "toolbar": {
+      "select": "Select",
+      "addPoint": "Add Point",
+      "freehand": "Freehand Draw",
+      "split": "Split",
+      "crop": "Crop",
+      "reverse": "Reverse",
+      "addPoi": "Add POI"
+    },
+    "routing": {
+      "manual": "Manual",
+      "hiking": "Hiking",
+      "trail": "Trail Running",
+      "cycling": "Cycling",
+      "road": "Road"
+    },
+    "save": "Save Route",
+    "export": "Export",
+    "discard": "Discard Changes",
+    "autoSaved": "Saved {{time}}",
+    "saving": "Saving...",
+    "unsavedChanges": "You have unsaved changes",
+    "undo": "Undo",
+    "redo": "Redo",
+    "enrichElevation": "Enrich elevation (DEM)",
+    "enrichingElevation": "Enriching...",
+    "cropApply": "Apply crop",
+    "cropCancel": "Cancel crop",
+    "cropHint": "Drag the handles on the elevation profile to select the portion to keep"
+  },
+  "split": {
+    "title": "Split Route",
+    "keepFirst": "Keep segment 1",
+    "keepSecond": "Keep segment 2",
+    "keepBoth": "Keep both (create 2nd route)",
+    "point": "Point {{index}} / {{total}}"
+  },
+  "poi": {
+    "water": "Water",
+    "parking": "Parking",
+    "refuge": "Refuge",
+    "summit": "Summit",
+    "viewpoint": "Viewpoint",
+    "danger": "Danger",
+    "food": "Food",
+    "camping": "Camping",
+    "custom": "Custom"
+  },
+  "category": {
+    "loop": "Loop",
+    "outAndBack": "Out & Back",
+    "traverse": "Traverse",
+    "pointToPoint": "Point to Point"
+  },
+  "status": {
+    "draft": "Draft",
+    "published": "Published"
+  },
+  "stats": {
+    "distance": "Distance",
+    "elevationGain": "Elevation Gain",
+    "elevationLoss": "Elevation Loss",
+    "estimatedTime": "Est. Time",
+    "maxElevation": "Max Elevation",
+    "minElevation": "Min Elevation"
+  },
+  "export": {
+    "title": "Export Route",
+    "gpx": "GPX",
+    "geojson": "GeoJSON",
+    "kml": "KML"
+  },
+  "metadata": {
+    "name": "Route Name",
+    "description": "Description",
+    "activityType": "Activity Type",
+    "category": "Category",
+    "tags": "Tags"
+  },
+  "editAsRoute": "Edit as route"
+}

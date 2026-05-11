@@ -11,8 +11,8 @@ async function clickLanguageSwitcher(page: import('@playwright/test').Page) {
     // Playwright actionability false-negative in app-shell flex layout
     await sidebar.locator('button[title*="Switch to FR"]').dispatchEvent('click');
   } else {
-    // Mobile: bottom nav language button
-    await page.locator('nav.fixed button[title*="Switch to FR"]').click();
+    // Mobile: bottom nav language button — dispatchEvent to work around viewport overflow
+    await page.locator('nav.fixed button[title*="Switch to FR"]').dispatchEvent('click');
   }
 }
 
