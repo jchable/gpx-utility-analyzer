@@ -222,9 +222,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # winget package versions follow the "x.y.z" convention without a leading "v"
+      - name: Determine winget version
+        id: ver
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
       - uses: vedantmgoyal9/winget-releaser@v2
         with:
           identifier: GPXAnalyzer.gpx-analyzer
-          version: ${{ github.ref_name }}
+          version: ${{ steps.ver.outputs.version }}
           installers-regex: 'gpx-analyzer-setup-.*-win-x64\.exe$'
           token: ${{ secrets.WINGET_TOKEN }}
