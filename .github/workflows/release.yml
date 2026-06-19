@@ -58,12 +58,18 @@ jobs:
             -Path publish/win-x64/gpx-analyzer.exe `
             -DestinationPath "gpx-analyzer-${version}-win-x64.zip"
 
+      - name: Install NSIS
+        shell: pwsh
+        run: choco install nsis -y --no-progress
+
       - name: Build NSIS installer
         shell: pwsh
         run: |
           $version = '${{ steps.version.outputs.VERSION }}'
           $exePath = (Resolve-Path "publish/win-x64/gpx-analyzer.exe").Path
-          makensis `
+          $makensis = Join-Path ${env:ProgramFiles(x86)} 'NSIS\makensis.exe'
+          if (-not (Test-Path $makensis)) { $makensis = Join-Path $env:ProgramFiles 'NSIS\makensis.exe' }
+          & $makensis `
             "/DVERSION=$version" `
             "/DEXE_PATH=$exePath" `
             installers/windows/gpx-analyzer.nsi
