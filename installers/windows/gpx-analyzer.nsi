@@ -89,6 +89,10 @@ UninstPage instfiles
 ;---------------------------------------------------------------------
 Section "Install" SecInstall
 
+  ; Registry writes target the native 64-bit view (the installer is 32-bit, so
+  ; without this HKLM\Software entries would be redirected to WOW6432Node)
+  SetRegView 64
+
   SetOutPath "$INSTDIR"
   File "${EXE_PATH}"
 
@@ -145,6 +149,9 @@ SectionEnd
 ; Uninstall section
 ;---------------------------------------------------------------------
 Section "Uninstall"
+
+  ; Match the install section's 64-bit registry view
+  SetRegView 64
 
   ; Remove binary and uninstaller
   Delete "$INSTDIR\gpx-analyzer.exe"
