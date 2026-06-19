@@ -5,7 +5,7 @@
 ### Windows — winget
 
 ```
-winget install GPXAnalyzer.gpx-analyzer
+winget install Coderise.gpx-analyzer
 ```
 
 Once installed, open a new terminal and run:
@@ -86,7 +86,7 @@ gpx-analyzer --help
 ### winget
 
 ```
-winget uninstall GPXAnalyzer.gpx-analyzer
+winget uninstall Coderise.gpx-analyzer
 ```
 
 ### apt

@@ -1,12 +1,12 @@
-PackageIdentifier: GPXAnalyzer.gpx-analyzer
-PackageVersion: 0.0.0
+PackageIdentifier: Coderise.gpx-analyzer
+PackageVersion: 0.1.0-alpha
 PackageLocale: en-US
 Publisher: GPX Analyzer Project
 PublisherUrl: https://github.com/jchable/gpx-utility-analyzer
 PublisherSupportUrl: https://github.com/jchable/gpx-utility-analyzer/issues
 PackageName: GPX Analyzer
 PackageUrl: https://github.com/jchable/gpx-utility-analyzer
-License: MIT
+License: AGPL-3.0-or-later
 LicenseUrl: https://github.com/jchable/gpx-utility-analyzer/blob/main/LICENSE
 ShortDescription: CLI tool to analyze GPX activity files
 Description: |-

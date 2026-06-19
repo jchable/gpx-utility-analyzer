@@ -229,7 +229,7 @@ jobs:
 
       - uses: vedantmgoyal9/winget-releaser@v2
         with:
-          identifier: GPXAnalyzer.gpx-analyzer
+          identifier: Coderise.gpx-analyzer
           version: ${{ steps.ver.outputs.version }}
           installers-regex: 'gpx-analyzer-setup-.*-win-x64\.exe$'
           token: ${{ secrets.WINGET_TOKEN }}
