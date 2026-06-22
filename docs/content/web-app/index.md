@@ -58,4 +58,4 @@ docker compose up --build
 # RustFS console: http://localhost:9001 (if enabled)
 ```
 
-See [Deployment](./deployment) and [Configuration](./configuration) for details.
+See [Deployment](./deployment.md) and [Configuration](./configuration.md) for details.
