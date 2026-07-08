@@ -14,7 +14,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   AI analyzer, API, and React client, plus Playwright E2E.
 - DCO sign-off check on pull requests (`dco.yml`).
 - Dependabot configuration for NuGet, npm, GitHub Actions, and Docker.
-- CodeQL static analysis for C# and JavaScript/TypeScript.
 
 ## [0.1.0-alpha] - 2026-06-19
 

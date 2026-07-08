@@ -1,7 +1,6 @@
 # GPX Utility Analyzer
 
 [![CI](https://github.com/jchable/gpx-utility-analyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/jchable/gpx-utility-analyzer/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/jchable/gpx-utility-analyzer/actions/workflows/codeql.yml/badge.svg)](https://github.com/jchable/gpx-utility-analyzer/actions/workflows/codeql.yml)
 [![Docs](https://github.com/jchable/gpx-utility-analyzer/actions/workflows/deploy-docs.yml/badge.svg)](https://jchable.github.io/gpx-utility-analyzer/)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 [![Latest release](https://img.shields.io/github/v/release/jchable/gpx-utility-analyzer?include_prereleases&sort=semver)](https://github.com/jchable/gpx-utility-analyzer/releases)
