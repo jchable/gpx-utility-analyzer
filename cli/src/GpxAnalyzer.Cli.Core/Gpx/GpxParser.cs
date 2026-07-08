@@ -34,6 +34,7 @@ public static class GpxParser
     {
         Name = trk.Element(ns + "name")?.Value ?? "",
         Desc = trk.Element(ns + "desc")?.Value ?? "",
+        Type = trk.Element(ns + "type")?.Value,
         Segments = trk.Elements(ns + "trkseg").Select(seg => ParseSegment(seg, ns)).ToList()
     };
 
@@ -62,6 +63,13 @@ public static class GpxParser
             ? double.Parse(speedStr, CultureInfo.InvariantCulture)
             : 0.0;
 
+        // GPS quality fields (direct children of <trkpt>)
+        var fix = pt.Element(ns + "fix")?.Value;
+        var satellites = ParseInt(pt.Element(ns + "sat")?.Value);
+        var hdop = ParseDouble(pt.Element(ns + "hdop")?.Value);
+        var vdop = ParseDouble(pt.Element(ns + "vdop")?.Value);
+        var pdop = ParseDouble(pt.Element(ns + "pdop")?.Value);
+
         // Parse extensions
         var extElem = pt.Element(ns + "extensions");
         string? innerXml = null;
@@ -84,7 +92,24 @@ public static class GpxParser
             HeartRate = ext.HeartRate,
             Cadence = ext.Cadence,
             Power = ext.Power,
-            Temperature = ext.Temperature
+            Temperature = ext.Temperature,
+            Fix = fix,
+            Satellites = satellites,
+            Hdop = hdop,
+            Vdop = vdop,
+            Pdop = pdop,
+            DeviceSpeed = ext.DeviceSpeed,
+            WaterTemp = ext.WaterTemp
         };
     }
+
+    private static int? ParseInt(string? value) =>
+        value != null && int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v)
+            ? v
+            : null;
+
+    private static double? ParseDouble(string? value) =>
+        value != null && double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var v)
+            ? v
+            : null;
 }

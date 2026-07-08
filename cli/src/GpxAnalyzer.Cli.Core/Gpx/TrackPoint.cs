@@ -19,4 +19,15 @@ public class TrackPoint
     public int? Cadence { get; set; }
     public int? Power { get; set; }
     public double? Temperature { get; set; }
+
+    // GPS quality (null = not present in source GPX)
+    public string? Fix { get; set; }        // "2d", "3d", "dgps", ...
+    public int? Satellites { get; set; }    // number of satellites used
+    public double? Hdop { get; set; }       // horizontal dilution of precision
+    public double? Vdop { get; set; }       // vertical dilution of precision
+    public double? Pdop { get; set; }       // position dilution of precision
+
+    // Additional extension data (null = not present in source GPX)
+    public double? DeviceSpeed { get; set; } // device-reported speed (gpxtpx:speed, m/s)
+    public double? WaterTemp { get; set; }   // water temperature (gpxtpx:wtemp, °C)
 }
