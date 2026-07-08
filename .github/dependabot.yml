@@ -1,0 +1,68 @@
+version: 2
+updates:
+  # ── .NET (NuGet) ────────────────────────────────────────────────
+  - package-ecosystem: nuget
+    directories:
+      - "/cli"
+      - "/ai-analyzer"
+      - "/ui"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels: ["dependencies", "dotnet"]
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      dotnet-minor-patch:
+        update-types: ["minor", "patch"]
+
+  # ── React client (npm) ──────────────────────────────────────────
+  - package-ecosystem: npm
+    directory: "/ui/client"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels: ["dependencies", "javascript"]
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      client-minor-patch:
+        update-types: ["minor", "patch"]
+
+  # ── Docs site (npm) ─────────────────────────────────────────────
+  - package-ecosystem: npm
+    directory: "/docs"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels: ["dependencies", "docs"]
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      docs-minor-patch:
+        update-types: ["minor", "patch"]
+
+  # ── GitHub Actions ──────────────────────────────────────────────
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    labels: ["dependencies", "ci"]
+    commit-message:
+      prefix: "chore(ci)"
+
+  # ── Docker images ───────────────────────────────────────────────
+  - package-ecosystem: docker
+    directories:
+      - "/ui/api"
+      - "/ui/client"
+    schedule:
+      interval: weekly
+      day: monday
+    labels: ["dependencies", "docker"]
+    commit-message:
+      prefix: "chore(docker)"
