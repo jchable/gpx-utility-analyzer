@@ -10,6 +10,14 @@ A full-stack platform for analyzing, processing and visualizing GPX activity fil
 
 .NET CLI tool for analyzing GPX files: distance, elevation gain/loss, speed, stop detection, biometrics (heart rate, power, cadence, temperature from GPX extensions), time-based splitting, file merging. Includes altitude correction using a digital elevation model (SRTM). Built as a Native AOT single-file executable with no runtime dependency.
 
+**Install (Windows)** — available on winget:
+
+```powershell
+winget install Coderise.gpx-analyzer
+```
+
+Or build and run from source:
+
 ```bash
 cd cli
 dotnet build src/GpxAnalyzer.Cli/
