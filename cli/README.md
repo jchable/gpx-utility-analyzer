@@ -4,7 +4,15 @@
 
 ## Installation
 
-Pre-built binaries are available for Windows, Linux, and macOS. See [docs/INSTALL.md](docs/INSTALL.md) for installation via **winget**, **apt**, or portable archives.
+### Windows — winget (recommended)
+
+```powershell
+winget install Coderise.gpx-analyzer
+```
+
+Open a new terminal and run `gpx-analyzer --help` — the installer adds `gpx-analyzer` to your `PATH`.
+
+Pre-built binaries for Windows, Linux, and macOS are also available. See [docs/INSTALL.md](docs/INSTALL.md) for installation via **winget**, **apt**, or portable archives.
 
 ## Prerequisites (build from source)
 

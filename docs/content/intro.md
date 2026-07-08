@@ -17,6 +17,8 @@ A toolkit for analyzing, processing and transforming GPX files.
 speed, stop detection, time-based splitting, file merging.
 Includes altitude correction using a digital elevation model (SRTM).
 
+**Install (Windows):** `winget install Coderise.gpx-analyzer`
+
 [View documentation →](/gpx-utility-analyzer/docs/cli)
 
 ### gpx-ai-analyzer (.NET)
