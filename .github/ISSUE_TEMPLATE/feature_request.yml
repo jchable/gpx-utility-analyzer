@@ -1,0 +1,61 @@
+name: ✨ Feature request
+description: Suggest an idea or enhancement
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement! For open-ended ideas or questions, consider
+        starting a [Discussion](../discussions) instead.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Preliminary checks
+      options:
+        - label: I have searched existing issues and discussions and this is not a duplicate.
+          required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Target component
+      options:
+        - cli (gpx-analyzer)
+        - ai-analyzer (gpx-ai-analyzer)
+        - api (ASP.NET Core)
+        - client (React front-end)
+        - docs
+        - docker / infra
+        - cross-cutting / not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What problem does this solve? Is your request related to a frustration or limitation?
+      placeholder: I'm always frustrated when...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: A clear description of what you want to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches or workarounds you have thought about.
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Mockups, links, examples from other tools, etc.

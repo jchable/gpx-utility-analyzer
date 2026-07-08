@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Questions & Discussions
+    url: https://github.com/jchable/gpx-utility-analyzer/discussions
+    about: Ask questions, share ideas, and discuss usage here instead of opening an issue.
+  - name: 📖 Documentation
+    url: https://jchable.github.io/gpx-utility-analyzer/
+    about: Read the online documentation before filing an issue.
+  - name: 🔒 Report a security vulnerability
+    url: https://github.com/jchable/gpx-utility-analyzer/security/advisories/new
+    about: Please report security issues privately, never as a public issue.

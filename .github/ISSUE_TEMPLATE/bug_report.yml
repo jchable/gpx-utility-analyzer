@@ -1,0 +1,96 @@
+name: 🐛 Bug report
+description: Report a reproducible bug or regression
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report! Please fill in as much of the
+        form below as you can. For security vulnerabilities, **do not** open an issue —
+        follow [SECURITY.md](../blob/main/SECURITY.md) instead.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Preliminary checks
+      options:
+        - label: I have searched existing issues and this is not a duplicate.
+          required: true
+        - label: I am using the latest released version (or `main`).
+          required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected component
+      options:
+        - cli (gpx-analyzer)
+        - ai-analyzer (gpx-ai-analyzer)
+        - api (ASP.NET Core)
+        - client (React front-end)
+        - docs
+        - docker / infra
+        - other / not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the bug
+      description: A clear and concise description of what the bug is.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: |
+        Exact steps, commands, or requests. For the CLI/AI analyzer, include the full
+        command line. Attach a **minimal GPX sample** if the bug is data-dependent.
+      placeholder: |
+        1. Run `gpx-analyzer analyze --preset trail track.gpx`
+        2. ...
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior / logs
+      description: Include error messages, stack traces, or console output. Please use code blocks.
+      render: shell
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: |
+        - OS and version:
+        - .NET version (`dotnet --version`) if relevant:
+        - Node version (`node --version`) if relevant:
+        - App version / commit:
+        - Deployment (local, Docker dev, Docker prod):
+      value: |
+        - OS:
+        - .NET:
+        - Node:
+        - Version/commit:
+        - Deployment:
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Screenshots, related issues, anything else useful.
