@@ -1,5 +1,12 @@
 # GPX Utility Analyzer
 
+[![CI](https://github.com/jchable/gpx-utility-analyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/jchable/gpx-utility-analyzer/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/jchable/gpx-utility-analyzer/actions/workflows/codeql.yml/badge.svg)](https://github.com/jchable/gpx-utility-analyzer/actions/workflows/codeql.yml)
+[![Docs](https://github.com/jchable/gpx-utility-analyzer/actions/workflows/deploy-docs.yml/badge.svg)](https://jchable.github.io/gpx-utility-analyzer/)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
+[![Latest release](https://img.shields.io/github/v/release/jchable/gpx-utility-analyzer?include_prereleases&sort=semver)](https://github.com/jchable/gpx-utility-analyzer/releases)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
 A full-stack platform for analyzing, processing and visualizing GPX activity files. Combines a .NET CLI for track statistics, AI-powered analysis for intelligent reports, and a web application with an interactive sport dashboard.
 
 **Published online documentation**: [https://jchable.github.io/gpx-utility-analyzer/](https://jchable.github.io/gpx-utility-analyzer/)
@@ -151,3 +158,25 @@ See [Web App docs](https://jchable.github.io/gpx-utility-analyzer/docs/web-app) 
 | Frontend | React 19, TypeScript 5.9, Vite 7, TailwindCSS v4, MapLibre GL JS, Recharts, TanStack Query |
 | Storage | Local filesystem (dev) / RustFS S3-compatible (prod) |
 | Infra | Docker Compose, nginx, GitHub Actions |
+
+## Contributing
+
+Contributions are welcome! Please read the [Contributing Guide](CONTRIBUTING.md) to get
+started — it covers the development setup, build/test commands, coding and commit
+conventions, and the DCO sign-off (`git commit -s`) required on every commit.
+
+By participating you agree to abide by our [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Community & Support
+
+- 💬 Questions and ideas: [GitHub Discussions](https://github.com/jchable/gpx-utility-analyzer/discussions)
+- 🐛 Bugs and features: [open an issue](https://github.com/jchable/gpx-utility-analyzer/issues/new/choose)
+- 🔒 Security: see [SECURITY.md](SECURITY.md) — please report vulnerabilities privately
+- ❓ Getting help: see [SUPPORT.md](SUPPORT.md)
+
+Changes are tracked in the [CHANGELOG](CHANGELOG.md).
+
+## License
+
+This project is licensed under the **GNU Affero General Public License v3.0** — see the
+[LICENSE](LICENSE) file for details.

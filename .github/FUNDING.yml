@@ -1,0 +1,8 @@
+# Enable a "Sponsor" button on the repository.
+# Uncomment and fill in the platforms you actually use, then GitHub renders
+# the button automatically. Leaving them all commented keeps the button hidden.
+
+github: [jchable]
+# ko_fi: your_username
+# buy_me_a_coffee: your_username
+# custom: ["https://example.com/donate"]
