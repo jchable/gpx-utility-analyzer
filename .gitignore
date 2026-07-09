@@ -39,7 +39,9 @@ appsettings.Staging.json
 # Local data / databases
 # ============================================================
 
-data/
+# Anchored to repo root so it does not also match source folders named "Data"
+# (e.g. ui/api/Data/) on case-insensitive filesystems.
+/data/
 *.db
 *.db-shm
 *.db-wal
