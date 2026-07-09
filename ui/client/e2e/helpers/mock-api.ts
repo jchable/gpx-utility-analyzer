@@ -120,6 +120,31 @@ export async function mockAllApi(page: Page) {
     route.fulfill({ json: track }),
   );
 
+  // Activity splits & best efforts (activity detail)
+  await page.route('**/api/activities/*/splits', (route) =>
+    route.fulfill({
+      json: {
+        splits: [
+          { km: 1, distance: 1.0, paceSecondsPerKm: 336, elevationGain: 85, elevationLoss: 5, avgHeartRate: 148, avgSpeed: 10.7 },
+          { km: 2, distance: 1.0, paceSecondsPerKm: 342, elevationGain: 78, elevationLoss: 12, avgHeartRate: 156, avgSpeed: 10.5 },
+          { km: 3, distance: 1.0, paceSecondsPerKm: 358, elevationGain: 95, elevationLoss: 8, avgHeartRate: 162, avgSpeed: 10.1 },
+          { km: 4, distance: 1.0, paceSecondsPerKm: 372, elevationGain: 88, elevationLoss: 15, avgHeartRate: 168, avgSpeed: 9.7 },
+          { km: 5, distance: 1.0, paceSecondsPerKm: 330, elevationGain: 40, elevationLoss: 60, avgHeartRate: 165, avgSpeed: 10.9 },
+        ],
+        bestEfforts: [
+          { label: '1 km', distanceKm: 1.0, timeSeconds: 330, paceSecondsPerKm: 330 },
+          { label: '5 km', distanceKm: 5.0, timeSeconds: 1738, paceSecondsPerKm: 348 },
+          { label: '10 km', distanceKm: 10.0, timeSeconds: 3600, paceSecondsPerKm: 360 },
+        ],
+      },
+    }),
+  );
+
+  // Activity tag suggestions (autocomplete)
+  await page.route('**/api/activities/tags', (route) =>
+    route.fulfill({ json: ['trail', 'mountain', 'forest', 'training'] }),
+  );
+
   // GPX download
   await page.route('**/api/activities/act-1/gpx', (route) =>
     route.fulfill({
