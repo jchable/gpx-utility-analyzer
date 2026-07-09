@@ -18,11 +18,12 @@ test.describe('Navigation — desktop', () => {
     await sidebar.getByRole('link', { name: /Upload/i }).click();
     await expect(page).toHaveURL(/\/upload/);
 
-    await sidebar.getByRole('link', { name: /Settings/i }).click();
-    await expect(page).toHaveURL(/\/settings/);
+    await sidebar.getByRole('link', { name: /My Routes/i }).click();
+    await expect(page).toHaveURL(/\/routes/);
 
-    await sidebar.getByRole('link', { name: /Integrations/i }).click();
-    await expect(page).toHaveURL(/\/integrations/);
+    // Exact match so it does not also resolve the "System Settings" admin link
+    await sidebar.getByRole('link', { name: 'Settings', exact: true }).click();
+    await expect(page).toHaveURL(/\/settings/);
 
     await sidebar.getByRole('link', { name: /Dashboard/i }).click();
     await expect(page).toHaveURL('/');
