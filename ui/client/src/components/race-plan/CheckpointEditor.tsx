@@ -36,9 +36,12 @@ export default function CheckpointEditor({ plan }: Props) {
     notes: null,
   });
 
-  // Populate form when editing existing
+  // Populate form when editing existing.
+  // Intentional prop→form sync: the editable form must reset when the selected
+  // checkpoint (or the new-checkpoint distance) changes.
   useEffect(() => {
     if (existing) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setForm({
         name: existing.name,
         type: existing.type,
