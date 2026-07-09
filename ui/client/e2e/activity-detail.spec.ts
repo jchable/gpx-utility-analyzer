@@ -24,8 +24,9 @@ test.describe('Activity Detail — Completed', () => {
     await page.goto('/activities/act-1');
     await expect(page.getByText('Max Speed')).toBeVisible();
     await expect(page.getByText('Avg Pace')).toBeVisible();
-    await expect(page.getByText('Max Elevation')).toBeVisible();
-    await expect(page.getByText('Avg HR')).toBeVisible();
+    await expect(page.getByText('Min Elevation')).toBeVisible();
+    // "Avg HR" appears in both the summary stat card and the biometrics section.
+    await expect(page.getByText('Avg HR').first()).toBeVisible();
   });
 
   test('renders elevation chart container', async ({ page }) => {
@@ -43,7 +44,7 @@ test.describe('Activity Detail — Completed', () => {
 
   test('has action buttons', async ({ page }) => {
     await page.goto('/activities/act-1');
-    await expect(page.locator('a', { hasText: 'GPX' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /GPX/ })).toBeVisible();
     await expect(page.getByRole('button', { name: /Reanalyze/ })).toBeVisible();
     await expect(page.getByRole('button', { name: /Delete/ })).toBeVisible();
   });

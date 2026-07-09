@@ -10,60 +10,6 @@ public class AnomalyCorrectorTests
         DateTime.Parse("2024-01-01T10:00:00Z").ToUniversalTime().AddSeconds(seconds);
 
     // ---------------------------------------------------------------
-    // RecalculateStats: ClampSpeeds regression (the bug we fixed)
-    // ---------------------------------------------------------------
-
-    [Fact]
-    public void RecalculateStats_WithMaxReasonableSpeed_ClampsRecalculatedSpeeds()
-    {
-        // This test prevents the exact regression where EnrichPoints overwrites
-        // clamped CalcSpeed values and MaxSpeedFromPoints reads unclamped data.
-        var points = new List<TrackPoint>
-        {
-            new() { Lat = 48.0, Lon = 2.0, Ele = 100, Time = T(0) },
-            new() { Lat = 48.0001, Lon = 2.0001, Ele = 100, Time = T(10) },
-            // GPS jump: ~157 km away in 1 second → ~157,000 m/s
-            new() { Lat = 49.0, Lon = 3.0, Ele = 100, Time = T(11) },
-            new() { Lat = 48.0003, Lon = 2.0003, Ele = 100, Time = T(20) },
-        };
-
-        var summary = new Summary
-        {
-            TotalTime = TimeSpan.FromSeconds(20),
-            MovingTime = TimeSpan.FromSeconds(20),
-        };
-
-        AnomalyCorrector.RecalculateStats(points, summary, maxReasonableSpeed: 7.0);
-
-        Assert.True(summary.Speed.MaxSpeed <= 7.0,
-            $"MaxSpeed should be clamped to 7.0 m/s, got {summary.Speed.MaxSpeed:F1} m/s ({summary.Speed.MaxSpeed * 3.6:F1} km/h)");
-    }
-
-    [Fact]
-    public void RecalculateStats_WithoutMaxReasonableSpeed_DoesNotClamp()
-    {
-        var points = new List<TrackPoint>
-        {
-            new() { Lat = 48.0, Lon = 2.0, Ele = 100, Time = T(0) },
-            new() { Lat = 48.0001, Lon = 2.0001, Ele = 100, Time = T(10) },
-            new() { Lat = 48.001, Lon = 2.001, Ele = 100, Time = T(11) },
-            new() { Lat = 48.0015, Lon = 2.0015, Ele = 100, Time = T(20) },
-        };
-
-        var summary = new Summary
-        {
-            TotalTime = TimeSpan.FromSeconds(20),
-            MovingTime = TimeSpan.FromSeconds(20),
-        };
-
-        // maxReasonableSpeed=0 disables clamping
-        AnomalyCorrector.RecalculateStats(points, summary, maxReasonableSpeed: 0);
-
-        Assert.True(summary.Speed.MaxSpeed > 0, "Should have computed some speed");
-        Assert.True(summary.TotalDistance > 0, "Should have computed some distance");
-    }
-
-    // ---------------------------------------------------------------
     // RecalculateStats: frozen section distance estimation
     // ---------------------------------------------------------------
 

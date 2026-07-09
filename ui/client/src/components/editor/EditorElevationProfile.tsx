@@ -261,7 +261,7 @@ export default function EditorElevationProfile({
               contentStyle={TOOLTIP_STYLE_COMPACT}
               cursor={TOOLTIP_CURSOR}
               labelFormatter={(v) => `${Number(v).toFixed(2)} km`}
-              formatter={(value: number | undefined) => [`${Math.round(value ?? 0)} m`, t('stats.elevationGain').replace(' +', '')]}
+              formatter={(value) => [`${Math.round(Number(value) || 0)} m`, t('stats.elevationGain').replace(' +', '')]}
             />
 
             {/* Crop overlay: dim the portions outside the crop range */}
