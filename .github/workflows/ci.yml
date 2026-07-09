@@ -93,7 +93,11 @@ jobs:
           cache: npm
           cache-dependency-path: ui/client/package-lock.json
       - name: Install
-        run: npm ci
+        # npm/cli#4828: `npm ci` can skip platform-specific native binaries
+        # (e.g. @rollup/rollup-linux-x64-gnu). Reconcile them for this runner.
+        run: |
+          npm ci
+          npm install --no-save
       - name: Lint
         run: npm run lint
       - name: Build
@@ -117,7 +121,11 @@ jobs:
           cache: npm
           cache-dependency-path: ui/client/package-lock.json
       - name: Install
-        run: npm ci
+        # npm/cli#4828: `npm ci` can skip platform-specific native binaries
+        # (e.g. @rollup/rollup-linux-x64-gnu). Reconcile them for this runner.
+        run: |
+          npm ci
+          npm install --no-save
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
       - name: Build
