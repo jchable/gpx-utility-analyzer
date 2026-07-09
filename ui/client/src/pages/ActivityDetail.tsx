@@ -63,6 +63,7 @@ export default function ActivityDetail() {
   // Sync enrichment state when activity loads (only on ID change)
   useEffect(() => {
     if (activity) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: seed editable local state from the loaded activity
       setLocalDesc(activity.description ?? '');
       setLocalRpe(activity.perceivedExertion ?? null);
       setLocalSessionType(activity.sessionType ?? '');

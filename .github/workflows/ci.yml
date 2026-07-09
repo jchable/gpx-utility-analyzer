@@ -87,13 +87,18 @@ jobs:
         working-directory: ui/client
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: ui/client/package-lock.json
       - name: Install
-        run: npm ci
+        # npm/cli#4828: the committed lockfile omits this runner's rollup native
+        # binary (@rollup/rollup-linux-x64-gnu), which npm ci then skips. Remove
+        # the lockfile + node_modules for a correct fresh resolve on this platform.
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install
       - name: Lint
         run: npm run lint
       - name: Build
@@ -111,13 +116,18 @@ jobs:
         working-directory: ui/client
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: ui/client/package-lock.json
       - name: Install
-        run: npm ci
+        # npm/cli#4828: the committed lockfile omits this runner's rollup native
+        # binary (@rollup/rollup-linux-x64-gnu), which npm ci then skips. Remove
+        # the lockfile + node_modules for a correct fresh resolve on this platform.
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
       - name: Build
@@ -126,7 +136,7 @@ jobs:
         run: npm run e2e
       - name: Upload report
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: ui/client/e2e-report/

@@ -57,6 +57,7 @@ export default function EditorElevationProfile({
   // Reset crop range when entering crop mode
   useEffect(() => {
     if (isCropMode && routeCoordinates.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: reset the crop range when crop mode is (re)entered
       setCropRange([0, routeCoordinates.length - 1]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
