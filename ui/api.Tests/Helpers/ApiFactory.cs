@@ -42,6 +42,8 @@ public class ApiFactory : WebApplicationFactory<Program>
         // Override file-based configuration values (AI, storage paths)
         // These are read lazily (not at DI registration time), so env override works.
         builder.UseEnvironment("Test");
+        builder.UseSetting("Jwt:Secret",                   // non-empty HS256 signing key for tests
+            "test-only-jwt-signing-secret-key-0123456789-abcdefghijklmnop");
         builder.UseSetting("AiProvider:Name", "");         // disable external AI calls
         builder.UseSetting("Storage:GpxDirectory", Path.Combine(_storageDir, "gpx"));
         builder.UseSetting("Storage:DemDirectory", Path.Combine(_storageDir, "dem"));

@@ -19,5 +19,11 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // This project does not use the React Compiler runtime; this compiler-only
+      // rule (added in eslint-plugin-react-hooks 7.1 recommended) flags correct
+      // manual memoization it cannot statically preserve. Not applicable here.
+      'react-hooks/preserve-manual-memoization': 'off',
+    },
   },
 ])

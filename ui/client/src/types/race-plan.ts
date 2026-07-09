@@ -249,9 +249,8 @@ export type RacePlanStatus = 'draft' | 'ready' | 'archived';
 // Request types (Create / Update)
 // ─────────────────────────────────────────────
 
-export interface RacePlanCreateFromRouteRequest {
-  // body vide, routeId en URL
-}
+// Empty request body — routeId is passed in the URL
+export type RacePlanCreateFromRouteRequest = Record<string, never>;
 
 export interface RacePlanUpdateRequest {
   name: string;
@@ -285,9 +284,8 @@ export interface RacePlanCheckpointCreateRequest {
   notes?: string | null;
 }
 
-export interface RacePlanCheckpointUpdateRequest extends RacePlanCheckpointCreateRequest {
-  // Même structure
-}
+// Same structure as the create request
+export type RacePlanCheckpointUpdateRequest = RacePlanCheckpointCreateRequest;
 
 export interface RacePlanNutritionItemCreateRequest {
   atCheckpointId?: string | null;

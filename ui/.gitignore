@@ -1,7 +1,11 @@
 # API
 api/bin/
 api/obj/
-api/data/
+# Runtime SQLite database files only — NOT the api/Data/ source folder
+# (Git is case-insensitive on Windows, so a bare `api/data/` also ignores `api/Data/`).
+api/data/*.db
+api/data/*.db-shm
+api/data/*.db-wal
 
 # Client
 client/node_modules/

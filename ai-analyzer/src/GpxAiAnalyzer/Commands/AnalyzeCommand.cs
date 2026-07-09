@@ -78,7 +78,7 @@ public static class AnalyzeCommand
 
             // Run analysis
             var analyzer = new TrackAnalyzer(chatClient);
-            var report = await analyzer.AnalyzeAsync(stats, ct);
+            var report = await analyzer.AnalyzeAsync(stats, ct: ct);
 
             // Output
             ReportFormatter.Format(Console.Out, stats.Filename, report, format);

@@ -15,15 +15,15 @@
     "serve": "docusaurus serve"
   },
   "dependencies": {
-    "@docusaurus/core": "^3.7",
-    "@docusaurus/preset-classic": "^3.7",
+    "@docusaurus/core": "^3.10",
+    "@docusaurus/preset-classic": "^3.10",
     "prism-react-renderer": "^2.4",
-    "react": "^19.0",
-    "react-dom": "^19.0"
+    "react": "^19.2",
+    "react-dom": "^19.2"
   },
   "devDependencies": {
     "@docusaurus/module-type-aliases": "^3.7",
-    "@docusaurus/tsconfig": "^3.7",
+    "@docusaurus/tsconfig": "^3.10",
     "@docusaurus/types": "^3.7",
     "typescript": "~5.7"
   },

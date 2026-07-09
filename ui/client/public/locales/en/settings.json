@@ -4,7 +4,6 @@
   "serviceConnectionHint": "Connect your personal account to automatically sync new activities via webhook.",
   "connect": "Connect",
   "disconnect": "Disconnect",
-  "placeholder": {
   "analysisPreferences": "Analysis Preferences",
   "defaultPreset": "Default Preset",
   "smoothing": "Smoothing",
