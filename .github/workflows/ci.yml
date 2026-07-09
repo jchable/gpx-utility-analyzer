@@ -93,11 +93,12 @@ jobs:
           cache: npm
           cache-dependency-path: ui/client/package-lock.json
       - name: Install
-        # npm/cli#4828: `npm ci` can skip platform-specific native binaries
-        # (e.g. @rollup/rollup-linux-x64-gnu). Reconcile them for this runner.
+        # npm/cli#4828: the committed lockfile omits this runner's rollup native
+        # binary (@rollup/rollup-linux-x64-gnu), which npm ci then skips. Remove
+        # the lockfile + node_modules for a correct fresh resolve on this platform.
         run: |
-          npm ci
-          npm install --no-save
+          rm -rf node_modules package-lock.json
+          npm install
       - name: Lint
         run: npm run lint
       - name: Build
@@ -121,11 +122,12 @@ jobs:
           cache: npm
           cache-dependency-path: ui/client/package-lock.json
       - name: Install
-        # npm/cli#4828: `npm ci` can skip platform-specific native binaries
-        # (e.g. @rollup/rollup-linux-x64-gnu). Reconcile them for this runner.
+        # npm/cli#4828: the committed lockfile omits this runner's rollup native
+        # binary (@rollup/rollup-linux-x64-gnu), which npm ci then skips. Remove
+        # the lockfile + node_modules for a correct fresh resolve on this platform.
         run: |
-          npm ci
-          npm install --no-save
+          rm -rf node_modules package-lock.json
+          npm install
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
       - name: Build
