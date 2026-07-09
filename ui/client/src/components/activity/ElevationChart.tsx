@@ -72,7 +72,7 @@ export default function ElevationChart({ stats }: ElevationChartProps) {
             <Tooltip
               contentStyle={TOOLTIP_STYLE}
               cursor={{ fill: 'var(--chart-cursor)' }}
-              formatter={(value: number | undefined) => [`${value ?? 0} m`, 'Elevation']}
+              formatter={(value) => [`${Number(value) || 0} m`, 'Elevation']}
             />
             <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={48}>
               {data.map((entry, index) => (
