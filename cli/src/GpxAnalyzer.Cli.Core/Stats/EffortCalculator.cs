@@ -13,6 +13,12 @@ public static class EffortCalculator
     /// denominator is GPS jitter and the numerator independent elevation noise,
     /// so the quotient is arbitrary — and it propagated straight into
     /// MaxGradePercent and the composite difficulty score.
+    ///
+    /// Applies to ComputeTerrainDifficulty ONLY. Tobler and Minetti bound a wild
+    /// grade themselves (exp decay + a min-speed guard; a clamp to +/-0.45), and
+    /// they consume the segment DISTANCE, so a floor there would not sanitise a
+    /// quotient — it would silently drop real distance. At 1 Hz, the default
+    /// cadence on most watches, that is every segment of a running track.
     /// </summary>
     private const double MinGradeSegmentM = 5.0;
 
@@ -40,7 +46,10 @@ public static class EffortCalculator
         for (int i = 1; i < points.Count; i++)
         {
             var dist = points[i].DistFromPrev;
-            if (dist < MinGradeSegmentM) continue; // grade is meaningless below this
+            // 0.1 m, not MinGradeSegmentM: Tobler saturates (exp decay plus the
+            // speedMs > 0.01 guard below), and a 5 m floor would discard EVERY
+            // segment of a 1 Hz recording - the default cadence on most watches.
+            if (dist < 0.1) continue; // skip negligible segments
 
             var dEle = points[i].Ele - points[i - 1].Ele;
             var grade = dEle / dist; // rise/run
@@ -135,7 +144,10 @@ public static class EffortCalculator
         for (int i = 1; i < points.Count; i++)
         {
             var dist = points[i].DistFromPrev;
-            if (dist < MinGradeSegmentM) continue;
+            // 0.1 m, not MinGradeSegmentM: Minetti clamps the grade to +/-0.45, so a
+            // jitter segment contributes at most its own (tiny) length x 5.4, and a
+            // 5 m floor would zero the metric outright for 1 Hz recordings.
+            if (dist < 0.1) continue;
 
             var dEle = points[i].Ele - points[i - 1].Ele;
             var grade = dEle / dist;

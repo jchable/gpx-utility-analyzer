@@ -408,4 +408,89 @@ public class EffortCalculatorTests
         // Distance-weighted: 2000 m at 10% over 2600 m total = 7.7%.
         Assert.Equal(7.7, effort.TerrainDifficulty.AvgGradePercent, 1);
     }
+
+    // ── #103 follow-up: the grade floor must not reach the distance-consuming metrics ──
+
+    /// <summary>
+    /// A 1 Hz recording — the default cadence on most GPS watches — of a runner at
+    /// 3 m/s climbing a steady 5%. Every segment is ~3 m, i.e. BELOW MinGradeSegmentM.
+    ///
+    /// No other fixture in this suite, and no golden, spaces points closer than 100 m,
+    /// which is exactly why applying the grade floor to ToblerTime and
+    /// EquivalentFlatDistance went unnoticed: it zeroed both metrics outright for the
+    /// most common recording cadence there is.
+    /// </summary>
+    private static (List<TrackPoint> Points, Summary Summary) OneHertzClimb(int count = 600)
+    {
+        var t0 = new DateTime(2024, 1, 1, 10, 0, 0, DateTimeKind.Utc);
+        var points = new List<TrackPoint>();
+        for (int i = 0; i < count; i++)
+            points.Add(new TrackPoint
+            {
+                Lat = 48.0 + i * (3.0 / 111_320.0),   // 3 m north per second
+                Lon = 2.0,
+                Ele = 100 + i * 0.15,                 // 0.15 m per 3 m = a steady 5%
+                Time = t0.AddSeconds(i),
+            });
+
+        // Let the pipeline compute DistFromPrev, so the fixture proves that a 1 Hz
+        // recording really does produce sub-5 m segments rather than asserting it.
+        SpeedCalculator.EnrichPoints(points);
+
+        var distM = points.Sum(p => p.DistFromPrev);
+        var gain = (count - 1) * 0.15;
+        return (points, new Summary
+        {
+            TotalDistance = distM,
+            TotalTime = TimeSpan.FromSeconds(count - 1),
+            MovingTime = TimeSpan.FromSeconds(count - 1),
+            Elevation = new ElevationResult { Gain = gain, Loss = 0, Max = 100 + gain, Min = 100 },
+        });
+    }
+
+    [Fact]
+    public void OneHertzRecording_ProducesSegmentsBelowTheGradeFloor()
+    {
+        var (points, _) = OneHertzClimb();
+
+        // The premise of every assertion below: this is what 1 Hz looks like.
+        Assert.All(points.Skip(1), p => Assert.InRange(p.DistFromPrev, 2.5, 3.5));
+    }
+
+    [Fact]
+    public void ToblerTime_OneHertzRecording_IsNotZeroedByTheGradeFloor()
+    {
+        var (points, summary) = OneHertzClimb();
+
+        var effort = EffortCalculator.ComputeAll(points, summary);
+
+        // Tobler at a 5% grade predicts 6*exp(-3.5*0.10) = 4.23 km/h, so ~1.8 km
+        // takes ~25 min. A floor that skips every segment reports 0 instead.
+        Assert.True(effort.ToblerTime > TimeSpan.Zero,
+            "tobler_time is zero for a 1 Hz recording: every segment was skipped");
+        Assert.InRange(effort.ToblerTime, TimeSpan.FromMinutes(20), TimeSpan.FromMinutes(32));
+
+        // ...and the ratio derived from it must therefore also be real.
+        Assert.True(effort.PerformanceRatioTobler > 0,
+            "performance_ratio_tobler is zero because tobler_time was zero");
+    }
+
+    [Fact]
+    public void EquivalentFlatDistance_OneHertzRecording_IsNotZeroedByTheGradeFloor()
+    {
+        var (points, summary) = OneHertzClimb();
+
+        var effort = EffortCalculator.ComputeAll(points, summary);
+
+        Assert.True(effort.EquivalentFlatDistanceKm > 0,
+            "equivalent_flat_distance_km is zero for a 1 Hz recording: every segment was skipped");
+
+        // Minetti's cost ratio at 5% is ~1.30, so ~1.8 km of climb is worth ~2.3 km flat.
+        // It must exceed the raw distance (uphill costs more) but stay in the same order.
+        var flatKm = summary.TotalDistance / 1000.0;
+        Assert.True(effort.EquivalentFlatDistanceKm > flatKm,
+            $"a 5% climb should cost more than its {flatKm:F2} km flat equivalent, " +
+            $"got {effort.EquivalentFlatDistanceKm}");
+        Assert.InRange(effort.EquivalentFlatDistanceKm, 2.0, 2.8);
+    }
 }
