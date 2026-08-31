@@ -20,7 +20,14 @@ public static class TimeSplitter
             throw new ArgumentException("Interval must be positive", nameof(interval));
 
         var segments = new List<TimeSegment>();
-        var baseTime = points[0].Time;
+
+        // A trkpt with no <time> parses as DateTime.MinValue. Anchoring the bucket
+        // window there makes the catch-up loop walk two millennia one interval at
+        // a time, emitting a junk segment per iteration. Anchor on the first
+        // timestamp that is actually usable instead.
+        var baseTime = points.FirstOrDefault(p => p.Time > DateTime.MinValue)?.Time
+                       ?? points[0].Time;
+
         int segIndex = 0;
         var currentPoints = new List<TrackPoint>();
         var segStart = baseTime;
@@ -31,9 +38,12 @@ public static class TimeSplitter
             // Move to the correct bucket
             while (p.Time >= segEnd)
             {
-                if (currentPoints.Count > 0)
+                // Only emit a bucket that actually holds recorded points. After a
+                // flush, currentPoints holds nothing but the duplicated boundary
+                // point, so a multi-interval recording gap would otherwise emit one
+                // junk single-point segment per interval it spans.
+                if (currentPoints.Count > 1)
                 {
-                    // Duplicate boundary point into next segment
                     var lastPoint = currentPoints[^1];
                     segments.Add(new TimeSegment
                     {
@@ -43,11 +53,18 @@ public static class TimeSplitter
                         Points = new List<TrackPoint>(currentPoints)
                     });
                     segIndex++;
-                    currentPoints = [lastPoint]; // boundary duplication
+
+                    // Clone: consumers (SplitCommand) run ComputePipeline per
+                    // segment, which mutates Ele/Lat/Lon in place. Sharing the
+                    // boundary object writes one segment's smoothed values into
+                    // the neighbouring segment's exported GPX.
+                    currentPoints = [lastPoint.Clone()];
                 }
+
                 segStart = segEnd;
                 segEnd = segStart + interval;
             }
+
             currentPoints.Add(p);
         }
 

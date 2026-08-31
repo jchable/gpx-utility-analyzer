@@ -95,76 +95,6 @@
 }
 {
   "filename": "segment-002.gpx",
-  "total_distance_m": 0,
-  "total_distance_3d_m": 0,
-  "total_distance_km": 0,
-  "elevation_gain_m": 0,
-  "elevation_loss_m": 0,
-  "max_elevation_m": 40,
-  "min_elevation_m": 40,
-  "start_time": "2024-01-01T10:05:00Z",
-  "end_time": "2024-01-01T10:05:00Z",
-  "total_time": {
-    "display": "0s",
-    "seconds": 0
-  },
-  "moving_time": {
-    "display": "0s",
-    "seconds": 0
-  },
-  "stopped_time": {
-    "display": "0s",
-    "seconds": 0
-  },
-  "avg_speed_kmh": 0,
-  "avg_moving_speed_kmh": 0,
-  "max_speed_kmh": 2.4468058823051573,
-  "avg_pace": "-",
-  "avg_moving_pace": "-",
-  "point_count": 1,
-  "segment_count": 1,
-  "points_per_km": 0,
-  "stop_count": 0,
-  "total_stop_time": {
-    "display": "0s",
-    "seconds": 0
-  },
-  "avg_stop_duration": {
-    "display": "0s",
-    "seconds": 0
-  },
-  "effort": {
-    "naismith_time": {
-      "display": "0s",
-      "seconds": 0
-    },
-    "tobler_time": {
-      "display": "0s",
-      "seconds": 0
-    },
-    "munter_time": {
-      "display": "0s",
-      "seconds": 0
-    },
-    "performance_ratio_naismith": 0,
-    "performance_ratio_tobler": 0,
-    "kilometre_effort": 0,
-    "itra_points": 0,
-    "itra_category": "XXS",
-    "equivalent_flat_distance_km": 0,
-    "terrain_difficulty": {
-      "score": 1,
-      "grade": "Easy",
-      "avg_grade_percent": 0,
-      "max_grade_percent": 0,
-      "grade_variance": 0,
-      "steep_section_ratio": 0,
-      "elevation_per_km": 0
-    }
-  }
-}
-{
-  "filename": "segment-003.gpx",
   "total_distance_m": 266.20136566938066,
   "total_distance_3d_m": 266.20136566938066,
   "total_distance_km": 0.2662013656693807,
@@ -255,12 +185,12 @@
     }
   },
   "anomalies": {
-    "quality_score": 85,
+    "quality_score": 89,
     "total_count": 3,
-    "info_count": 0,
-    "warning_count": 3,
+    "info_count": 1,
+    "warning_count": 2,
     "critical_count": 0,
-    "distance_impact_m": -75929.68687803294,
+    "distance_impact_m": -76133.58736822504,
     "time_impact_s": 86400,
     "correction_applied": false,
     "anomalies": [
@@ -280,14 +210,14 @@
       {
         "type": "gps_drift",
         "category": "position",
-        "severity": "warning",
+        "severity": "info",
         "start_index": 0,
         "end_index": 1,
         "start_time": "2024-01-01T10:05:00Z",
         "end_time": "2024-01-02T10:00:00Z",
-        "distance_impact_m": 203.90049019209644,
+        "distance_impact_m": 0,
         "time_impact_s": 0,
-        "description": "Position oscillation during stop: max drift 133m from centroid, inflated distance: 204m",
+        "description": "Position oscillation during stop: max drift 133m from centroid, inflated distance: 0m",
         "was_corrected": false
       },
       {
