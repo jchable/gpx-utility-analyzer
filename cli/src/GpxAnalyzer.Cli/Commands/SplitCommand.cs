@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.Globalization;
 using GpxAnalyzer.Cli.Core.Gpx;
 using GpxAnalyzer.Cli.Core.Output;
 using GpxAnalyzer.Cli.Core.Split;
@@ -54,8 +55,9 @@ public static class SplitCommand
             var splitInterval = ParseDuration(interval);
             if (splitInterval <= TimeSpan.Zero)
             {
-                Console.Error.WriteLine($"Error: invalid interval '{interval}'");
-                return;
+                Console.Error.WriteLine(
+                    $"Error: invalid interval '{interval}' - use a unit suffix, e.g. 24h, 90m or 30s");
+                return 1;
             }
 
             var formatter = FormatterFactory.Create(format, GpxAnalyzer.Cli.Output.JsonContext.Default.Options);
@@ -84,7 +86,11 @@ public static class SplitCommand
                         GpxWriter.Write(outPath, seg.Points, $"{prefix}-{i + 1:D3}");
                         Console.Error.WriteLine($"  {filename} ({seg.Points.Count} points)");
 
-                        var (summary, _) = ComputePipeline.Compute(seg.Points, 1, cfg);
+                        // Compute on a copy: ComputePipeline mutates Ele and Lat/Lon
+                        // in place (DEM correction, elevation and track smoothing),
+                        // and boundary points are shared between adjacent segments.
+                        var forAnalysis = seg.Points.Select(p => p.Clone()).ToList();
+                        var (summary, _) = ComputePipeline.Compute(forAnalysis, 1, cfg);
                         formatter.Format(Console.Out, filename, summary, cfg.StopConfig);
                     }
                     catch (Exception ex)
@@ -97,22 +103,26 @@ public static class SplitCommand
             {
                 Console.Error.WriteLine($"Error: {ex.Message}");
             }
+
+            return 0;
         });
 
         return cmd;
     }
 
-    private static TimeSpan ParseDuration(string s)
+    internal static TimeSpan ParseDuration(string s)
     {
         s = s.Trim().ToLowerInvariant();
-        if (s.EndsWith("h") && double.TryParse(s[..^1], out var hours))
+        if (s.EndsWith("h") && double.TryParse(s[..^1], NumberStyles.Float, CultureInfo.InvariantCulture, out var hours))
             return TimeSpan.FromHours(hours);
-        if (s.EndsWith("m") && double.TryParse(s[..^1], out var minutes))
+        if (s.EndsWith("m") && double.TryParse(s[..^1], NumberStyles.Float, CultureInfo.InvariantCulture, out var minutes))
             return TimeSpan.FromMinutes(minutes);
-        if (s.EndsWith("s") && double.TryParse(s[..^1], out var seconds))
+        if (s.EndsWith("s") && double.TryParse(s[..^1], NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds))
             return TimeSpan.FromSeconds(seconds);
-        if (TimeSpan.TryParse(s, out var ts))
-            return ts;
+
+        // Deliberately NOT falling through to TimeSpan.TryParse: its format reads a
+        // bare integer as a whole number of DAYS, so '--interval 24' was silently
+        // accepted as 24 days instead of the 24 hours the user meant.
         return TimeSpan.Zero;
     }
 }
