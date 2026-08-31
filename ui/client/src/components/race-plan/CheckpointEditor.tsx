@@ -69,6 +69,8 @@ export default function CheckpointEditor({ plan }: Props) {
       );
     } else {
       setForm((f) => ({ ...f, distanceKm: newCheckpointDistanceKm ?? f.distanceKm }));
+      // A new checkpoint must not inherit the day offset of the one last edited.
+      setCutoffDayOffset(0);
     }
   }, [existing, editingCheckpointId, newCheckpointDistanceKm, startTime]);
 
