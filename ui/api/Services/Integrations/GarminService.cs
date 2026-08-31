@@ -117,24 +117,36 @@ public class GarminService : IActivityImporter
         throw new NotSupportedException("Garmin tokens do not expire.");
     }
 
-    public Task<bool> ValidateWebhookAsync(HttpContext context)
+    public Task<bool> ValidateSubscriptionAsync(HttpContext context)
     {
         // Garmin webhook validation is typically done during registration
         return Task.FromResult(true);
     }
 
-    public async Task<string?> GetWebhookActivityIdAsync(HttpContext context)
+    public async Task<WebhookEvent?> ReadWebhookEventAsync(HttpContext context)
     {
-        var body = await JsonSerializer.DeserializeAsync<JsonElement>(context.Request.Body);
+        JsonElement body;
+        try { body = await JsonSerializer.DeserializeAsync<JsonElement>(context.Request.Body); }
+        catch (JsonException) { return null; }
 
-        // Garmin webhook payload contains activityDetails array
-        if (body.TryGetProperty("activityDetails", out var details) && details.GetArrayLength() > 0)
-        {
-            var activityId = details[0].GetProperty("activityId").GetInt64();
-            return activityId.ToString();
-        }
+        if (body.ValueKind != JsonValueKind.Object) return null;
 
-        return null;
+        // Garmin webhook payload contains an activityDetails array
+        if (!body.TryGetProperty("activityDetails", out var details) ||
+            details.ValueKind != JsonValueKind.Array ||
+            details.GetArrayLength() == 0)
+            return null;
+
+        var entry = details[0];
+        if (!entry.TryGetProperty("activityId", out var activityId)) return null;
+
+        // Garmin identifies the athlete with userId; without it the event cannot
+        // be attributed to a user and must be dropped rather than guessed.
+        string? ownerId = entry.TryGetProperty("userId", out var owner)
+            ? (owner.ValueKind == JsonValueKind.Number ? owner.GetInt64().ToString() : owner.GetString())
+            : null;
+
+        return new WebhookEvent(activityId.GetInt64().ToString(), ownerId);
     }
 
     public async Task<ImportedActivity> FetchActivityAsync(string externalId, string accessToken)

@@ -41,7 +41,7 @@ public class WebhooksController : ControllerBase
         var importer = _importers.FirstOrDefault(i => i.ProviderName == "strava");
         if (importer is null) return NotFound();
 
-        if (await importer.ValidateWebhookAsync(HttpContext))
+        if (await importer.ValidateSubscriptionAsync(HttpContext))
         {
             var challenge = Request.Query["hub.challenge"].ToString();
             return Ok(new { hub_challenge = challenge });
@@ -65,15 +65,27 @@ public class WebhooksController : ControllerBase
         var importer = _importers.FirstOrDefault(i => i.ProviderName == provider);
         if (importer is null) return NotFound();
 
-        var integration = await _db.Integrations.FirstOrDefaultAsync(i => i.Provider == provider && i.IsActive);
+        // Read + validate the body once, before any credential is selected.
+        var evt = await importer.ReadWebhookEventAsync(HttpContext);
+        if (evt is null) return Ok(); // not an activity-create event, or failed validation
+
+        if (string.IsNullOrEmpty(evt.OwnerId))
+        {
+            _logger.LogWarning("Webhook for {Provider} carried no owner id; dropping", provider);
+            return Ok();
+        }
+
+        var integration = await _db.Integrations.FirstOrDefaultAsync(
+            i => i.Provider == provider && i.IsActive && i.ExternalUserId == evt.OwnerId);
         if (integration is null)
         {
-            _logger.LogWarning("Received webhook for {Provider} but no active integration found", provider);
+            _logger.LogWarning(
+                "Received {Provider} webhook for owner {OwnerId} with no matching active integration",
+                provider, evt.OwnerId);
             return Ok(); // Acknowledge but don't process
         }
 
-        var externalId = await importer.GetWebhookActivityIdAsync(HttpContext);
-        if (externalId is null) return Ok(); // Not an activity creation event
+        var externalId = evt.ExternalActivityId;
 
         // Check for duplicate
         var exists = await _db.Activities.AnyAsync(a => a.Source == provider && a.ExternalId == externalId);

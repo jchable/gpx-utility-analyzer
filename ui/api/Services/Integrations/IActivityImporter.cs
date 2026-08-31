@@ -6,10 +6,19 @@ public interface IActivityImporter
     Task<string> GetAuthorizationUrlAsync(string callbackUrl, string state);
     Task<TokenInfo> ExchangeCodeAsync(string code, string callbackUrl);
     Task<TokenInfo> RefreshTokenAsync(string refreshToken);
-    Task<bool> ValidateWebhookAsync(HttpContext context);
-    Task<string?> GetWebhookActivityIdAsync(HttpContext context);
+    /// <summary>Validates a GET subscription-verification request.</summary>
+    Task<bool> ValidateSubscriptionAsync(HttpContext context);
+
+    /// <summary>
+    /// Reads and validates the POST webhook body exactly once.
+    /// Returns null when the event is not an activity creation, or fails validation.
+    /// </summary>
+    Task<WebhookEvent?> ReadWebhookEventAsync(HttpContext context);
+
     Task<ImportedActivity> FetchActivityAsync(string externalId, string accessToken);
 }
+
+public sealed record WebhookEvent(string ExternalActivityId, string? OwnerId);
 
 public class TokenInfo
 {
