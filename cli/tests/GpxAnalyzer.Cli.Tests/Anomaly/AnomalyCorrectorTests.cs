@@ -526,4 +526,36 @@ public class AnomalyCorrectorTests
             $"max speed should stay clamped at the hiking threshold, got {summary.Speed.MaxSpeed * 3.6:F0} km/h");
     }
 
+
+    // -- #79 + #84: elevation and biometrics must follow the corrections
+    [Fact]
+    public void FixAnomalies_ElevationSpikeAndHrDropout_RecomputesElevationAndBiometrics()
+    {
+        var t0 = DateTime.Parse("2024-01-01T10:00:00Z").ToUniversalTime();
+        var points = new List<TrackPoint>();
+        for (int i = 0; i < 30; i++)
+            points.Add(new TrackPoint
+            {
+                Lat = 48.0 + i * 0.00003, Lon = 2.0, Ele = 100,
+                Time = t0.AddSeconds(i), HeartRate = 140,
+            });
+
+        points[10].Ele = 950;                                   // barometric spike, +850 m
+        for (int i = 20; i < 25; i++) points[i].HeartRate = 250; // HR dropout run
+
+        var cfg = BuildFixAnomaliesConfig(maxReasonableSpeed: 4.0);
+        var (summary, processed) = ComputePipeline.Compute(points, 1, cfg);
+
+        // The corrector rewrote the elevations and nulled the HR samples...
+        Assert.True(processed[10].Ele < 500, "the spike should have been interpolated away");
+        Assert.DoesNotContain(processed, p => p.HeartRate == 250);
+
+        // ...so the reported numbers must reflect the corrected data.
+        Assert.True(summary.Elevation.Gain < 100,
+            $"elevation gain still includes the corrected spike: {summary.Elevation.Gain:F0} m");
+        Assert.NotNull(summary.Biometrics.HeartRate);
+        Assert.True(summary.Biometrics.HeartRate!.Max < 250,
+            $"heart rate max still reports the nulled dropout: {summary.Biometrics.HeartRate.Max}");
+    }
+
 }

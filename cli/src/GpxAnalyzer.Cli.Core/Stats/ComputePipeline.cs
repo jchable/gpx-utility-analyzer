@@ -145,11 +145,29 @@ public static class ComputePipeline
                     s.TotalDistance3D += Math.Sqrt(horizontal * horizontal + dEle * dEle);
                 }
 
+                s.Elevation = ElevationCalculator.ComputeWithAlgo(points, elevCfg);
+
+                s.StartTime = points[0].Time;
+                s.EndTime = points[^1].Time;
+                s.TotalTime = s.EndTime - s.StartTime;
+
+                s.Stops = StopDetector.DetectStops(points, cfg.StopConfig);
+                s.StopCount = s.Stops.Count;
+                s.TotalStopTime = StopDetector.TotalStopTime(s.Stops);
+                s.LongestStop = StopDetector.LongestStop(s.Stops);
+                s.AvgStopDuration = StopDetector.AvgStopDuration(s.Stops);
+                s.StoppedTime = s.TotalStopTime;
+                s.MovingTime = s.TotalTime - s.StoppedTime;
+                if (s.MovingTime < TimeSpan.Zero) s.MovingTime = TimeSpan.Zero;
+
                 s.Speed = SpeedCalculator.ComputeSpeed(s.TotalDistance, s.TotalTime, s.MovingTime);
                 s.Speed.MaxSpeed = SpeedCalculator.MaxSpeedFromPoints(points);
 
                 if (s.TotalDistance > 0)
                     s.PointsPerKm = points.Count / (s.TotalDistance / 1000);
+
+                s.Biometrics = BiometricsCalculator.Compute(points, cfg.BiometricsCfg);
+                s.Effort = EffortCalculator.ComputeAll(points, s);
             }
         }
 
