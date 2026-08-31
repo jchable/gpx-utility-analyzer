@@ -21,4 +21,8 @@
     <ProjectReference Include="..\GpxAnalyzer.Cli.Core\GpxAnalyzer.Cli.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="GpxAnalyzer.Cli.Tests" />
+  </ItemGroup>
+
 </Project>

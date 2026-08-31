@@ -48,6 +48,11 @@ internal static class SharedFlags
         {
             Console.Error.WriteLine($"Warning: unknown preset '{preset}', using hiking");
             stopCfg = StopDetector.Presets[StopDetector.PresetHiking];
+            // The name itself has to fall back too: the PresetMaxSpeed lookup below
+            // uses it, and leaving the invalid name there silently sets
+            // MaxReasonableSpeed = 0, which disables GPS outlier filtering,
+            // speed clamping and speed-spike detection all at once.
+            preset = StopDetector.PresetHiking;
         }
 
         if (stopSpeed > 0)
@@ -83,8 +88,9 @@ internal static class SharedFlags
         }
 
         double maxReasonable = maxSpeed;
-        if (maxReasonable <= 0 && SpeedCalculator.PresetMaxSpeed.TryGetValue(preset, out var presetMax))
-            maxReasonable = presetMax;
+        if (maxReasonable <= 0)
+            maxReasonable = SpeedCalculator.PresetMaxSpeed.GetValueOrDefault(
+                preset, SpeedCalculator.DefaultMaxReasonableSpeed);
 
         return new ComputeConfig
         {
