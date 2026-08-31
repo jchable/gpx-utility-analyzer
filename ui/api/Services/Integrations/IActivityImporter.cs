@@ -3,7 +3,7 @@ namespace GpxAnalyzer.Api.Services.Integrations;
 public interface IActivityImporter
 {
     string ProviderName { get; }
-    Task<string> GetAuthorizationUrlAsync(string callbackUrl);
+    Task<string> GetAuthorizationUrlAsync(string callbackUrl, string state);
     Task<TokenInfo> ExchangeCodeAsync(string code, string callbackUrl);
     Task<TokenInfo> RefreshTokenAsync(string refreshToken);
     Task<bool> ValidateWebhookAsync(HttpContext context);

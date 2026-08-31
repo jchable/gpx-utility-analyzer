@@ -29,12 +29,17 @@ public class GarminService : IActivityImporter
         _logger = logger;
     }
 
-    public async Task<string> GetAuthorizationUrlAsync(string callbackUrl)
+    public async Task<string> GetAuthorizationUrlAsync(string callbackUrl, string state)
     {
         var consumerKey = await _settings.GetAsync("Integrations:Garmin:ConsumerKey")
             ?? throw new InvalidOperationException("Garmin ConsumerKey not configured.");
         var consumerSecret = await _settings.GetAsync("Integrations:Garmin:ConsumerSecret")
             ?? throw new InvalidOperationException("Garmin ConsumerSecret not configured.");
+
+        // OAuth 1.0a has no `state` parameter, so the binding travels in the
+        // callback URL itself — the provider redirects the browser back to it
+        // verbatim, appending oauth_token/oauth_verifier.
+        var boundCallbackUrl = $"{callbackUrl}?state={Uri.EscapeDataString(state)}";
 
         using var client = _httpClientFactory.CreateClient();
         var request = new HttpRequestMessage(HttpMethod.Post, RequestTokenUrl);
@@ -42,7 +47,7 @@ public class GarminService : IActivityImporter
         OAuth1Helper.SignRequest(request, consumerKey, consumerSecret,
             extraParams: new Dictionary<string, string>
             {
-                ["oauth_callback"] = callbackUrl,
+                ["oauth_callback"] = boundCallbackUrl,
             });
 
         var response = await client.SendAsync(request);

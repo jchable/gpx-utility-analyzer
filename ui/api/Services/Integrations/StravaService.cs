@@ -27,12 +27,15 @@ public class StravaService : IActivityImporter
         _logger = logger;
     }
 
-    public async Task<string> GetAuthorizationUrlAsync(string callbackUrl)
+    public async Task<string> GetAuthorizationUrlAsync(string callbackUrl, string state)
     {
         var clientId = await _settings.GetAsync("Integrations:Strava:ClientId")
             ?? throw new InvalidOperationException("Strava ClientId not configured.");
 
-        return $"{AuthUrl}?client_id={clientId}&response_type=code&redirect_uri={Uri.EscapeDataString(callbackUrl)}&scope=read,activity:read_all&approval_prompt=auto";
+        return $"{AuthUrl}?client_id={clientId}&response_type=code" +
+               $"&redirect_uri={Uri.EscapeDataString(callbackUrl)}" +
+               $"&scope=read,activity:read_all&approval_prompt=auto" +
+               $"&state={Uri.EscapeDataString(state)}";
     }
 
     public async Task<TokenInfo> ExchangeCodeAsync(string code, string callbackUrl)
