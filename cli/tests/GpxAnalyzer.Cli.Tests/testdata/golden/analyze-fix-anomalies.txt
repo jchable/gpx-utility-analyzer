@@ -1,0 +1,118 @@
+{
+  "filename": "with-gps-quality.gpx",
+  "total_distance_m": 165.39838164605544,
+  "total_distance_3d_m": 165.39838164605544,
+  "total_distance_km": 0.16539838164605544,
+  "elevation_gain_m": 0,
+  "elevation_loss_m": 0,
+  "max_elevation_m": 36,
+  "min_elevation_m": 36,
+  "start_time": "2024-01-01T10:00:00Z",
+  "end_time": "2024-01-01T10:02:00Z",
+  "total_time": {
+    "display": "2m 0s",
+    "seconds": 120
+  },
+  "moving_time": {
+    "display": "2m 0s",
+    "seconds": 120
+  },
+  "stopped_time": {
+    "display": "0s",
+    "seconds": 0
+  },
+  "avg_speed_kmh": 4.961951449381663,
+  "avg_moving_speed_kmh": 4.961951449381663,
+  "max_speed_kmh": 5.513265424782512,
+  "avg_pace": "12:05 min/km",
+  "avg_moving_pace": "12:05 min/km",
+  "point_count": 3,
+  "segment_count": 1,
+  "points_per_km": 18.138025113328226,
+  "stop_count": 0,
+  "total_stop_time": {
+    "display": "0s",
+    "seconds": 0
+  },
+  "avg_stop_duration": {
+    "display": "0s",
+    "seconds": 0
+  },
+  "heart_rate": {
+    "avg_bpm": 135,
+    "max_bpm": 150,
+    "min_bpm": 120
+  },
+  "temperature": {
+    "avg_celsius": 18.75,
+    "min_celsius": 18.5,
+    "max_celsius": 19
+  },
+  "effort": {
+    "naismith_time": {
+      "display": "1m 59s",
+      "seconds": 119.0868347
+    },
+    "tobler_time": {
+      "display": "1m 58s",
+      "seconds": 118.2181178
+    },
+    "munter_time": {
+      "display": "2m 28s",
+      "seconds": 148.8585434
+    },
+    "performance_ratio_naismith": 1.01,
+    "performance_ratio_tobler": 1.02,
+    "kilometre_effort": 0.2,
+    "itra_points": 0.2,
+    "itra_category": "XXS",
+    "equivalent_flat_distance_km": 0.2,
+    "terrain_difficulty": {
+      "score": 1,
+      "grade": "Easy",
+      "avg_grade_percent": 0,
+      "max_grade_percent": 0,
+      "grade_variance": 0,
+      "steep_section_ratio": 0,
+      "elevation_per_km": 0
+    }
+  },
+  "anomalies": {
+    "quality_score": 90,
+    "total_count": 2,
+    "info_count": 0,
+    "warning_count": 2,
+    "critical_count": 0,
+    "distance_impact_m": -18.377132513361616,
+    "time_impact_s": 120,
+    "correction_applied": true,
+    "anomalies": [
+      {
+        "type": "signal_loss",
+        "category": "position",
+        "severity": "warning",
+        "start_index": 0,
+        "end_index": 1,
+        "start_time": "2024-01-01T10:00:00Z",
+        "end_time": "2024-01-01T10:01:00Z",
+        "distance_impact_m": -18.377132513361616,
+        "time_impact_s": 60,
+        "description": "Signal loss: 1m00s gap between consecutive points",
+        "was_corrected": false
+      },
+      {
+        "type": "signal_loss",
+        "category": "position",
+        "severity": "warning",
+        "start_index": 1,
+        "end_index": 2,
+        "start_time": "2024-01-01T10:01:00Z",
+        "end_time": "2024-01-01T10:02:00Z",
+        "distance_impact_m": -0,
+        "time_impact_s": 60,
+        "description": "Signal loss: 1m00s gap between consecutive points",
+        "was_corrected": false
+      }
+    ]
+  }
+}

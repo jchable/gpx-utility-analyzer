@@ -1,0 +1,13 @@
+
+=== Benchmark: small.gpx (5 points) ===
+Configurations: 3
+
+
+ # PRESET ALGO E . SMOOTH T . SMOOTH DEM PARAMS DIST 2 D DIST 3 D D + D - MAX ELE MIN ELE MOVING STOPPED STOPS AVG SPD MAX SPD FILTERED TIME
+
+ 1 hiking threshold medium none yes t=2.0 1.00 km 1.00 km +2 m -0 m 43 m 39 m 20m00s 0m00s 0 3.0 km/h 3.2 km/h 0 <ms>
+ 2 trail threshold medium none yes t=2.0 1.00 km 1.00 km +2 m -0 m 43 m 39 m 20m00s 0m00s 0 3.0 km/h 3.2 km/h 0 <ms>
+ 3 cycling threshold medium none yes t=2.0 1.00 km 1.00 km +2 m -0 m 43 m 39 m 20m00s 0m00s 0 3.0 km/h 3.2 km/h 0 <ms>
+
+
+Completed 3 runs in <s> (avg: <ms>/run)

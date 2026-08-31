@@ -1,0 +1,76 @@
+
+=== GPX Analysis: small.gpx ===
+
+General
++--------------+-------------------------+
+| Start Time   | 2024-01-01 10:00:00 UTC |
+| End Time     | 2024-01-01 10:20:00 UTC |
+| Total Time   | 20m 0s                  |
+| Moving Time  | 20m 0s                  |
+| Stopped Time | 0s                      |
+| Points       | 5                       |
+| Segments     | 1                       |
+| Points/km    | 5.0                     |
++--------------+-------------------------+
+
+Distance & Speed
++---------------------+--------------+
+| Total Distance (2D) | 1.0 km       |
+| Total Distance (3D) | 1.0 km       |
+| Avg Speed           | 3.0 km/h     |
+| Avg Moving Speed    | 3.0 km/h     |
+| Max Speed           | 3.2 km/h     |
+| Avg Pace            | 19:57 min/km |
+| Avg Moving Pace     | 19:57 min/km |
++---------------------+--------------+
+
+Elevation
++----------------+------+
+| Elevation Gain | +2 m |
+| Elevation Loss | -0 m |
+| Max Elevation  | 43 m |
+| Min Elevation  | 39 m |
++----------------+------+
+
+Effort Metrics
++--------------------------+---------------+
+| Kilometre-Effort (KE)    | 1.0 KE        |
+| ITRA Points              | 1.0 (XXS)     |
+| Equivalent Flat Distance | 1.0 km        |
+| Naismith Time            | 12m 15s       |
+| Tobler Time              | 12m 6s        |
+| Munter Time              | 15m 12s       |
+| Performance vs Naismith  | 1.63x         |
+| Performance vs Tobler    | 1.65x         |
+| Terrain Difficulty       | 1.1/10 (Easy) |
++--------------------------+---------------+
+
+Stops (speed < 0.2 m/s, min duration: 3m 0s)
+  No stops detected.
+
+Data Quality (Score: 75/100)
++---------------------+--------+
+| Total Anomalies     | 5      |
+| Critical            | 0      |
+| Warnings            | 5      |
+| Info                | 0      |
+| Distance Impact     | -62 m  |
+| Time Impact         | 20m 0s |
+| Corrections Applied | No     |
++---------------------+--------+
+
+  [WARNING] SignalLoss (10:00:00 - 10:05:00)
+    Signal loss: 5m00s gap between consecutive points
+    Impact: -62 m distance
+
+  [WARNING] LowPointDensity (10:00:00 - 10:20:00)
+    Low point density: 5.0 points/km (minimum recommended: 5)
+
+  [WARNING] SignalLoss (10:05:00 - 10:10:00)
+    Signal loss: 5m00s gap between consecutive points
+
+  [WARNING] SignalLoss (10:10:00 - 10:15:00)
+    Signal loss: 5m00s gap between consecutive points
+
+  [WARNING] SignalLoss (10:15:00 - 10:20:00)
+    Signal loss: 5m00s gap between consecutive points

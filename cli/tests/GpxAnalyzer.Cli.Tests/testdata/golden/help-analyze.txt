@@ -1,0 +1,32 @@
+Description:
+  Analyze GPX files: distance, elevation, speed, pace, stops
+
+Usage:
+  gpx-analyzer analyze <files>... [options]
+
+Arguments:
+  <files>  GPX files, directories, or glob patterns
+
+Options:
+  --preset <preset>                            Stop detection preset: hiking, trail, cycling [default: hiking]
+  --stop-speed <stop-speed>                    Override max speed for stops (m/s) [default: 0]
+  --stop-duration <stop-duration>              Override min duration for stops (seconds) [default: 0]
+  --elevation-threshold <elevation-threshold>  Min elevation change (meters) [default: 2]
+  --smoothing <smoothing>                      Elevation smoothing: none, light, medium, heavy [default: medium]
+  --dem-dir <dem-dir>                          SRTM .hgt directory []
+  --dem-cache <dem-cache>                      DEM cache directory []
+  --dem-auto-download                          Auto-download missing tiles [default: True]
+  --dem-max-memory <dem-max-memory>            Max memory for DEM (MB, 0=unlimited) [default: 0]
+  --dem-skip-validation                        Skip tile validation [default: False]
+  --elevation-algo <elevation-algo>            Algorithm: threshold, douglas-peucker, segments [default: threshold]
+  --track-smoothing <track-smoothing>          GPS lat/lon smoothing: none, light, medium, heavy [default: none]
+  --dp-epsilon <dp-epsilon>                    Douglas-Peucker epsilon (meters) [default: 3]
+  --seg-min-length <seg-min-length>            Segments min length (meters) [default: 200]
+  --seg-max-deviation <seg-max-deviation>      Segments max RMS residual (meters) [default: 2]
+  --export <export>                            Export preprocessed GPX directory []
+  --enrich                                     Include computed metrics in export [default: False]
+  --max-hr <max-hr>                            Max HR for zone calculation [default: 0]
+  --max-speed <max-speed>                      GPS outlier removal threshold (m/s) [default: 0]
+  --fix-anomalies                              Apply automatic anomaly corrections [default: False]
+  -f, --format <format>                        Output format: text or json [default: text]
+  -?, -h, --help                               Show help and usage information

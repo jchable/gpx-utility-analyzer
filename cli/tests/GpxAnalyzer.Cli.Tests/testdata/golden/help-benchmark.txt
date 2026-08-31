@@ -1,0 +1,23 @@
+Description:
+  Run multi-configuration benchmark on a GPX file
+
+Usage:
+  gpx-analyzer benchmark <file> [options]
+
+Arguments:
+  <file>  GPX file to benchmark
+
+Options:
+  -o, --output <output>              CSV output file []
+  --full                             Full Cartesian product (~1248 runs) [default: False]
+  --vary <vary>                      Axes to vary (comma-separated: preset,elev-algo,elev-smoothing,track-smoothing,dem,elev-params) []
+  -v, --verbose                      Print progress to stderr [default: False]
+  --sort <sort>                      Sort by column (distance, distance-3d, elev-gain, elev-loss, moving-time, avg-speed, max-speed, stops, filtered, time) []
+  --max-hr <max-hr>                  Max HR for zone calculation [default: 0]
+  --dem-dir <dem-dir>                SRTM .hgt directory []
+  --dem-cache <dem-cache>            DEM cache directory []
+  --dem-auto-download                Auto-download missing tiles [default: True]
+  --dem-max-memory <dem-max-memory>  Max memory for DEM (MB, 0=unlimited) [default: 0]
+  --dem-skip-validation              Skip tile validation [default: False]
+  -f, --format <format>              Output format: text or json [default: text]
+  -?, -h, --help                     Show help and usage information

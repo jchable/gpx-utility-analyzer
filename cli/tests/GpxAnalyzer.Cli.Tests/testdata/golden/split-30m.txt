@@ -1,0 +1,147 @@
+{
+  "filename": "chunk-001.gpx",
+  "total_distance_m": 1002.5045871911748,
+  "total_distance_3d_m": 1002.5136913215906,
+  "total_distance_km": 1.0025045871911749,
+  "elevation_gain_m": 2.2666666666666657,
+  "elevation_loss_m": 0,
+  "max_elevation_m": 43.333333333333336,
+  "min_elevation_m": 39.333333333333336,
+  "start_time": "2024-01-01T10:00:00Z",
+  "end_time": "2024-01-01T10:20:00Z",
+  "total_time": {
+    "display": "20m 0s",
+    "seconds": 1200
+  },
+  "moving_time": {
+    "display": "20m 0s",
+    "seconds": 1200
+  },
+  "stopped_time": {
+    "display": "0s",
+    "seconds": 0
+  },
+  "avg_speed_kmh": 3.0075137615735246,
+  "avg_moving_speed_kmh": 3.0075137615735246,
+  "max_speed_kmh": 3.194454946646669,
+  "avg_pace": "19:57 min/km",
+  "avg_moving_pace": "19:57 min/km",
+  "point_count": 5,
+  "segment_count": 1,
+  "points_per_km": 4.987508350469536,
+  "stop_count": 0,
+  "total_stop_time": {
+    "display": "0s",
+    "seconds": 0
+  },
+  "avg_stop_duration": {
+    "display": "0s",
+    "seconds": 0
+  },
+  "effort": {
+    "naismith_time": {
+      "display": "12m 15s",
+      "seconds": 735.4033027
+    },
+    "tobler_time": {
+      "display": "12m 6s",
+      "seconds": 726.6245498
+    },
+    "munter_time": {
+      "display": "15m 12s",
+      "seconds": 912.4541284
+    },
+    "performance_ratio_naismith": 1.63,
+    "performance_ratio_tobler": 1.65,
+    "kilometre_effort": 1,
+    "itra_points": 1,
+    "itra_category": "XXS",
+    "equivalent_flat_distance_km": 1,
+    "terrain_difficulty": {
+      "score": 1.1,
+      "grade": "Easy",
+      "avg_grade_percent": 0.4,
+      "max_grade_percent": 0.7,
+      "grade_variance": 0.03,
+      "steep_section_ratio": 0,
+      "elevation_per_km": 2.3
+    }
+  },
+  "anomalies": {
+    "quality_score": 75,
+    "total_count": 5,
+    "info_count": 0,
+    "warning_count": 5,
+    "critical_count": 0,
+    "distance_impact_m": -62.30087547728422,
+    "time_impact_s": 1200,
+    "correction_applied": false,
+    "anomalies": [
+      {
+        "type": "signal_loss",
+        "category": "position",
+        "severity": "warning",
+        "start_index": 0,
+        "end_index": 1,
+        "start_time": "2024-01-01T10:00:00Z",
+        "end_time": "2024-01-01T10:05:00Z",
+        "distance_impact_m": -62.30087547728422,
+        "time_impact_s": 300,
+        "description": "Signal loss: 5m00s gap between consecutive points",
+        "was_corrected": false
+      },
+      {
+        "type": "low_point_density",
+        "category": "data_quality",
+        "severity": "warning",
+        "start_index": 0,
+        "end_index": 4,
+        "start_time": "2024-01-01T10:00:00Z",
+        "end_time": "2024-01-01T10:20:00Z",
+        "distance_impact_m": 0,
+        "time_impact_s": 0,
+        "description": "Low point density: 5.0 points/km (minimum recommended: 5)",
+        "was_corrected": false
+      },
+      {
+        "type": "signal_loss",
+        "category": "position",
+        "severity": "warning",
+        "start_index": 1,
+        "end_index": 2,
+        "start_time": "2024-01-01T10:05:00Z",
+        "end_time": "2024-01-01T10:10:00Z",
+        "distance_impact_m": -0,
+        "time_impact_s": 300,
+        "description": "Signal loss: 5m00s gap between consecutive points",
+        "was_corrected": false
+      },
+      {
+        "type": "signal_loss",
+        "category": "position",
+        "severity": "warning",
+        "start_index": 2,
+        "end_index": 3,
+        "start_time": "2024-01-01T10:10:00Z",
+        "end_time": "2024-01-01T10:15:00Z",
+        "distance_impact_m": -0,
+        "time_impact_s": 300,
+        "description": "Signal loss: 5m00s gap between consecutive points",
+        "was_corrected": false
+      },
+      {
+        "type": "signal_loss",
+        "category": "position",
+        "severity": "warning",
+        "start_index": 3,
+        "end_index": 4,
+        "start_time": "2024-01-01T10:15:00Z",
+        "end_time": "2024-01-01T10:20:00Z",
+        "distance_impact_m": -0,
+        "time_impact_s": 300,
+        "description": "Signal loss: 5m00s gap between consecutive points",
+        "was_corrected": false
+      }
+    ]
+  }
+}
