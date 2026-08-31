@@ -67,67 +67,15 @@ public sealed class DemSource : IElevationProvider, IElevationPreloader
         }
         if (tile == null) return (0, false);
 
-        // Check if cross-tile interpolation is needed
+        // SRTM tiles duplicate their shared edge row and column, so every point
+        // inside a tile is fully interpolable from that tile alone.
         double row = (tile.GridSize - 1) * (tile.LatOrigin + 1.0 - lat);
         double col = (tile.GridSize - 1) * (lon - tile.LonOrigin);
 
         if (row < 0 || row > tile.GridSize - 1 || col < 0 || col > tile.GridSize - 1)
             return (0, false);
 
-        int r0 = (int)Math.Floor(row);
-        int c0 = (int)Math.Floor(col);
-        bool needSouth = r0 + 1 >= tile.GridSize && row > r0;
-        bool needEast = c0 + 1 >= tile.GridSize && col > c0;
-
-        if (!needSouth && !needEast)
-            return tile.GetElevation(lat, lon);
-
-        return CrossTileElevation(tile, row, col, r0, c0, needSouth, needEast);
-    }
-
-    private (double Elevation, bool Ok) CrossTileElevation(
-        HgtTile tile, double row, double col, int r0, int c0, bool needSouth, bool needEast)
-    {
-        int gs = tile.GridSize;
-
-        short GetSample(int r, int c)
-        {
-            if (r < gs && c < gs)
-                return tile.Get(r, c);
-
-            double adjLat = tile.LatOrigin;
-            double adjLon = tile.LonOrigin;
-            if (r >= gs) adjLat -= 1;
-            if (c >= gs) adjLon += 1;
-
-            string adjKey = HgtTile.TileKey(adjLat + 0.5, adjLon + 0.5);
-            if (!_tiles.TryGetValue(adjKey, out var adjTile))
-            {
-                adjTile = LoadTile(adjKey);
-                _tiles[adjKey] = adjTile;
-            }
-            if (adjTile == null) return HgtTile.VoidValue;
-
-            int nr = r >= gs ? 0 : r;
-            int nc = c >= gs ? 0 : c;
-            return adjTile.Get(nr, nc);
-        }
-
-        int r1 = r0 + 1, c1 = c0 + 1;
-        short q11 = GetSample(r0, c0);
-        short q12 = GetSample(r0, c1);
-        short q21 = GetSample(r1, c0);
-        short q22 = GetSample(r1, c1);
-
-        if (q11 == HgtTile.VoidValue || q12 == HgtTile.VoidValue ||
-            q21 == HgtTile.VoidValue || q22 == HgtTile.VoidValue)
-            return (0, false);
-
-        double dr = row - r0;
-        double dc = col - c0;
-        double top = q11 * (1 - dc) + q12 * dc;
-        double bot = q21 * (1 - dc) + q22 * dc;
-        return (top * (1 - dr) + bot * dr, true);
+        return tile.GetElevation(lat, lon);
     }
 
     public async Task PreloadAsync(List<TrackPoint> points)
@@ -165,25 +113,16 @@ public sealed class DemSource : IElevationProvider, IElevationPreloader
         }
     }
 
-    private const double BoundaryThreshold = 1.0 / 1200.0;
-
+    /// <summary>
+    /// The tiles the track genuinely needs — one per point. No neighbours: SRTM
+    /// tiles duplicate their shared edge row and column, so GetElevation never
+    /// reads outside the tile a point falls in.
+    /// </summary>
     private static List<string> CollectTileKeys(List<TrackPoint> points)
     {
         var seen = new HashSet<string>();
         foreach (var p in points)
-        {
-            string key = HgtTile.TileKey(p.Lat, p.Lon);
-            seen.Add(key);
-
-            double latFloor = Math.Floor(p.Lat);
-            double lonFloor = Math.Floor(p.Lon);
-            bool nearSouth = p.Lat - latFloor < BoundaryThreshold && p.Lat > latFloor;
-            bool nearEast = (lonFloor + 1) - p.Lon < BoundaryThreshold && p.Lon < lonFloor + 1;
-
-            if (nearSouth) seen.Add(HgtTile.TileKey(latFloor - 0.5, p.Lon));
-            if (nearEast) seen.Add(HgtTile.TileKey(p.Lat, lonFloor + 1.5));
-            if (nearSouth && nearEast) seen.Add(HgtTile.TileKey(latFloor - 0.5, lonFloor + 1.5));
-        }
+            seen.Add(HgtTile.TileKey(p.Lat, p.Lon));
         return [.. seen];
     }
 
