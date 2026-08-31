@@ -7,6 +7,7 @@
   "fileCount_one": "{{count}} fichier sélectionné",
   "fileCount_other": "{{count}} fichiers sélectionnés",
   "clearAll": "Tout effacer",
+  "removeFile": "Retirer {{name}}",
   "statusReady": "Prêt",
   "statusUploading": "Envoi...",
   "statusProcessing": "Traitement...",

@@ -8,6 +8,8 @@ import { ACTIVITY_TYPES, ACTIVITY_COLORS } from '../types/activity';
 type UploadStatus = 'pending' | 'uploading' | 'processing' | 'done' | 'error';
 
 interface FileEntry {
+  /** Stable identity: the upload loop is keyed by this, never by array position. */
+  id: string;
   file: File;
   status: UploadStatus;
   activityId?: string;
@@ -15,6 +17,14 @@ interface FileEntry {
 }
 
 const POLL_INTERVAL = 2000;
+
+let fallbackIdCounter = 0;
+
+function newEntryId(): string {
+  return typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `file-${Date.now()}-${fallbackIdCounter++}`;
+}
 
 export default function UploadPage() {
   const { t } = useTranslation('upload');
@@ -26,6 +36,13 @@ export default function UploadPage() {
   const [activityType, setActivityType] = useState('trail');
   const [isDragOver, setIsDragOver] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+
+  // A ref mirroring `files`, so the async upload loop reads the LIVE list
+  // rather than the array captured when handleUploadAll was created.
+  const filesRef = useRef<FileEntry[]>(files);
+  useEffect(() => {
+    filesRef.current = files;
+  }, [files]);
 
   useEffect(() => {
     const processingFiles = files.filter((f) => f.status === 'processing' && f.activityId);
@@ -66,12 +83,12 @@ export default function UploadPage() {
     if (gpxFiles.length === 0) return;
     setFiles((prev) => [
       ...prev,
-      ...gpxFiles.map((file) => ({ file, status: 'pending' as UploadStatus })),
+      ...gpxFiles.map((file) => ({ id: newEntryId(), file, status: 'pending' as UploadStatus })),
     ]);
   }, []);
 
-  const removeFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
+  const removeFile = (id: string) => {
+    setFiles((prev) => prev.filter((f) => f.id !== id));
   };
 
   const handleDrop = useCallback(
@@ -94,27 +111,30 @@ export default function UploadPage() {
   };
 
   const handleUploadAll = async () => {
-    if (files.length === 0 || isUploading) return;
+    if (isUploading) return;
+
+    const queue = files.filter((f) => f.status === 'pending').map((f) => f.id);
+    if (queue.length === 0) return;
+
     setIsUploading(true);
 
-    for (let i = 0; i < files.length; i++) {
-      if (files[i].status !== 'pending') continue;
+    for (const id of queue) {
+      // Re-read from the live list: the entry may have been removed since the
+      // queue was built, and its position will have shifted regardless.
+      const entry = filesRef.current.find((f) => f.id === id);
+      if (!entry || entry.status !== 'pending') continue;
 
-      setFiles((prev) =>
-        prev.map((f, idx) => (idx === i ? { ...f, status: 'uploading' } : f))
-      );
+      setFiles((prev) => prev.map((f) => (f.id === id ? { ...f, status: 'uploading' } : f)));
 
       try {
-        const result = await api.uploadGpx(files[i].file, activityType);
+        const result = await api.uploadGpx(entry.file, activityType);
         setFiles((prev) =>
-          prev.map((f, idx) =>
-            idx === i ? { ...f, status: 'processing', activityId: result.id } : f
-          )
+          prev.map((f) => (f.id === id ? { ...f, status: 'processing', activityId: result.id } : f))
         );
       } catch (err) {
         setFiles((prev) =>
-          prev.map((f, idx) =>
-            idx === i
+          prev.map((f) =>
+            f.id === id
               ? { ...f, status: 'error', error: err instanceof Error ? err.message : t('uploadFailed') }
               : f
           )
@@ -246,9 +266,9 @@ export default function UploadPage() {
           </div>
 
           <div className="space-y-2">
-            {files.map((entry, i) => (
+            {files.map((entry) => (
               <div
-                key={`${entry.file.name}-${i}`}
+                key={entry.id}
                 className="flex items-center gap-3 bg-surface-card rounded-xl px-4 py-3 border border-border"
               >
                 {statusIcon(entry.status)}
@@ -275,8 +295,12 @@ export default function UploadPage() {
                     {tc('button.view')}
                   </button>
                 ) : entry.status === 'pending' ? (
+                  // Only ever rendered for a still-pending entry, i.e. one that
+                  // has not been sent. The upload loop is keyed by entry id and
+                  // re-reads the live list, so removing one mid-run is safe.
                   <button
-                    onClick={() => removeFile(i)}
+                    onClick={() => removeFile(entry.id)}
+                    aria-label={t('removeFile', { name: entry.file.name })}
                     className="p-1 rounded-lg text-content-muted/70 hover:text-red-400 transition-colors shrink-0"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
