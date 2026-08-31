@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="GpxAiAnalyzer.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- Microsoft.Extensions.AI core -->
     <PackageReference Include="Google.GenAI" Version="1.13.0" />
     <PackageReference Include="Microsoft.Extensions.AI" Version="*" />
