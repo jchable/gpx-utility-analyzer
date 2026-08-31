@@ -113,6 +113,37 @@ export function computeDayNightSegments(
   return segments;
 }
 
+/**
+ * Converts a wall-clock "HH:mm" cutoff into seconds since the race start.
+ *
+ * `dayOffset` is how many midnights the cutoff falls after the one implied by
+ * the plain wall-clock reading. Minute-of-day arithmetic alone caps the result
+ * at 24 h, which makes every day-2+ cutoff in an ultra unrepresentable.
+ */
+export function hhmmToElapsedSeconds(
+  startTime: string,
+  hhmm: string,
+  dayOffset = 0,
+): number | null {
+  if (!hhmm) return null;
+
+  const [hh, mm] = hhmm.split(':').map(Number);
+  const [sh, sm] = (startTime || '00:00').split(':').map(Number);
+  if ([hh, mm, sh, sm].some((n) => Number.isNaN(n))) return null;
+
+  let diffMinutes = hh * 60 + mm - (sh * 60 + sm);
+  if (diffMinutes < 0) diffMinutes += 24 * 60;
+
+  return (diffMinutes + dayOffset * 24 * 60) * 60;
+}
+
+/** How many whole days after the start a given elapsed time falls on. */
+export function elapsedSecondsToDayOffset(startTime: string, seconds: number): number {
+  const [sh, sm] = (startTime || '00:00').split(':').map(Number);
+  if (Number.isNaN(sh) || Number.isNaN(sm)) return 0;
+  return Math.floor((sh * 60 + sm + seconds / 60) / (24 * 60));
+}
+
 /** Format a seconds-since-start value as "HH:mm" given a departure time string. */
 export function formatArrivalTime(startTimeStr: string, elapsedSeconds: number): string {
   const [hh, mm] = startTimeStr.split(':').map(Number);

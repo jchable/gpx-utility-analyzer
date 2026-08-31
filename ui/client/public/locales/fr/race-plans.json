@@ -45,6 +45,8 @@
     "type": "Type",
     "distance": "Distance (km)",
     "cutoff": "Temps limite (cutoff)",
+    "cutoffDay": "Jour du cutoff",
+    "sameDay": "Le jour même",
     "pause": "Pause prévue",
     "crewAccess": "Accessible crew",
     "crewNotes": "Notes crew",

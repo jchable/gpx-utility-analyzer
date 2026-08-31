@@ -4,7 +4,7 @@ import { X, Plus, Minus } from 'lucide-react';
 import type { RacePlanDetail, RacePlanCheckpointCreateRequest, CheckpointType, DropBagItem } from '../../types/race-plan';
 import { useAddCheckpoint, useUpdateCheckpoint } from '../../hooks/useRacePlans';
 import { useRacePlanStore } from '../../stores/racePlanStore';
-import { formatArrivalTime } from '../../utils/dayNight';
+import { formatArrivalTime, hhmmToElapsedSeconds, elapsedSecondsToDayOffset } from '../../utils/dayNight';
 
 const CHECKPOINT_TYPES: CheckpointType[] = ['start', 'checkpoint', 'aid_station', 'crew_only', 'finish'];
 
@@ -23,6 +23,9 @@ export default function CheckpointEditor({ plan }: Props) {
     ? plan.checkpoints.find((cp) => cp.id === editingCheckpointId)
     : null;
 
+  // Helpers for cutoff / pause time inputs (HH:mm format ↔ seconds)
+  const startTime = plan.startTime ?? '00:00';
+
   const [form, setForm] = useState<RacePlanCheckpointCreateRequest>({
     name: '',
     type: 'aid_station',
@@ -35,6 +38,11 @@ export default function CheckpointEditor({ plan }: Props) {
     dropBagContents: null,
     notes: null,
   });
+
+  // How many midnights past the start the cutoff falls on. Kept outside `form`
+  // because `form` is spread straight into the API payload and this is a
+  // presentation-only companion to the wall-clock <input type="time">.
+  const [cutoffDayOffset, setCutoffDayOffset] = useState(0);
 
   // Populate form when editing existing.
   // Intentional prop→form sync: the editable form must reset when the selected
@@ -54,28 +62,19 @@ export default function CheckpointEditor({ plan }: Props) {
         dropBagContents: existing.dropBagContents,
         notes: existing.notes,
       });
+      setCutoffDayOffset(
+        existing.cutoffTimeSeconds == null
+          ? 0
+          : elapsedSecondsToDayOffset(startTime, existing.cutoffTimeSeconds),
+      );
     } else {
       setForm((f) => ({ ...f, distanceKm: newCheckpointDistanceKm ?? f.distanceKm }));
     }
-  }, [existing, editingCheckpointId, newCheckpointDistanceKm]);
-
-  // Helpers for cutoff / pause time inputs (HH:mm format ↔ seconds)
-  const startTime = plan.startTime ?? '00:00';
+  }, [existing, editingCheckpointId, newCheckpointDistanceKm, startTime]);
 
   function secondsToHHMM(seconds: number | null | undefined): string {
     if (seconds == null) return '';
     return formatArrivalTime(startTime, seconds);
-  }
-
-  function hhmmToSeconds(hhmmValue: string): number | null {
-    if (!hhmmValue) return null;
-    const [hh, mm] = hhmmValue.split(':').map(Number);
-    const [sh, sm] = startTime.split(':').map(Number);
-    const startMinutes = sh * 60 + sm;
-    const targetMinutes = hh * 60 + mm;
-    let diffMinutes = targetMinutes - startMinutes;
-    if (diffMinutes < 0) diffMinutes += 24 * 60; // next day
-    return diffMinutes * 60;
   }
 
   function minutesToSeconds(min: string): number | null {
@@ -191,12 +190,40 @@ export default function CheckpointEditor({ plan }: Props) {
           <label className="block text-xs font-medium text-content-muted mb-1">
             {t('checkpoint.cutoff')} (HH:mm)
           </label>
-          <input
-            type="time"
-            value={secondsToHHMM(form.cutoffTimeSeconds)}
-            onChange={(e) => setForm((f) => ({ ...f, cutoffTimeSeconds: hhmmToSeconds(e.target.value) }))}
-            className="w-full bg-surface-alt border border-border rounded-lg px-3 py-2 text-sm text-content focus:outline-none focus:ring-2 focus:ring-cyan-500"
-          />
+          <div className="flex gap-2">
+            <input
+              type="time"
+              value={secondsToHHMM(form.cutoffTimeSeconds)}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  cutoffTimeSeconds: hhmmToElapsedSeconds(startTime, e.target.value, cutoffDayOffset),
+                }))
+              }
+              aria-label={t('checkpoint.cutoff')}
+              className="flex-1 min-w-0 bg-surface-alt border border-border rounded-lg px-3 py-2 text-sm text-content focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            />
+            <select
+              value={cutoffDayOffset}
+              onChange={(e) => {
+                const dayOffset = Number(e.target.value);
+                setCutoffDayOffset(dayOffset);
+                setForm((f) => ({
+                  ...f,
+                  cutoffTimeSeconds:
+                    f.cutoffTimeSeconds == null
+                      ? null
+                      : hhmmToElapsedSeconds(startTime, secondsToHHMM(f.cutoffTimeSeconds), dayOffset),
+                }));
+              }}
+              aria-label={t('checkpoint.cutoffDay')}
+              className="shrink-0 bg-surface-alt border border-border rounded-lg px-2 py-2 text-sm text-content focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            >
+              <option value={0}>{t('checkpoint.sameDay')}</option>
+              <option value={1}>+1 d</option>
+              <option value={2}>+2 d</option>
+            </select>
+          </div>
         </div>
 
         {/* Planned pause */}
