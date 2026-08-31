@@ -6,8 +6,8 @@ Usage:
 
 Options:
   -f, --format <format>  Output format: text or json [default: text]
-  --version              Show version information
   -?, -h, --help         Show help and usage information
+  --version              Show version information
 
 Commands:
   analyze <files>   Analyze GPX files: distance, elevation, speed, pace, stops
