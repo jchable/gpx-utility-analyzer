@@ -1,7 +1,7 @@
 {
   "filename": "out/merged.gpx",
   "total_distance_m": 1268.7059528605555,
-  "total_distance_3d_m": 1803.8216212240045,
+  "total_distance_3d_m": 1268.7109572721797,
   "total_distance_km": 1.2687059528605555,
   "elevation_gain_m": 17.333333333333336,
   "elevation_loss_m": 0,

@@ -109,15 +109,19 @@ public static class AnomalyCorrector
             }
         }
 
-        // Re-sum distances
+        // Re-sum distances. 3D is derived from the same segments as 2D — see
+        // ComputePipeline step 6-7; the two expressions must stay in sync.
         s.TotalDistance = 0;
         s.TotalDistance3D = 0;
         for (int i = 1; i < points.Count; i++)
         {
-            s.TotalDistance += points[i].DistFromPrev;
-            s.TotalDistance3D += DistanceCalculator.Distance3D(
-                points[i - 1].Lat, points[i - 1].Lon, points[i - 1].Ele,
-                points[i].Lat, points[i].Lon, points[i].Ele);
+            double horizontal = points[i].DistFromPrev;
+            s.TotalDistance += horizontal;
+
+            if (horizontal <= 0) continue;
+
+            double dEle = points[i].Ele - points[i - 1].Ele;
+            s.TotalDistance3D += Math.Sqrt(horizontal * horizontal + dEle * dEle);
         }
 
         // Re-compute speed

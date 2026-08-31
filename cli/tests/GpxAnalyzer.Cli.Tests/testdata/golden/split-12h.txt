@@ -166,7 +166,7 @@
 {
   "filename": "segment-003.gpx",
   "total_distance_m": 266.20136566938066,
-  "total_distance_3d_m": 532.8282169438227,
+  "total_distance_3d_m": 266.20136566938066,
   "total_distance_km": 0.2662013656693807,
   "elevation_gain_m": 15,
   "elevation_loss_m": 0,

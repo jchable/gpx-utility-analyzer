@@ -58,12 +58,19 @@ public static class ComputePipeline
         int clampedCount = SpeedCalculator.ClampSpeeds(points, cfg.MaxReasonableSpeed);
 
         // Step 6-7: Distance
+        // 3D must be derived from the SAME segments as 2D: EnrichPoints zeroes
+        // DistFromPrev across recording gaps and ClampSpeeds zeroes it for
+        // over-speed segments, and a segment excluded from 2D is not a real
+        // segment in 3D either.
         for (int i = 1; i < points.Count; i++)
         {
-            s.TotalDistance += points[i].DistFromPrev;
-            s.TotalDistance3D += DistanceCalculator.Distance3D(
-                points[i - 1].Lat, points[i - 1].Lon, points[i - 1].Ele,
-                points[i].Lat, points[i].Lon, points[i].Ele);
+            double horizontal = points[i].DistFromPrev;
+            s.TotalDistance += horizontal;
+
+            if (horizontal <= 0) continue;
+
+            double dEle = points[i].Ele - points[i - 1].Ele;
+            s.TotalDistance3D += Math.Sqrt(horizontal * horizontal + dEle * dEle);
         }
 
         // Step 8: Elevation (configured algorithm)

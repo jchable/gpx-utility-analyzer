@@ -1,7 +1,7 @@
 {
   "filename": "two-segments.gpx",
   "total_distance_m": 470.10185586147713,
-  "total_distance_3d_m": 736.7287071359192,
+  "total_distance_3d_m": 470.10185586147713,
   "total_distance_km": 0.4701018558614771,
   "elevation_gain_m": 15.000000000000114,
   "elevation_loss_m": 0,

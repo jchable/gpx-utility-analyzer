@@ -1,7 +1,7 @@
 {
   "filename": "out/m2.gpx",
   "total_distance_m": 2473.9369883194986,
-  "total_distance_3d_m": 2740.4794952244306,
+  "total_distance_3d_m": 2473.9412135493562,
   "total_distance_km": 2.4739369883194984,
   "elevation_gain_m": 15.666666666666664,
   "elevation_loss_m": 0,
