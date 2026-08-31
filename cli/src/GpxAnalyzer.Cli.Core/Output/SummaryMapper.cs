@@ -22,8 +22,8 @@ public static class SummaryMapper
             ElevationLossM = s.Elevation.Loss,
             MaxElevationM = s.Elevation.Max,
             MinElevationM = s.Elevation.Min,
-            StartTime = s.StartTime.ToString("yyyy-MM-ddTHH:mm:ssZ"),
-            EndTime = s.EndTime.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+            StartTime = FormatHelpers.FormatIsoTimestamp(s.StartTime),
+            EndTime = FormatHelpers.FormatIsoTimestamp(s.EndTime),
             TotalTime = ToDuration(s.TotalTime),
             MovingTime = ToDuration(s.MovingTime),
             StoppedTime = ToDuration(s.StoppedTime),
@@ -57,8 +57,8 @@ public static class SummaryMapper
 
     private static StopInfo ToStopInfo(Stop s) => new()
     {
-        StartTime = s.StartTime.ToString("yyyy-MM-ddTHH:mm:ssZ"),
-        EndTime = s.EndTime.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+        StartTime = FormatHelpers.FormatIsoTimestamp(s.StartTime),
+        EndTime = FormatHelpers.FormatIsoTimestamp(s.EndTime),
         Duration = ToDuration(s.Duration),
         Lat = s.Lat,
         Lon = s.Lon,
@@ -148,8 +148,8 @@ public static class SummaryMapper
                 Severity = ToSnakeCase(a.Severity.ToString()),
                 StartIndex = a.StartIndex,
                 EndIndex = a.EndIndex,
-                StartTime = a.StartTime?.ToString("yyyy-MM-ddTHH:mm:ssZ"),
-                EndTime = a.EndTime?.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                StartTime = a.StartTime.HasValue ? FormatHelpers.FormatIsoTimestamp(a.StartTime.Value) : null,
+                EndTime = a.EndTime.HasValue ? FormatHelpers.FormatIsoTimestamp(a.EndTime.Value) : null,
                 DistanceImpactM = a.DistanceImpactM,
                 TimeImpactS = a.TimeImpactS,
                 Description = a.Description,
