@@ -8,6 +8,14 @@ namespace GpxAnalyzer.Cli.Core.Stats;
 /// </summary>
 public static class EffortCalculator
 {
+    /// <summary>
+    /// Shortest segment whose grade is meaningful. Below a few metres the
+    /// denominator is GPS jitter and the numerator independent elevation noise,
+    /// so the quotient is arbitrary — and it propagated straight into
+    /// MaxGradePercent and the composite difficulty score.
+    /// </summary>
+    private const double MinGradeSegmentM = 5.0;
+
     // ── Feature 1: Time estimates ──
 
     /// <summary>
@@ -32,7 +40,7 @@ public static class EffortCalculator
         for (int i = 1; i < points.Count; i++)
         {
             var dist = points[i].DistFromPrev;
-            if (dist < 0.1) continue; // skip negligible segments
+            if (dist < MinGradeSegmentM) continue; // grade is meaningless below this
 
             var dEle = points[i].Ele - points[i - 1].Ele;
             var grade = dEle / dist; // rise/run
@@ -127,7 +135,7 @@ public static class EffortCalculator
         for (int i = 1; i < points.Count; i++)
         {
             var dist = points[i].DistFromPrev;
-            if (dist < 0.1) continue;
+            if (dist < MinGradeSegmentM) continue;
 
             var dEle = points[i].Ele - points[i - 1].Ele;
             var grade = dEle / dist;
@@ -162,7 +170,7 @@ public static class EffortCalculator
         for (int i = 1; i < points.Count; i++)
         {
             var dist = points[i].DistFromPrev;
-            if (dist < 0.1) continue;
+            if (dist < MinGradeSegmentM) continue;
 
             var dEle = points[i].Ele - points[i - 1].Ele;
             var grade = Math.Abs(dEle / dist) * 100.0; // in percent
@@ -180,12 +188,18 @@ public static class EffortCalculator
         }
 
         var totalSegmentDist = segmentDists.Sum();
-        var avgGrade = grades.Average();
+        // Distance-weighted: an unweighted mean lets the many near-stationary
+        // samples dominate the few long segments that carry the real terrain.
+        var avgGrade = totalSegmentDist > 0
+            ? grades.Zip(segmentDists, (g, d) => g * d).Sum() / totalSegmentDist
+            : 0;
         var maxGrade = grades.Max();
 
-        // Grade variance
+        // Grade variance, weighted by the same distances as the mean
         var mean = avgGrade;
-        var variance = grades.Average(g => (g - mean) * (g - mean));
+        var variance = totalSegmentDist > 0
+            ? grades.Zip(segmentDists, (g, d) => (g - mean) * (g - mean) * d).Sum() / totalSegmentDist
+            : 0;
 
         // Steep section ratio (% of distance where grade > 15%)
         double steepDist = 0;

@@ -62,7 +62,7 @@
       "grade": "Easy",
       "avg_grade_percent": 0.4,
       "max_grade_percent": 0.7,
-      "grade_variance": 0.03,
+      "grade_variance": 0.02,
       "steep_section_ratio": 0,
       "elevation_per_km": 2.3
     }

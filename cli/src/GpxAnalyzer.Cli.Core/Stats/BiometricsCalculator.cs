@@ -108,7 +108,10 @@ public static class BiometricsCalculator
             double hr = hrVal;
             double pct = (hr / maxF) * 100;
             var dt = points[i].Time - points[i - 1].Time;
-            if (dt <= TimeSpan.Zero) continue;
+            // Cap at the pipeline's recording-gap threshold: crediting a single
+            // post-gap sample with the whole gap makes the five zone durations sum
+            // to more than the session's own moving time.
+            if (dt <= TimeSpan.Zero || dt > Elevation.ElevationSmoother.GapThreshold) continue;
 
             for (int z = 0; z < zones.Count; z++)
             {

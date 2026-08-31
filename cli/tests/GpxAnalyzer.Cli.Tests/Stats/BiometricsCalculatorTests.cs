@@ -85,4 +85,55 @@ public class BiometricsCalculatorTests
         Assert.Equal(22.0, result.Temperature!.Max, 0.1);
         Assert.Equal(18.0, result.Temperature.Min, 0.1);
     }
+
+    // #102 — ComputeHRZones credited the whole inter-sample interval to whichever
+    // zone the LATER sample fell in, with no upper bound, so a recording gap was
+    // charged in full to a single post-gap reading.
+    [Fact]
+    public void ComputeHRZones_RecordingGap_DoesNotCreditTheGapToAZone()
+    {
+        var t0 = DateTime.Parse("2024-01-01T10:00:00Z").ToUniversalTime();
+        var points = new List<TrackPoint>();
+
+        // 30 min of riding at 120 bpm, one sample every 10 s
+        for (int i = 0; i < 180; i++)
+            points.Add(new TrackPoint { Lat = 48.0, Lon = 2.0, Time = t0.AddSeconds(i * 10), HeartRate = 120 });
+
+        // 25 min tunnel: no samples. First sample after it reads 145 bpm.
+        var resume = points[^1].Time.AddMinutes(25);
+        points.Add(new TrackPoint { Lat = 48.0, Lon = 2.0, Time = resume, HeartRate = 145 });
+        for (int i = 1; i < 180; i++)
+            points.Add(new TrackPoint { Lat = 48.0, Lon = 2.0, Time = resume.AddSeconds(i * 10), HeartRate = 120 });
+
+        var result = BiometricsCalculator.Compute(points, new BiometricsConfig { MaxHR = 190 });
+
+        Assert.NotNull(result.HeartRate);
+        var zoneTotal = result.HeartRate!.Zones.Aggregate(TimeSpan.Zero, (a, z) => a + z.Duration);
+        var elapsed = points[^1].Time - points[0].Time;
+
+        // The gap must not be attributed to any zone, so the zones cannot sum
+        // to more than the recorded time minus the gap.
+        Assert.True(zoneTotal <= elapsed - TimeSpan.FromMinutes(20),
+            $"zone durations sum to {zoneTotal} over an elapsed {elapsed} that includes a 25 min gap");
+    }
+
+    // #102 negative control: an ordinary short interval must still be credited,
+    // so capping cannot degenerate into dropping every sample.
+    [Fact]
+    public void ComputeHRZones_NoGap_StillCreditsTheWholeSession()
+    {
+        var t0 = DateTime.Parse("2024-01-01T10:00:00Z").ToUniversalTime();
+        var points = new List<TrackPoint>();
+        for (int i = 0; i < 180; i++)
+            points.Add(new TrackPoint { Lat = 48.0, Lon = 2.0, Time = t0.AddSeconds(i * 10), HeartRate = 120 });
+
+        var result = BiometricsCalculator.Compute(points, new BiometricsConfig { MaxHR = 190 });
+
+        Assert.NotNull(result.HeartRate);
+        var zoneTotal = result.HeartRate!.Zones.Aggregate(TimeSpan.Zero, (a, z) => a + z.Duration);
+        Assert.Equal(points[^1].Time - points[0].Time, zoneTotal);
+
+        // 120/190 = 63% -> Z2 (Endurance)
+        Assert.Equal(points[^1].Time - points[0].Time, result.HeartRate.Zones[1].Duration);
+    }
 }

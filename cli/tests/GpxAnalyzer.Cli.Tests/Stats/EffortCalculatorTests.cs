@@ -284,4 +284,128 @@ public class EffortCalculatorTests
         }
         return points;
     }
+
+    // ── #103: grade floor and distance-weighted average ──
+
+    // NOTE: this fixture spaces points 3 m apart, which is below MinGradeSegmentM,
+    // so after the fix EVERY segment is excluded and the difficulty falls back to
+    // its "no measurable grade" branch. It still fails before the fix (the 0.3 m
+    // jitter segment yields a 167% grade), but see the companion test below for
+    // the case that proves real terrain is still measured.
+    [Fact]
+    public void ComputeTerrainDifficulty_FlatRunWithASubMetreJitterSegment_DoesNotReportAnImpossibleGrade()
+    {
+        var t0 = DateTime.Parse("2024-01-01T10:00:00Z").ToUniversalTime();
+        var points = new List<TrackPoint>();
+
+        // 1 Hz flat road run: ~3 m per second, elevation noise of +/- 0.3 m
+        for (int i = 0; i < 600; i++)
+            points.Add(new TrackPoint
+            {
+                Lat = 48.0 + i * 0.000027,
+                Lon = 2.0,
+                Ele = 35 + (i % 3) * 0.3,
+                Time = t0.AddSeconds(i),
+                DistFromPrev = i == 0 ? 0 : 3.0,
+            });
+
+        // At a traffic light two consecutive samples are 0.3 m apart with a
+        // residual 0.5 m elevation difference -> grade = 167%.
+        points[300].DistFromPrev = 0.3;
+        points[300].Ele = points[299].Ele + 0.5;
+
+        var s = new Summary
+        {
+            TotalDistance = 1800,
+            TotalTime = TimeSpan.FromSeconds(600),
+            MovingTime = TimeSpan.FromSeconds(600),
+        };
+
+        var effort = EffortCalculator.ComputeAll(points, s);
+
+        Assert.True(effort.TerrainDifficulty.MaxGradePercent < 30,
+            $"a flat road run reported max_grade_percent = {effort.TerrainDifficulty.MaxGradePercent:F1}");
+        Assert.Equal("Easy", effort.TerrainDifficulty.Grade);
+    }
+
+    // Companion to the test above: with segments comfortably above the grade
+    // floor, the sub-metre jitter segment must be the ONLY thing dropped — the
+    // real 5% terrain still has to be reported, so the floor cannot degenerate
+    // into "measure nothing".
+    [Fact]
+    public void ComputeTerrainDifficulty_JitterSegmentAmongRealSegments_DropsOnlyTheJitter()
+    {
+        var t0 = DateTime.Parse("2024-01-01T10:00:00Z").ToUniversalTime();
+        var points = new List<TrackPoint>();
+
+        // 600 points, 10 m apart, climbing a steady 0.5 m per segment -> 5% grade.
+        for (int i = 0; i < 600; i++)
+            points.Add(new TrackPoint
+            {
+                Lat = 48.0 + i * 0.00009,
+                Lon = 2.0,
+                Ele = 35 + i * 0.5,
+                Time = t0.AddSeconds(i * 3),
+                DistFromPrev = i == 0 ? 0 : 10.0,
+            });
+
+        // One jitter segment: the same 0.5 m rise recorded over 0.3 m -> 167%.
+        points[300].DistFromPrev = 0.3;
+
+        var s = new Summary
+        {
+            TotalDistance = 5990,
+            TotalTime = TimeSpan.FromSeconds(1797),
+            MovingTime = TimeSpan.FromSeconds(1797),
+            Elevation = new ElevationResult { Gain = 299.5, Loss = 0, Max = 334.5, Min = 35 },
+        };
+
+        var effort = EffortCalculator.ComputeAll(points, s);
+
+        // The jitter quotient must not survive into max_grade_percent...
+        Assert.Equal(5.0, effort.TerrainDifficulty.MaxGradePercent, 1);
+        // ...and the real terrain must still be measured.
+        Assert.Equal(5.0, effort.TerrainDifficulty.AvgGradePercent, 1);
+        Assert.Equal("Easy", effort.TerrainDifficulty.Grade);
+    }
+
+    // #103, second half: the average must be distance-weighted, so a burst of
+    // near-stationary samples cannot outvote the segments carrying the terrain.
+    [Fact]
+    public void ComputeTerrainDifficulty_ManyShortSegments_DoNotOutvoteTheLongOnes()
+    {
+        var t0 = DateTime.Parse("2024-01-01T10:00:00Z").ToUniversalTime();
+        var points = new List<TrackPoint> { new() { Lat = 48.0, Lon = 2.0, Ele = 100, Time = t0 } };
+
+        // 100 short-but-countable 6 m segments on flat ground (0% grade)...
+        for (int i = 1; i <= 100; i++)
+            points.Add(new TrackPoint
+            {
+                Lat = 48.0, Lon = 2.0, Ele = 100,
+                Time = t0.AddSeconds(i * 6), DistFromPrev = 6.0,
+            });
+
+        // ...then 10 long 200 m segments climbing 20 m each (10% grade).
+        var last = points[^1];
+        for (int i = 1; i <= 10; i++)
+            points.Add(new TrackPoint
+            {
+                Lat = 48.0, Lon = 2.0, Ele = 100 + i * 20,
+                Time = last.Time.AddSeconds(i * 120), DistFromPrev = 200.0,
+            });
+
+        var s = new Summary
+        {
+            TotalDistance = 100 * 6 + 10 * 200,
+            TotalTime = TimeSpan.FromSeconds(1800),
+            MovingTime = TimeSpan.FromSeconds(1800),
+            Elevation = new ElevationResult { Gain = 200, Loss = 0, Max = 300, Min = 100 },
+        };
+
+        var effort = EffortCalculator.ComputeAll(points, s);
+
+        // Unweighted: 10 * 10% / 110 segments = 0.9%.
+        // Distance-weighted: 2000 m at 10% over 2600 m total = 7.7%.
+        Assert.Equal(7.7, effort.TerrainDifficulty.AvgGradePercent, 1);
+    }
 }
