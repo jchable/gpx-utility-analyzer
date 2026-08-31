@@ -30,7 +30,10 @@ public static class FileResolver
         // Glob pattern
         if (arg.Contains('*') || arg.Contains('?') || arg.Contains('['))
         {
-            string dir = Path.GetDirectoryName(arg) ?? ".";
+            // GetDirectoryName returns string.Empty (not null) for a bare pattern
+            // such as "*.gpx", which PowerShell and cmd.exe pass through unexpanded.
+            var dirPart = Path.GetDirectoryName(arg);
+            string dir = string.IsNullOrEmpty(dirPart) ? "." : dirPart;
             string pattern = Path.GetFileName(arg);
             if (Directory.Exists(dir))
             {

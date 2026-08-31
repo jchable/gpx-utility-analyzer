@@ -68,14 +68,26 @@ public static class GpxWriter
 
     public static void Write(string path, List<TrackPoint> points, string trackName)
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(path) ?? ".");
+        EnsureDirectory(path);
         WriteToFile(path, points, trackName, enrich: false);
     }
 
     public static void WriteEnriched(string path, List<TrackPoint> points, string trackName)
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(path) ?? ".");
+        EnsureDirectory(path);
         WriteToFile(path, points, trackName, enrich: true);
+    }
+
+    /// <summary>
+    /// Creates the output directory when the path has one. Path.GetDirectoryName
+    /// returns string.Empty (not null) for a bare filename, so a "?? \".\"" fallback
+    /// never fires and CreateDirectory("") throws.
+    /// </summary>
+    private static void EnsureDirectory(string path)
+    {
+        var dir = Path.GetDirectoryName(path);
+        if (!string.IsNullOrEmpty(dir))
+            Directory.CreateDirectory(dir);
     }
 
     private static void WriteToFile(string path, List<TrackPoint> points, string trackName, bool enrich)
