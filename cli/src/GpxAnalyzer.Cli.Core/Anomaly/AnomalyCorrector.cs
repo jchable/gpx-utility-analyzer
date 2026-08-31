@@ -96,41 +96,6 @@ public static class AnomalyCorrector
     }
 
     /// <summary>
-    /// Recalculates distance and speed stats after corrections were applied.
-    /// Does NOT re-run the full pipeline — only updates affected summary fields.
-    /// </summary>
-    public static void RecalculateStats(List<TrackPoint> points, Summary s)
-    {
-        // Re-enrich speeds and distances
-        SpeedCalculator.EnrichPoints(points);
-
-        ApplyFrozenSectionDistances(points, s);
-
-        // Re-sum distances. 3D is derived from the same segments as 2D — see
-        // ComputePipeline step 6-7; the two expressions must stay in sync.
-        s.TotalDistance = 0;
-        s.TotalDistance3D = 0;
-        for (int i = 1; i < points.Count; i++)
-        {
-            double horizontal = points[i].DistFromPrev;
-            s.TotalDistance += horizontal;
-
-            if (horizontal <= 0) continue;
-
-            double dEle = points[i].Ele - points[i - 1].Ele;
-            s.TotalDistance3D += Math.Sqrt(horizontal * horizontal + dEle * dEle);
-        }
-
-        // Re-compute speed
-        s.Speed = SpeedCalculator.ComputeSpeed(s.TotalDistance, s.TotalTime, s.MovingTime);
-        s.Speed.MaxSpeed = SpeedCalculator.MaxSpeedFromPoints(points);
-
-        // Re-compute points per km
-        if (s.TotalDistance > 0)
-            s.PointsPerKm = points.Count / (s.TotalDistance / 1000);
-    }
-
-    /// <summary>
     /// Interpolates lat/lon linearly through frozen section.
     /// Estimates distance from surrounding segments' speed.
     /// </summary>

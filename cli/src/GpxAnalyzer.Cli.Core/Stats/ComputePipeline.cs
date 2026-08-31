@@ -125,7 +125,31 @@ public static class ComputePipeline
             if (cfg.FixAnomalies && s.AnomalyReport.TotalCount > 0)
             {
                 s.AnomalyReport = AnomalyCorrector.ApplyCorrections(points, s.AnomalyReport);
-                AnomalyCorrector.RecalculateStats(points, s);
+
+                // Corrections mutate Ele, Lat/Lon, Time and HeartRate, so every
+                // stage downstream of those fields has to run again. Re-running
+                // the stages is the only way to keep the exported GPX and the
+                // reported numbers describing the same track.
+                SpeedCalculator.EnrichPoints(points);
+                SpeedCalculator.ClampSpeeds(points, cfg.MaxReasonableSpeed);
+                AnomalyCorrector.ApplyFrozenSectionDistances(points, s);
+
+                s.TotalDistance = 0;
+                s.TotalDistance3D = 0;
+                for (int i = 1; i < points.Count; i++)
+                {
+                    double horizontal = points[i].DistFromPrev;
+                    s.TotalDistance += horizontal;
+                    if (horizontal <= 0) continue;
+                    double dEle = points[i].Ele - points[i - 1].Ele;
+                    s.TotalDistance3D += Math.Sqrt(horizontal * horizontal + dEle * dEle);
+                }
+
+                s.Speed = SpeedCalculator.ComputeSpeed(s.TotalDistance, s.TotalTime, s.MovingTime);
+                s.Speed.MaxSpeed = SpeedCalculator.MaxSpeedFromPoints(points);
+
+                if (s.TotalDistance > 0)
+                    s.PointsPerKm = points.Count / (s.TotalDistance / 1000);
             }
         }
 
