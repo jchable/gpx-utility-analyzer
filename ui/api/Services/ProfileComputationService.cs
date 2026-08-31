@@ -292,7 +292,14 @@ public class ProfileComputationService
 
             for (var i = startIdx; i <= endIdx && i < points.Count; i++)
             {
-                if (i > startIdx)
+                // startIdx deliberately backs up one point before the split start,
+                // and endIdx advances one past the split end, so the boundary
+                // segment belongs to two consecutive splits. Attribute each segment
+                // to exactly one split: the one containing its END point. Without
+                // this gate every split double-counts one segment's elevation.
+                if (i > startIdx &&
+                    points[i].CumDist > splitStartDist &&
+                    points[i].CumDist <= splitEndDist)
                 {
                     var dEle = points[i].Ele - points[i - 1].Ele;
                     if (dEle > 0) elevGain += dEle;
