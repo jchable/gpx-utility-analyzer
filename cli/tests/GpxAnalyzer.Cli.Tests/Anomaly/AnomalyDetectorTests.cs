@@ -72,4 +72,42 @@ public class AnomalyDetectorTests
 
         Assert.Contains(report.Anomalies, a => a.Type == AnomalyType.ElevationSpike);
     }
+
+    // #105 — Detect probed only points 0..99 for a HeartRate and bailed out for
+    // the whole track when it found none.
+    [Fact]
+    public void BiometricDetect_HeartRateStartingAfterPoint100_StillDetectsOutOfRange()
+    {
+        var t0 = DateTime.Parse("2024-01-01T10:00:00Z").ToUniversalTime();
+        var points = new List<TrackPoint>();
+
+        // Chest strap pairs after 120 points (two minutes at 1 Hz)
+        for (int i = 0; i < 120; i++)
+            points.Add(new TrackPoint { Lat = 48.0, Lon = 2.0, Time = t0.AddSeconds(i) });
+        for (int i = 120; i < 400; i++)
+            points.Add(new TrackPoint
+            {
+                Lat = 48.0,
+                Lon = 2.0,
+                Time = t0.AddSeconds(i),
+                HeartRate = i is >= 200 and < 210 ? 250 : 140,   // a dropout run
+            });
+
+        var anomalies = BiometricAnomalyDetector.Detect(points, AnomalyConfig.Default());
+
+        Assert.Contains(anomalies, a => a.Type == AnomalyType.HeartRateOutOfRange);
+    }
+
+    // Negative control for #105: a track with no heart rate at all must still
+    // produce no biometric anomalies.
+    [Fact]
+    public void BiometricDetect_NoHeartRateAnywhere_ReportsNothing()
+    {
+        var t0 = DateTime.Parse("2024-01-01T10:00:00Z").ToUniversalTime();
+        var points = new List<TrackPoint>();
+        for (int i = 0; i < 400; i++)
+            points.Add(new TrackPoint { Lat = 48.0, Lon = 2.0, Time = t0.AddSeconds(i) });
+
+        Assert.Empty(BiometricAnomalyDetector.Detect(points, AnomalyConfig.Default()));
+    }
 }
