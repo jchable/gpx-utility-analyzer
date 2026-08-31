@@ -27,12 +27,15 @@ public class StravaService : IActivityImporter
         _logger = logger;
     }
 
-    public async Task<string> GetAuthorizationUrlAsync(string callbackUrl)
+    public async Task<string> GetAuthorizationUrlAsync(string callbackUrl, string state)
     {
         var clientId = await _settings.GetAsync("Integrations:Strava:ClientId")
             ?? throw new InvalidOperationException("Strava ClientId not configured.");
 
-        return $"{AuthUrl}?client_id={clientId}&response_type=code&redirect_uri={Uri.EscapeDataString(callbackUrl)}&scope=read,activity:read_all&approval_prompt=auto";
+        return $"{AuthUrl}?client_id={clientId}&response_type=code" +
+               $"&redirect_uri={Uri.EscapeDataString(callbackUrl)}" +
+               $"&scope=read,activity:read_all&approval_prompt=auto" +
+               $"&state={Uri.EscapeDataString(state)}";
     }
 
     public async Task<TokenInfo> ExchangeCodeAsync(string code, string callbackUrl)
@@ -94,32 +97,52 @@ public class StravaService : IActivityImporter
         };
     }
 
-    public async Task<bool> ValidateWebhookAsync(HttpContext context)
+    public async Task<bool> ValidateSubscriptionAsync(HttpContext context)
     {
-        // Strava webhook validation: GET with hub.challenge
-        if (context.Request.Method == "GET")
-        {
-            var verifyToken = await _settings.GetAsync("Integrations:Strava:WebhookVerifyToken", "gpx-analyzer") ?? "gpx-analyzer";
-            var mode = context.Request.Query["hub.mode"].ToString();
-            var token = context.Request.Query["hub.verify_token"].ToString();
-            return mode == "subscribe" && token == verifyToken;
-        }
-        return true;
+        var verifyToken = await _settings.GetAsync("Integrations:Strava:WebhookVerifyToken", "gpx-analyzer")
+            ?? "gpx-analyzer";
+        var mode = context.Request.Query["hub.mode"].ToString();
+        var token = context.Request.Query["hub.verify_token"].ToString();
+        return mode == "subscribe" && token == verifyToken;
     }
 
-    public async Task<string?> GetWebhookActivityIdAsync(HttpContext context)
+    public async Task<WebhookEvent?> ReadWebhookEventAsync(HttpContext context)
     {
-        var body = await JsonSerializer.DeserializeAsync<JsonElement>(context.Request.Body);
+        JsonElement body;
+        try { body = await JsonSerializer.DeserializeAsync<JsonElement>(context.Request.Body); }
+        catch (JsonException) { return null; }
 
-        var objectType = body.GetProperty("object_type").GetString();
-        var aspectType = body.GetProperty("aspect_type").GetString();
+        if (body.ValueKind != JsonValueKind.Object) return null;
 
-        if (objectType == "activity" && aspectType == "create")
+        // Reject anything not issued against our own subscription. Strava does not
+        // sign webhook bodies, so subscription_id is the only binding it offers.
+        var expectedSubscription = await _settings.GetAsync("Integrations:Strava:SubscriptionId");
+        if (!string.IsNullOrEmpty(expectedSubscription))
         {
-            return body.GetProperty("object_id").GetInt64().ToString();
+            if (!body.TryGetProperty("subscription_id", out var sub)) return null;
+            var actual = sub.ValueKind == JsonValueKind.Number
+                ? sub.GetInt64().ToString()
+                : sub.GetString();
+            if (!string.Equals(actual, expectedSubscription, StringComparison.Ordinal))
+            {
+                _logger.LogWarning("Rejected Strava webhook for unknown subscription {Subscription}", actual);
+                return null;
+            }
         }
 
-        return null;
+        if (!body.TryGetProperty("object_type", out var objectType) ||
+            !body.TryGetProperty("aspect_type", out var aspectType) ||
+            objectType.GetString() != "activity" ||
+            aspectType.GetString() != "create")
+            return null;
+
+        if (!body.TryGetProperty("object_id", out var objectId)) return null;
+
+        string? ownerId = body.TryGetProperty("owner_id", out var owner)
+            ? (owner.ValueKind == JsonValueKind.Number ? owner.GetInt64().ToString() : owner.GetString())
+            : null;
+
+        return new WebhookEvent(objectId.GetInt64().ToString(), ownerId);
     }
 
     public async Task<ImportedActivity> FetchActivityAsync(string externalId, string accessToken)
