@@ -97,11 +97,22 @@ public class AuthController : ControllerBase
         if (storedToken == null || !storedToken.IsActive)
             return Unauthorized(new { code = "INVALID_REFRESH_TOKEN" });
 
+        var user = storedToken.User;
+
+        // A deactivated account must not be able to renew its session.
+        // Login already refuses these users; refresh has to agree.
+        if (!user.IsActive)
+        {
+            storedToken.RevokedAt = DateTime.UtcNow;
+            storedToken.RevokedByIp = GetIpAddress();
+            await _context.SaveChangesAsync();
+            return Unauthorized(new { code = "ACCOUNT_DISABLED" });
+        }
+
         // Revoke the old token
         storedToken.RevokedAt = DateTime.UtcNow;
         storedToken.RevokedByIp = GetIpAddress();
 
-        var user = storedToken.User;
         var roles = await _userManager.GetRolesAsync(user);
         var role = roles.FirstOrDefault() ?? "User";
 
