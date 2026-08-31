@@ -287,11 +287,10 @@ public class EffortCalculatorTests
 
     // ── #103: grade floor and distance-weighted average ──
 
-    // NOTE: this fixture spaces points 3 m apart, which is below MinGradeSegmentM,
-    // so after the fix EVERY segment is excluded and the difficulty falls back to
-    // its "no measurable grade" branch. It still fails before the fix (the 0.3 m
-    // jitter segment yields a 167% grade), but see the companion test below for
-    // the case that proves real terrain is still measured.
+    // This fixture spaces points 3 m apart, below MinGradeSegmentM. Short segments
+    // are accumulated to a 5 m baseline rather than discarded, so the 0.3 m jitter
+    // segment is absorbed into a window long enough to make its 0.5 m residual an
+    // ordinary grade instead of 167% - and the run is still measured, not skipped.
     [Fact]
     public void ComputeTerrainDifficulty_FlatRunWithASubMetreJitterSegment_DoesNotReportAnImpossibleGrade()
     {
@@ -326,14 +325,20 @@ public class EffortCalculatorTests
         Assert.True(effort.TerrainDifficulty.MaxGradePercent < 30,
             $"a flat road run reported max_grade_percent = {effort.TerrainDifficulty.MaxGradePercent:F1}");
         Assert.Equal("Easy", effort.TerrainDifficulty.Grade);
+
+        // Pin the NON-degenerate path. If short segments are ever discarded again
+        // instead of accumulated, every segment of this 1 Hz fixture drops out and
+        // max_grade_percent silently becomes 0 - which would satisfy both
+        // assertions above while measuring nothing at all.
+        Assert.True(effort.TerrainDifficulty.MaxGradePercent > 0,
+            "max_grade_percent is 0: no segment cleared the baseline, so the run was not measured");
     }
 
-    // Companion to the test above: with segments comfortably above the grade
-    // floor, the sub-metre jitter segment must be the ONLY thing dropped — the
-    // real 5% terrain still has to be reported, so the floor cannot degenerate
-    // into "measure nothing".
+    // Companion to the test above, with segments comfortably above the baseline:
+    // the jitter segment must not put a 167% quotient into max_grade_percent, and
+    // the real 5% terrain must still be reported.
     [Fact]
-    public void ComputeTerrainDifficulty_JitterSegmentAmongRealSegments_DropsOnlyTheJitter()
+    public void ComputeTerrainDifficulty_JitterSegmentAmongRealSegments_AbsorbsItIntoTheNextWindow()
     {
         var t0 = DateTime.Parse("2024-01-01T10:00:00Z").ToUniversalTime();
         var points = new List<TrackPoint>();
@@ -362,9 +367,13 @@ public class EffortCalculatorTests
 
         var effort = EffortCalculator.ComputeAll(points, s);
 
-        // The jitter quotient must not survive into max_grade_percent...
-        Assert.Equal(5.0, effort.TerrainDifficulty.MaxGradePercent, 1);
-        // ...and the real terrain must still be measured.
+        // The 167% quotient must not survive. The 0.3 m segment does not reach the
+        // 5 m baseline on its own, so it is carried into the next one: its 0.5 m rise
+        // plus the next segment 0.5 m over 0.3 + 10 m = 9.7%, not 166.7%. Absorbing
+        // it keeps the elevation change the discarding version threw away.
+        Assert.Equal(9.7, effort.TerrainDifficulty.MaxGradePercent, 1);
+
+        // The real terrain still dominates the distance-weighted average.
         Assert.Equal(5.0, effort.TerrainDifficulty.AvgGradePercent, 1);
         Assert.Equal("Easy", effort.TerrainDifficulty.Grade);
     }
@@ -420,7 +429,8 @@ public class EffortCalculatorTests
     /// EquivalentFlatDistance went unnoticed: it zeroed both metrics outright for the
     /// most common recording cadence there is.
     /// </summary>
-    private static (List<TrackPoint> Points, Summary Summary) OneHertzClimb(int count = 600)
+    private static (List<TrackPoint> Points, Summary Summary) OneHertzClimb(
+        double risePerPoint = 0.15, int count = 600)
     {
         var t0 = new DateTime(2024, 1, 1, 10, 0, 0, DateTimeKind.Utc);
         var points = new List<TrackPoint>();
@@ -429,7 +439,7 @@ public class EffortCalculatorTests
             {
                 Lat = 48.0 + i * (3.0 / 111_320.0),   // 3 m north per second
                 Lon = 2.0,
-                Ele = 100 + i * 0.15,                 // 0.15 m per 3 m = a steady 5%
+                Ele = 100 + i * risePerPoint,         // 0.15 m per 3 m = a steady 5%
                 Time = t0.AddSeconds(i),
             });
 
@@ -438,7 +448,7 @@ public class EffortCalculatorTests
         SpeedCalculator.EnrichPoints(points);
 
         var distM = points.Sum(p => p.DistFromPrev);
-        var gain = (count - 1) * 0.15;
+        var gain = (count - 1) * risePerPoint;
         return (points, new Summary
         {
             TotalDistance = distM,
@@ -492,5 +502,66 @@ public class EffortCalculatorTests
             $"a 5% climb should cost more than its {flatKm:F2} km flat equivalent, " +
             $"got {effort.EquivalentFlatDistanceKm}");
         Assert.InRange(effort.EquivalentFlatDistanceKm, 2.0, 2.8);
+    }
+
+    // ── #140: short segments are accumulated to a baseline, not discarded ──
+
+    [Fact]
+    public void TerrainDifficulty_OneHertzSustainedTwentyPercentClimb_IsNotReportedAsEasy()
+    {
+        // 0.6 m of rise per 3 m of ground = a sustained 20% climb, 359 m of gain
+        // over 1.8 km. Every segment is ~3 m, below MinGradeSegmentM.
+        var (points, summary) = OneHertzClimb(risePerPoint: 0.6);
+
+        var terrain = EffortCalculator.ComputeAll(points, summary).TerrainDifficulty;
+
+        Assert.NotEqual("Easy", terrain.Grade);
+        Assert.True(terrain.Score >= 5,
+            $"a sustained 20% climb scored {terrain.Score} ({terrain.Grade})");
+
+        // The grade itself must be measured, not zeroed.
+        Assert.InRange(terrain.MaxGradePercent, 18, 22);
+        Assert.InRange(terrain.AvgGradePercent, 18, 22);
+
+        // 20% throughout, so every metre is a "steep section".
+        Assert.Equal(1.0, terrain.SteepSectionRatio, 2);
+    }
+
+    // Asserted on its own, with no reference to any grade outcome: elevation_per_km
+    // comes from the summary's own gain and distance and must stay correct whatever
+    // policy the per-segment grades follow.
+    [Fact]
+    public void TerrainDifficulty_OneHertzRecording_ReportsElevationPerKm()
+    {
+        var (points, summary) = OneHertzClimb(risePerPoint: 0.6);
+
+        var terrain = EffortCalculator.ComputeAll(points, summary).TerrainDifficulty;
+
+        // 359.4 m of gain over 1.7973 km.
+        var expected = summary.Elevation.Gain / (summary.TotalDistance / 1000.0);
+        Assert.Equal(expected, terrain.ElevationPerKm, 1);
+        Assert.InRange(terrain.ElevationPerKm, 195, 205);
+    }
+
+    // The same field on the path where no window clears the baseline at all — the
+    // branch that used to discard it. Every segment here has zero distance (a fully
+    // clamped track), so no grade can be computed, yet the climb is still 200 m/km.
+    [Fact]
+    public void TerrainDifficulty_NoMeasurableSegment_StillReportsElevationPerKm()
+    {
+        var t0 = new DateTime(2024, 1, 1, 10, 0, 0, DateTimeKind.Utc);
+        var points = new List<TrackPoint>();
+        for (int i = 0; i < 100; i++)
+            points.Add(new TrackPoint
+            {
+                Lat = 48.0, Lon = 2.0, Ele = 100 + i * 2,
+                Time = t0.AddSeconds(i), DistFromPrev = 0,
+            });
+
+        var terrain = EffortCalculator.ComputeTerrainDifficulty(points, distanceM: 1000, elevGainM: 200);
+
+        Assert.Equal(200.0, terrain.ElevationPerKm, 1);
+        // No grade information exists here, so the score stays at its floor.
+        Assert.Equal(0, terrain.MaxGradePercent);
     }
 }

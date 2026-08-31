@@ -175,19 +175,42 @@ public static class EffortCalculator
             };
         }
 
-        // Compute per-segment grades
+        // Elevation per km needs no per-segment grade at all, so it must be
+        // reported even when no window below clears the baseline.
+        var distKm = distanceM / 1000.0;
+        var elevPerKm = distKm > 0 ? elevGainM / distKm : 0;
+
+        // Accumulate consecutive segments until they span at least
+        // MinGradeSegmentM, then take ONE grade over that whole window. Discarding
+        // the short segments instead would drop every segment of a 1 Hz recording
+        // — the default cadence on most GPS watches — and report a sustained 20%
+        // climb as flat "Easy" terrain.
         var grades = new List<double>();
         var segmentDists = new List<double>();
 
+        double accDist = 0, accEle = 0;
         for (int i = 1; i < points.Count; i++)
         {
             var dist = points[i].DistFromPrev;
-            if (dist < MinGradeSegmentM) continue;
 
-            var dEle = points[i].Ele - points[i - 1].Ele;
-            var grade = Math.Abs(dEle / dist) * 100.0; // in percent
-            grades.Add(grade);
-            segmentDists.Add(dist);
+            // A zero-distance segment is a recording gap or a clamped outlier: its
+            // elevation delta belongs to no recorded ground distance, so it must
+            // not be folded into the next window's numerator.
+            if (dist <= 0)
+            {
+                accDist = 0;
+                accEle = 0;
+                continue;
+            }
+
+            accDist += dist;
+            accEle += points[i].Ele - points[i - 1].Ele;
+            if (accDist < MinGradeSegmentM) continue;
+
+            grades.Add(Math.Abs(accEle / accDist) * 100.0); // in percent
+            segmentDists.Add(accDist);
+            accDist = 0;
+            accEle = 0;
         }
 
         if (grades.Count == 0)
@@ -196,6 +219,7 @@ public static class EffortCalculator
             {
                 Score = 1,
                 Grade = "Easy",
+                ElevationPerKm = Math.Round(elevPerKm, 1),
             };
         }
 
@@ -221,10 +245,6 @@ public static class EffortCalculator
                 steepDist += segmentDists[i];
         }
         var steepRatio = totalSegmentDist > 0 ? steepDist / totalSegmentDist : 0;
-
-        // Elevation per km
-        var distKm = distanceM / 1000.0;
-        var elevPerKm = distKm > 0 ? elevGainM / distKm : 0;
 
         // Composite score with weighted normalization
         // Reference values for normalization (typical upper bounds)
