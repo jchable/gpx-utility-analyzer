@@ -58,24 +58,34 @@ public static class AnalyzeCommand
                 demSkipValOpt, elevAlgoOpt, trackSmoothOpt, dpEpsOpt, segMinLenOpt, segMaxDevOpt,
                 maxHrOpt, maxSpeedOpt, fixAnomaliesOpt);
 
+            // Output paths claimed so far, so two inputs with the same basename in
+            // different directories cannot silently overwrite each other.
+            var claimed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            int failures = 0;
+
             foreach (var path in resolvedFiles)
             {
                 try
                 {
-                    AnalyzeFile(path, formatter, cfg, export, enrich);
+                    AnalyzeFile(path, formatter, cfg, export, enrich, claimed);
                 }
                 catch (Exception ex)
                 {
                     Console.Error.WriteLine($"Error analyzing {path}: {ex.Message}");
+                    failures++;
                 }
             }
+
+            // A pipeline cannot distinguish "parsed nothing" from "analyzed
+            // everything" when the exit code is 0 either way.
+            return failures > 0 ? 1 : 0;
         });
 
         return cmd;
     }
 
     private static void AnalyzeFile(string path, IFormatter formatter, ComputeConfig cfg,
-        string exportDir, bool enrich)
+        string exportDir, bool enrich, HashSet<string> claimedOutputs)
     {
         var doc = GpxParser.ParseFile(path);
         var points = doc.AllPoints();
@@ -85,7 +95,7 @@ public static class AnalyzeCommand
         if (!string.IsNullOrEmpty(exportDir))
         {
             string baseName = Path.GetFileNameWithoutExtension(path);
-            string outPath = Path.Combine(exportDir, baseName + "_processed.gpx");
+            string outPath = ClaimOutputPath(exportDir, baseName, path, claimedOutputs);
             Directory.CreateDirectory(exportDir);
 
             if (enrich)
@@ -94,6 +104,32 @@ public static class AnalyzeCommand
                 GpxWriter.Write(outPath, processed, baseName);
 
             Console.Error.WriteLine($"Exported: {outPath} ({processed.Count} points)");
+        }
+    }
+
+    /// <summary>
+    /// Reserves a unique export path. Recursive input resolution can yield several
+    /// files with the same basename in different directories; without this they all
+    /// map to one output and the last write silently wins.
+    /// </summary>
+    internal static string ClaimOutputPath(string exportDir, string baseName,
+        string sourcePath, HashSet<string> claimed)
+    {
+        string candidate = Path.Combine(exportDir, baseName + "_processed.gpx");
+        if (claimed.Add(candidate)) return candidate;
+
+        // First disambiguator: the source's parent directory (tracks/2023 -> 2023).
+        var parent = Path.GetFileName(Path.GetDirectoryName(sourcePath) ?? "");
+        if (!string.IsNullOrEmpty(parent))
+        {
+            candidate = Path.Combine(exportDir, $"{parent}_{baseName}_processed.gpx");
+            if (claimed.Add(candidate)) return candidate;
+        }
+
+        for (int n = 2; ; n++)
+        {
+            candidate = Path.Combine(exportDir, $"{baseName}_processed_{n}.gpx");
+            if (claimed.Add(candidate)) return candidate;
         }
     }
 }
