@@ -5,6 +5,8 @@ using Microsoft.Extensions.AI;
 
 public sealed class AnthropicProvider : IChatClientProvider
 {
+    public const string DefaultModel = "claude-sonnet-4-5";
+
     public string Name => "anthropic";
 
     public IChatClient CreateClient(ProviderOptions options)
@@ -22,6 +24,12 @@ public sealed class AnthropicProvider : IChatClientProvider
             client = new AnthropicClient();
         }
 
-        return client.Messages;
+        var model = options.Model ?? DefaultModel;
+
+        // The SDK's IChatClient takes no model at construction, and TrackAnalyzer
+        // does not set ChatOptions.ModelId — so without binding it here the
+        // --model / AiProvider:Model value was dropped on the floor while the API
+        // logged the model it thought it was using.
+        return new ModelBindingChatClient(client.Messages, model);
     }
 }
