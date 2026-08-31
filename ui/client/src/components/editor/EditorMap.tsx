@@ -17,6 +17,7 @@ import { useEditorStore } from '../../stores/editorStore';
 import type { EditorMode } from '../../stores/editorStore';
 import type { PoiType } from '../../types/route';
 import { getMapTilerKey, computeBounds, getStyleUrl } from '../../utils/map-helpers';
+import { waypointOrderForRouteIndex } from '../../utils/routeInsert';
 import { poiColorMatchExpression } from '../../constants/poi';
 
 // --- Layer IDs ---
@@ -310,9 +311,17 @@ export default function EditorMap({ poiType = 'custom', onSplitRequest }: Editor
           const line = lineString(coords);
           const pt = point([lng, lat]);
           const snapped = nearestPointOnLine(line, pt);
-          const insertIndex = snapped.properties.index ?? coords.length - 1;
+          const routeIndex = snapped.properties.index ?? coords.length - 1;
 
-          insertWaypoint(lat, lng, insertIndex);
+          // properties.index is an index into the rendered polyline, not a
+          // waypoint order — insertWaypoint's third argument is an order.
+          const afterOrder = waypointOrderForRouteIndex(
+            coords,
+            useEditorStore.getState().waypoints,
+            routeIndex,
+          );
+
+          insertWaypoint(lat, lng, afterOrder);
 
           // Update route in manual mode
           if (state.routingProfile === 'manual') {
