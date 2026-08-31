@@ -30,4 +30,9 @@ public class TrackPoint
     // Additional extension data (null = not present in source GPX)
     public double? DeviceSpeed { get; set; } // device-reported speed (gpxtpx:speed, m/s)
     public double? WaterTemp { get; set; }   // water temperature (gpxtpx:wtemp, °C)
+
+    /// <summary>Shallow copy. TrackPoint is mutable and is aliased across pipeline
+    /// stages and split boundaries; use this wherever a stage must not observe
+    /// another stage's in-place mutations.</summary>
+    public TrackPoint Clone() => (TrackPoint)MemberwiseClone();
 }

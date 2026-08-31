@@ -401,4 +401,45 @@ public class AnomalyCorrectorTests
         Assert.Equal(120, points[0].HeartRate);
         Assert.Equal(130, points[2].HeartRate);
     }
+
+    // ---------------------------------------------------------------
+    // Post-correction recompute (#79, #81, #82, #83, #84)
+    // ---------------------------------------------------------------
+
+    // -- #82: a frozen run starting at index 0 must ramp linearly -------
+    [Fact]
+    public void CorrectGpsFrozen_RunStartingAtIndexZero_ProducesEvenlySpacedPoints()
+    {
+        var t0 = DateTime.Parse("2024-01-01T10:00:00Z").ToUniversalTime();
+        var points = new List<TrackPoint>();
+        for (int i = 0; i < 5; i++)
+            points.Add(new TrackPoint { Lat = 48.0000, Lon = 2.0, Time = t0.AddSeconds(i), Cadence = 80 });
+        points.Add(new TrackPoint { Lat = 48.0050, Lon = 2.0, Time = t0.AddSeconds(5), Cadence = 80 });
+
+        var report = new AnomalyReport
+        {
+            Anomalies =
+            [
+                new TrackAnomaly
+                {
+                    Type = AnomalyType.GpsFrozen,
+                    Severity = AnomalySeverity.Warning,
+                    Category = AnomalyCategory.Position,
+                    StartIndex = 0, EndIndex = 4,
+                    StartTime = t0, EndTime = t0.AddSeconds(4),
+                    TimeImpactS = 4,
+                },
+            ],
+        };
+
+        AnomalyCorrector.ApplyCorrections(points, report);
+
+        // Five points interpolated between 48.0000 and 48.0050 must be evenly
+        // spaced: every consecutive delta identical to within floating error.
+        var deltas = new List<double>();
+        for (int i = 1; i <= 4; i++) deltas.Add(points[i].Lat - points[i - 1].Lat);
+        foreach (var d in deltas)
+            Assert.Equal(deltas[0], d, 8);
+    }
+
 }

@@ -142,9 +142,15 @@ public static class AnomalyCorrector
         int start = anomaly.StartIndex;
         int end = anomaly.EndIndex;
 
-        // Find the last good point before and first good point after
-        var p0 = start > 0 ? points[start - 1] : points[start];
-        var p1 = end < points.Count - 1 ? points[end + 1] : points[end];
+        // Find the last good point before and first good point after.
+        // TrackPoint is a mutable class, so the fallback aliased the very object
+        // the loop overwrites on its first iteration when start == 0. Snapshot
+        // the coordinates before interpolating.
+        var anchor = start > 0 ? points[start - 1] : points[start];
+        double lat0 = anchor.Lat, lon0 = anchor.Lon;
+
+        var tail = end < points.Count - 1 ? points[end + 1] : points[end];
+        double lat1 = tail.Lat, lon1 = tail.Lon;
 
         int count = end - start + 1;
 
@@ -152,8 +158,8 @@ public static class AnomalyCorrector
         for (int i = start; i <= end; i++)
         {
             double t = (double)(i - start + 1) / (count + 1);
-            points[i].Lat = p0.Lat + (p1.Lat - p0.Lat) * t;
-            points[i].Lon = p0.Lon + (p1.Lon - p0.Lon) * t;
+            points[i].Lat = lat0 + (lat1 - lat0) * t;
+            points[i].Lon = lon0 + (lon1 - lon0) * t;
         }
 
         return new TrackAnomaly
