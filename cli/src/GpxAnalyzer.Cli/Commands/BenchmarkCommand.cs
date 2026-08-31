@@ -1,5 +1,4 @@
 using System.CommandLine;
-using System.CommandLine.Invocation;
 using System.Diagnostics;
 using GpxAnalyzer.Cli.Core.Benchmark;
 using GpxAnalyzer.Cli.Core.Dem;
@@ -12,20 +11,18 @@ public static class BenchmarkCommand
 {
     public static Command Create()
     {
-        var fileArg = new Argument<string>("file", "GPX file to benchmark");
-        var outputOpt = new Option<string>("--output", () => "", "CSV output file");
-        outputOpt.AddAlias("-o");
-        var fullOpt = new Option<bool>("--full", () => false, "Full Cartesian product (~1248 runs)");
-        var varyOpt = new Option<string>("--vary", () => "", "Axes to vary (comma-separated: preset,elev-algo,elev-smoothing,track-smoothing,dem,elev-params)");
-        var verboseOpt = new Option<bool>("--verbose", () => false, "Print progress to stderr");
-        verboseOpt.AddAlias("-v");
-        var sortOpt = new Option<string>("--sort", () => "", $"Sort by column ({string.Join(", ", BenchmarkOutput.ValidSortColumns)})");
-        var maxHrOpt = new Option<int>("--max-hr", () => 0, "Max HR for zone calculation");
-        var demDirOpt = new Option<string>("--dem-dir", () => "", "SRTM .hgt directory");
-        var demCacheOpt = new Option<string>("--dem-cache", () => "", "DEM cache directory");
-        var demAutoOpt = new Option<bool>("--dem-auto-download", () => true, "Auto-download missing tiles");
-        var demMaxMemOpt = new Option<int>("--dem-max-memory", () => 0, "Max memory for DEM (MB, 0=unlimited)");
-        var demSkipValOpt = new Option<bool>("--dem-skip-validation", () => false, "Skip tile validation");
+        var fileArg = new Argument<string>("file") { Description = "GPX file to benchmark" };
+        var outputOpt = new Option<string>("--output", "-o") { Description = "CSV output file", DefaultValueFactory = _ => "" };
+        var fullOpt = new Option<bool>("--full") { Description = "Full Cartesian product (~1248 runs)", DefaultValueFactory = _ => false };
+        var varyOpt = new Option<string>("--vary") { Description = "Axes to vary (comma-separated: preset,elev-algo,elev-smoothing,track-smoothing,dem,elev-params)", DefaultValueFactory = _ => "" };
+        var verboseOpt = new Option<bool>("--verbose", "-v") { Description = "Print progress to stderr", DefaultValueFactory = _ => false };
+        var sortOpt = new Option<string>("--sort") { Description = $"Sort by column ({string.Join(", ", BenchmarkOutput.ValidSortColumns)})", DefaultValueFactory = _ => "" };
+        var maxHrOpt = new Option<int>("--max-hr") { Description = "Max HR for zone calculation", DefaultValueFactory = _ => 0 };
+        var demDirOpt = new Option<string>("--dem-dir") { Description = "SRTM .hgt directory", DefaultValueFactory = _ => "" };
+        var demCacheOpt = new Option<string>("--dem-cache") { Description = "DEM cache directory", DefaultValueFactory = _ => "" };
+        var demAutoOpt = new Option<bool>("--dem-auto-download") { Description = "Auto-download missing tiles", DefaultValueFactory = _ => true };
+        var demMaxMemOpt = new Option<int>("--dem-max-memory") { Description = "Max memory for DEM (MB, 0=unlimited)", DefaultValueFactory = _ => 0 };
+        var demSkipValOpt = new Option<bool>("--dem-skip-validation") { Description = "Skip tile validation", DefaultValueFactory = _ => false };
 
         var cmd = new Command("benchmark", "Run multi-configuration benchmark on a GPX file")
         {
@@ -33,20 +30,20 @@ public static class BenchmarkCommand
             maxHrOpt, demDirOpt, demCacheOpt, demAutoOpt, demMaxMemOpt, demSkipValOpt
         };
 
-        cmd.SetHandler((InvocationContext ctx) =>
+        cmd.SetAction((ParseResult parseResult) =>
         {
-            var file = ctx.ParseResult.GetValueForArgument(fileArg);
-            var output = ctx.ParseResult.GetValueForOption(outputOpt) ?? "";
-            var full = ctx.ParseResult.GetValueForOption(fullOpt);
-            var vary = ctx.ParseResult.GetValueForOption(varyOpt) ?? "";
-            var verbose = ctx.ParseResult.GetValueForOption(verboseOpt);
-            var sort = ctx.ParseResult.GetValueForOption(sortOpt) ?? "";
-            var maxHr = ctx.ParseResult.GetValueForOption(maxHrOpt);
-            var demDir = ctx.ParseResult.GetValueForOption(demDirOpt) ?? "";
-            var demCache = ctx.ParseResult.GetValueForOption(demCacheOpt) ?? "";
-            var demAuto = ctx.ParseResult.GetValueForOption(demAutoOpt);
-            var demMaxMem = ctx.ParseResult.GetValueForOption(demMaxMemOpt);
-            var demSkipVal = ctx.ParseResult.GetValueForOption(demSkipValOpt);
+            var file = parseResult.GetRequiredValue(fileArg);
+            var output = parseResult.GetValue(outputOpt) ?? "";
+            var full = parseResult.GetValue(fullOpt);
+            var vary = parseResult.GetValue(varyOpt) ?? "";
+            var verbose = parseResult.GetValue(verboseOpt);
+            var sort = parseResult.GetValue(sortOpt) ?? "";
+            var maxHr = parseResult.GetValue(maxHrOpt);
+            var demDir = parseResult.GetValue(demDirOpt) ?? "";
+            var demCache = parseResult.GetValue(demCacheOpt) ?? "";
+            var demAuto = parseResult.GetValue(demAutoOpt);
+            var demMaxMem = parseResult.GetValue(demMaxMemOpt);
+            var demSkipVal = parseResult.GetValue(demSkipValOpt);
 
             var wallClock = Stopwatch.StartNew();
 

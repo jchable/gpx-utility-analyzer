@@ -1,5 +1,4 @@
 using System.CommandLine;
-using System.CommandLine.Invocation;
 using GpxAnalyzer.Cli.Core.Gpx;
 using GpxAnalyzer.Cli.Core.Output;
 using GpxAnalyzer.Cli.Core.Split;
@@ -11,29 +10,29 @@ public static class SplitCommand
 {
     public static Command Create(Option<string> formatOption)
     {
-        var fileArg = new Argument<string>("file", "GPX file to split");
-        var intervalOpt = new Option<string>("--interval", () => "24h", "Split interval (e.g. 24h, 12h, 30m)");
-        var outputDirOpt = new Option<string>("--output-dir", () => "splits", "Output directory for split files");
-        var prefixOpt = new Option<string>("--prefix", () => "segment", "Filename prefix for split files");
+        var fileArg = new Argument<string>("file") { Description = "GPX file to split" };
+        var intervalOpt = new Option<string>("--interval") { Description = "Split interval (e.g. 24h, 12h, 30m)", DefaultValueFactory = _ => "24h" };
+        var outputDirOpt = new Option<string>("--output-dir") { Description = "Output directory for split files", DefaultValueFactory = _ => "splits" };
+        var prefixOpt = new Option<string>("--prefix") { Description = "Filename prefix for split files", DefaultValueFactory = _ => "segment" };
 
         // Shared compute flags
-        var presetOpt = new Option<string>("--preset", () => "hiking", "Stop detection preset: hiking, trail, cycling");
-        var stopSpeedOpt = new Option<double>("--stop-speed", () => 0, "Override max speed for stops (m/s)");
-        var stopDurationOpt = new Option<double>("--stop-duration", () => 0, "Override min duration for stops (seconds)");
-        var elevThresholdOpt = new Option<double>("--elevation-threshold", () => 2.0, "Min elevation change (meters)");
-        var smoothingOpt = new Option<string>("--smoothing", () => "medium", "Elevation smoothing: none, light, medium, heavy");
-        var demDirOpt = new Option<string>("--dem-dir", () => "", "SRTM .hgt directory");
-        var demCacheOpt = new Option<string>("--dem-cache", () => "", "DEM cache directory");
-        var demAutoOpt = new Option<bool>("--dem-auto-download", () => true, "Auto-download missing tiles");
-        var demMaxMemOpt = new Option<int>("--dem-max-memory", () => 0, "Max memory for DEM (MB, 0=unlimited)");
-        var demSkipValOpt = new Option<bool>("--dem-skip-validation", () => false, "Skip tile validation");
-        var elevAlgoOpt = new Option<string>("--elevation-algo", () => "threshold", "Algorithm: threshold, douglas-peucker, segments");
-        var trackSmoothOpt = new Option<string>("--track-smoothing", () => "none", "GPS lat/lon smoothing: none, light, medium, heavy");
-        var dpEpsOpt = new Option<double>("--dp-epsilon", () => 3.0, "Douglas-Peucker epsilon (meters)");
-        var segMinLenOpt = new Option<double>("--seg-min-length", () => 200.0, "Segments min length (meters)");
-        var segMaxDevOpt = new Option<double>("--seg-max-deviation", () => 2.0, "Segments max RMS residual (meters)");
-        var maxHrOpt = new Option<int>("--max-hr", () => 0, "Max HR for zone calculation");
-        var maxSpeedOpt = new Option<double>("--max-speed", () => 0, "GPS outlier removal threshold (m/s)");
+        var presetOpt = new Option<string>("--preset") { Description = "Stop detection preset: hiking, trail, cycling", DefaultValueFactory = _ => "hiking" };
+        var stopSpeedOpt = new Option<double>("--stop-speed") { Description = "Override max speed for stops (m/s)", DefaultValueFactory = _ => 0 };
+        var stopDurationOpt = new Option<double>("--stop-duration") { Description = "Override min duration for stops (seconds)", DefaultValueFactory = _ => 0 };
+        var elevThresholdOpt = new Option<double>("--elevation-threshold") { Description = "Min elevation change (meters)", DefaultValueFactory = _ => 2.0 };
+        var smoothingOpt = new Option<string>("--smoothing") { Description = "Elevation smoothing: none, light, medium, heavy", DefaultValueFactory = _ => "medium" };
+        var demDirOpt = new Option<string>("--dem-dir") { Description = "SRTM .hgt directory", DefaultValueFactory = _ => "" };
+        var demCacheOpt = new Option<string>("--dem-cache") { Description = "DEM cache directory", DefaultValueFactory = _ => "" };
+        var demAutoOpt = new Option<bool>("--dem-auto-download") { Description = "Auto-download missing tiles", DefaultValueFactory = _ => true };
+        var demMaxMemOpt = new Option<int>("--dem-max-memory") { Description = "Max memory for DEM (MB, 0=unlimited)", DefaultValueFactory = _ => 0 };
+        var demSkipValOpt = new Option<bool>("--dem-skip-validation") { Description = "Skip tile validation", DefaultValueFactory = _ => false };
+        var elevAlgoOpt = new Option<string>("--elevation-algo") { Description = "Algorithm: threshold, douglas-peucker, segments", DefaultValueFactory = _ => "threshold" };
+        var trackSmoothOpt = new Option<string>("--track-smoothing") { Description = "GPS lat/lon smoothing: none, light, medium, heavy", DefaultValueFactory = _ => "none" };
+        var dpEpsOpt = new Option<double>("--dp-epsilon") { Description = "Douglas-Peucker epsilon (meters)", DefaultValueFactory = _ => 3.0 };
+        var segMinLenOpt = new Option<double>("--seg-min-length") { Description = "Segments min length (meters)", DefaultValueFactory = _ => 200.0 };
+        var segMaxDevOpt = new Option<double>("--seg-max-deviation") { Description = "Segments max RMS residual (meters)", DefaultValueFactory = _ => 2.0 };
+        var maxHrOpt = new Option<int>("--max-hr") { Description = "Max HR for zone calculation", DefaultValueFactory = _ => 0 };
+        var maxSpeedOpt = new Option<double>("--max-speed") { Description = "GPS outlier removal threshold (m/s)", DefaultValueFactory = _ => 0 };
 
         var cmd = new Command("split", "Split a GPX file by time interval")
         {
@@ -44,13 +43,13 @@ public static class SplitCommand
             segMaxDevOpt, maxHrOpt, maxSpeedOpt
         };
 
-        cmd.SetHandler((InvocationContext ctx) =>
+        cmd.SetAction((ParseResult parseResult) =>
         {
-            var file = ctx.ParseResult.GetValueForArgument(fileArg);
-            var interval = ctx.ParseResult.GetValueForOption(intervalOpt) ?? "24h";
-            var outputDir = ctx.ParseResult.GetValueForOption(outputDirOpt) ?? "splits";
-            var prefix = ctx.ParseResult.GetValueForOption(prefixOpt) ?? "segment";
-            var format = ctx.ParseResult.GetValueForOption(formatOption) ?? "text";
+            var file = parseResult.GetRequiredValue(fileArg);
+            var interval = parseResult.GetValue(intervalOpt) ?? "24h";
+            var outputDir = parseResult.GetValue(outputDirOpt) ?? "splits";
+            var prefix = parseResult.GetValue(prefixOpt) ?? "segment";
+            var format = parseResult.GetValue(formatOption) ?? "text";
 
             var splitInterval = ParseDuration(interval);
             if (splitInterval <= TimeSpan.Zero)
@@ -60,7 +59,7 @@ public static class SplitCommand
             }
 
             var formatter = FormatterFactory.Create(format, GpxAnalyzer.Cli.Output.JsonContext.Default.Options);
-            var cfg = SharedFlags.BuildConfigFromContext(ctx, presetOpt, stopSpeedOpt, stopDurationOpt,
+            var cfg = SharedFlags.BuildConfigFromParseResult(parseResult, presetOpt, stopSpeedOpt, stopDurationOpt,
                 elevThresholdOpt, smoothingOpt, demDirOpt, demCacheOpt, demAutoOpt, demMaxMemOpt,
                 demSkipValOpt, elevAlgoOpt, trackSmoothOpt, dpEpsOpt, segMinLenOpt, segMaxDevOpt,
                 maxHrOpt, maxSpeedOpt);
