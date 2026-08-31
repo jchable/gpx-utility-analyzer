@@ -11,10 +11,28 @@ import SplitModal from '../components/editor/SplitModal';
 import ExportModal from '../components/editor/ExportModal';
 import { useEditorStore } from '../stores/editorStore';
 import { useRoute, useUpdateRoute, useCreateRoute } from '../hooks/useRoutes';
-import { useAutoSave } from '../hooks/useAutoSave';
+import { useAutoSave, payloadIsStillCurrent } from '../hooks/useAutoSave';
 import { useRoutingPreview } from '../hooks/useRoutingPreview';
 import { routesApi } from '../api/routes-client';
 import type { PoiType } from '../types/route';
+
+type EditorSnapshot = ReturnType<typeof useEditorStore.getState>;
+
+/** The exact slice of editor state a full save PUT carries. */
+function fullSavePayload(state: EditorSnapshot, fallbackName: string) {
+  return {
+    name: state.routeName || fallbackName,
+    description: state.routeDescription,
+    activityType: state.activityType,
+    routeCategory: state.routeCategory,
+    tags: state.tags,
+    routingProfile: state.routingProfile,
+    status: 'draft' as const,
+    points: state.routeCoordinates,
+    waypoints: state.waypoints,
+    pois: state.pois,
+  };
+}
 
 export default function EditorPage() {
   const { id } = useParams<{ id: string }>();
@@ -79,25 +97,26 @@ export default function EditorPage() {
     setSaving(true);
     try {
       const state = useEditorStore.getState();
+      const data = fullSavePayload(state, t('editor.title'));
+
+      /**
+       * markSaved() clears isDirty unconditionally. Anything the user changed
+       * while the request was in flight was left out of that request, so
+       * clearing the flag for it would silently discard the edit — the discard
+       * prompt and the beforeunload guard both read isDirty. Only mark clean
+       * when the store still holds exactly what was sent.
+       */
+      const markSavedIfUnchanged = () => {
+        const after = useEditorStore.getState();
+        if (payloadIsStillCurrent(data, fullSavePayload(after, t('editor.title')))) {
+          after.markSaved();
+        }
+      };
 
       if (routeId) {
         // Update existing route
-        await updateMutation.mutateAsync({
-          id: routeId,
-          data: {
-            name: state.routeName || t('editor.title'),
-            description: state.routeDescription,
-            activityType: state.activityType,
-            routeCategory: state.routeCategory,
-            tags: state.tags,
-            routingProfile: state.routingProfile,
-            status: 'draft',
-            points: state.routeCoordinates,
-            waypoints: state.waypoints,
-            pois: state.pois,
-          },
-        });
-        useEditorStore.getState().markSaved();
+        await updateMutation.mutateAsync({ id: routeId, data });
+        markSavedIfUnchanged();
       } else {
         // Create new route
         const created = await createMutation.mutateAsync({
@@ -108,22 +127,8 @@ export default function EditorPage() {
         // Then update with full data
         if (created?.id) {
           useEditorStore.getState().setRouteId(created.id);
-          await updateMutation.mutateAsync({
-            id: created.id,
-            data: {
-              name: state.routeName || t('editor.title'),
-              description: state.routeDescription,
-              activityType: state.activityType,
-              routeCategory: state.routeCategory,
-              tags: state.tags,
-              routingProfile: state.routingProfile,
-              status: 'draft',
-              points: state.routeCoordinates,
-              waypoints: state.waypoints,
-              pois: state.pois,
-            },
-          });
-          useEditorStore.getState().markSaved();
+          await updateMutation.mutateAsync({ id: created.id, data });
+          markSavedIfUnchanged();
 
           // Update URL to include new ID
           if (isMountedRef.current) {
