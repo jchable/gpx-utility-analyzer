@@ -76,7 +76,12 @@ public class ProfileComputationService
                         cad = ParseInt(tpe.Element(tpe.Name.Namespace + "cad")?.Value);
                     }
 
-                    power = ParseInt(extensions.Element("power")?.Value);
+                    // GpxWriter emits <power> in the GPX default namespace (the
+                    // two-arg WriteElementString overload inherits it), so an
+                    // unqualified XName never matched and power was always null,
+                    // in ProfileJson and in ComputeKmSplits' AvgPower.
+                    power = ParseInt(extensions.Element(ns + "power")?.Value)
+                         ?? ParseInt(extensions.Element("power")?.Value);
                 }
 
                 rawPoints.Add(new RawEnrichedPoint
