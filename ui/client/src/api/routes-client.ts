@@ -102,8 +102,26 @@ export const routesApi = {
   getTags: () => fetchJson<string[]>('/routes/tags'),
 
   // --- Export (server-side) ---
-  getExportUrl: (id: string, format: 'gpx' | 'geojson' | 'kml') =>
-    `${BASE}/routes/${id}/export/${format}`,
+  /**
+   * Downloads a route export. Auth is bearer-only, so this must go through
+   * fetch + a blob URL: a top-level navigation carries no Authorization header.
+   */
+  exportRoute: async (
+    id: string,
+    format: 'gpx' | 'geojson' | 'kml',
+    filename?: string,
+  ): Promise<void> => {
+    const res = await fetch(`${BASE}/routes/${id}/export/${format}`, { headers: allHeaders() });
+    if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename ?? `route-${id}.${format}`;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
 
   // --- Routing preview ---
   routingPreview: (waypoints: number[][], profile: string) =>

@@ -64,6 +64,39 @@ test.describe('Editor Page — Existing Route', () => {
     // The enrichment button should exist in the DOM
     await expect(page.getByTitle(/Enrich elevation|Enrichir l'altitude/i)).toHaveCount(1);
   });
+
+  test('route export sends the bearer token instead of opening a bare tab', async ({ page }) => {
+    const exportRequests: { url: string; auth: string | undefined }[] = [];
+    await page.route('**/api/routes/*/export/*', async (route) => {
+      exportRequests.push({
+        url: route.request().url(),
+        auth: route.request().headers()['authorization'],
+      });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/gpx+xml',
+        body: '<gpx version="1.1"></gpx>',
+      });
+    });
+
+    const popups: string[] = [];
+    page.on('popup', (p) => popups.push(p.url()));
+
+    await page.goto('/editor/route-1');
+    await expect(page.locator('input[placeholder]').first()).toHaveValue('Col du Galibier', { timeout: 5000 });
+
+    await page.getByRole('button', { name: /^(Export|Exporter)$/ }).click();
+    await page.getByRole('button', { name: 'GPX', exact: true }).click();
+
+    // Either the fetch landed (fixed) or a bare tab opened (broken).
+    await expect.poll(() => exportRequests.length + popups.length).toBeGreaterThan(0);
+
+    // A top-level navigation carries no Authorization header, so the export must
+    // never be a popup.
+    expect(popups).toHaveLength(0);
+    expect(exportRequests).toHaveLength(1);
+    expect(exportRequests[0].auth).toMatch(/^Bearer /);
+  });
 });
 
 test.describe('Editor Page — Toolbar Modes', () => {

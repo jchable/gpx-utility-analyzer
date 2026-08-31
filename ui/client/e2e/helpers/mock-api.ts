@@ -22,6 +22,7 @@ const settings = loadFixture('settings.json');
 const providers = loadFixture('providers.json');
 const routes = loadFixture('routes.json');
 const routeDetail = loadFixture('route-detail.json');
+const racePlanDetail = loadFixture('race-plan-detail.json');
 
 // Build a fake JWT that jwt-decode can parse (not cryptographically valid, just base64-decodable)
 function fakeMockJwt(): string {
@@ -271,6 +272,36 @@ export async function mockAllApi(page: Page) {
       route.fulfill({ status: 204 });
     } else {
       route.fallback();
+    }
+  });
+
+  // --- Race plan endpoints ---
+
+  // Race plans list
+  await page.route('**/api/race-plans?*', (route) =>
+    route.fulfill({ json: [racePlanDetail] }),
+  );
+
+  // Nutrition product catalogue
+  await page.route('**/api/race-plans/nutrition-products*', (route) =>
+    route.fulfill({ json: [] }),
+  );
+
+  // Recompute target times — returns the plan unchanged
+  await page.route('**/api/race-plans/*/compute-times', (route) =>
+    route.fulfill({ json: racePlanDetail }),
+  );
+
+  // Race plan detail — GET returns the fixture, PUT echoes the submitted body
+  await page.route('**/api/race-plans/plan-1', async (route) => {
+    const method = route.request().method();
+    if (method === 'DELETE') {
+      await route.fulfill({ status: 204 });
+    } else if (method === 'PUT') {
+      // Echo the body merged over the fixture, mirroring the API's full replace.
+      await route.fulfill({ json: { ...racePlanDetail, ...route.request().postDataJSON() } });
+    } else {
+      await route.fulfill({ json: racePlanDetail });
     }
   });
 }

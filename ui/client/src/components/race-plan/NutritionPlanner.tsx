@@ -12,6 +12,7 @@ import {
   useDeleteNutritionItem,
   useUpdateRacePlan,
 } from '../../hooks/useRacePlans';
+import { toRacePlanUpdateRequest } from '../../types/race-plan';
 import type {
   RacePlanDetail,
   RacePlanCheckpoint,
@@ -349,22 +350,7 @@ export default function NutritionPlanner({ plan }: { plan: RacePlanDetail }) {
     sweatDebounce.current = setTimeout(() => {
       updatePlan.mutate({
         id: plan.id,
-        data: {
-          name: plan.name,
-          description: plan.description ?? undefined,
-          activityType: plan.activityType,
-          status: plan.status,
-          raceDate: plan.raceDate ?? undefined,
-          startTime: plan.startTime ?? undefined,
-          startLatitude: plan.startLatitude ?? undefined,
-          startLongitude: plan.startLongitude ?? undefined,
-          targetTimeSeconds: plan.targetTimeSeconds ?? undefined,
-          targetTimeBSeconds: plan.targetTimeBSeconds ?? undefined,
-          targetTimeCSeconds: plan.targetTimeCSeconds ?? undefined,
-          performanceCoefficient: plan.performanceCoefficient,
-          sweatRateMLPerHour: val,
-          equipment: plan.equipment ?? undefined,
-        },
+        data: toRacePlanUpdateRequest(plan, { sweatRateMLPerHour: val }),
       });
     }, 800);
   }

@@ -16,10 +16,14 @@ const FORMATS: { id: 'gpx' | 'geojson' | 'kml'; mime: string }[] = [
 export default function ExportModal({ routeId, onClose }: ExportModalProps) {
   const { t } = useTranslation('routes');
 
-  const handleExport = (format: 'gpx' | 'geojson' | 'kml') => {
-    const url = routesApi.getExportUrl(routeId, format);
-    window.open(url, '_blank');
-    onClose();
+  const handleExport = async (format: 'gpx' | 'geojson' | 'kml') => {
+    try {
+      await routesApi.exportRoute(routeId, format);
+    } catch (err) {
+      console.error('Route export failed:', err);
+    } finally {
+      onClose();
+    }
   };
 
   return (
