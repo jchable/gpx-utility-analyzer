@@ -10,8 +10,16 @@ using System.Text.Json;
 
 public static class AnalyzeCommand
 {
-    public static Command Create(ProviderRegistry registry)
+    /// <param name="registry">Provider registry used to resolve <c>--provider</c>.</param>
+    /// <param name="isInputRedirected">
+    /// Stdin-availability probe. Defaults to <see cref="Console.IsInputRedirected"/>;
+    /// overridable so the missing-input branch can be exercised from a test host,
+    /// which always runs with a redirected stdin.
+    /// </param>
+    public static Command Create(ProviderRegistry registry, Func<bool>? isInputRedirected = null)
     {
+        var inputRedirected = isInputRedirected ?? (() => Console.IsInputRedirected);
+
         var providerOption = new Option<string>("--provider")
         { Description = "AI provider: azure-openai, openai, anthropic, ollama, gemini", Required = true };
 
@@ -50,7 +58,7 @@ public static class AnalyzeCommand
             {
                 json = await File.ReadAllTextAsync(inputFile.FullName, ct);
             }
-            else if (Console.IsInputRedirected)
+            else if (inputRedirected())
             {
                 json = await Console.In.ReadToEndAsync(ct);
             }
@@ -58,7 +66,10 @@ public static class AnalyzeCommand
             {
                 Console.Error.WriteLine("Error: provide --input file or pipe JSON via stdin.");
                 Console.Error.WriteLine("Usage: gpx-analyzer analyze --format json track.gpx | gpx-ai-analyzer analyze --provider openai");
-                return;
+                // A bare `return` here is exit code 0: a CI step redirecting stdout
+                // to report.json wrote an empty file and its `if [ $? -ne 0 ]` guard
+                // never fired.
+                return 1;
             }
 
             // Deserialize
@@ -82,6 +93,8 @@ public static class AnalyzeCommand
 
             // Output
             ReportFormatter.Format(Console.Out, stats.Filename, report, format);
+
+            return 0;
         });
 
         return command;
