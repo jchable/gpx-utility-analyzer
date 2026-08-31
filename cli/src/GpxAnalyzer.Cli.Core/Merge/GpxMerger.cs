@@ -11,7 +11,11 @@ public static class GpxMerger
             allPoints.AddRange(doc.AllPoints());
 
         if (sortByTime)
-            allPoints.Sort((a, b) => a.Time.CompareTo(b.Time));
+            // List<T>.Sort is an introsort and is explicitly unstable. Untimed
+            // trkpts all parse to DateTime.MinValue, so a course/route GPX is one
+            // block of equal keys and introsort shuffles its geometry into a
+            // zig-zag. OrderBy is documented stable.
+            allPoints = [.. allPoints.OrderBy(p => p.Time)];
 
         return new GpxDocument
         {
