@@ -76,3 +76,6 @@ sample/
 *_result2.json
 *_fix.json
 profile_tmp.json
+
+# Claude Code agent worktrees
+.claude/worktrees/
