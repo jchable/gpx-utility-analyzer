@@ -16,11 +16,23 @@ namespace GpxAnalyzer.Api.Tests.Helpers;
 /// </summary>
 public class ApiFactory : WebApplicationFactory<Program>
 {
-    private readonly string _dbPath =
-        Path.Combine(Path.GetTempPath(), $"gpxtest_{Guid.NewGuid():N}.db");
+    private readonly string _dbPath;
+    private readonly bool _ownsDbFile;
 
     private readonly string _storageDir =
         Path.Combine(Path.GetTempPath(), $"gpxtest_storage_{Guid.NewGuid():N}");
+
+    /// <param name="dbPath">
+    /// Optional explicit database path. Supply one to reuse a single database across
+    /// two factory instances (the "the host restarted" scenario). When supplied the
+    /// file belongs to the caller and is NOT deleted on dispose; otherwise a unique
+    /// path is generated and removed with the factory.
+    /// </param>
+    public ApiFactory(string? dbPath = null)
+    {
+        _ownsDbFile = dbPath is null;
+        _dbPath = dbPath ?? Path.Combine(Path.GetTempPath(), $"gpxtest_{Guid.NewGuid():N}.db");
+    }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -54,7 +66,8 @@ public class ApiFactory : WebApplicationFactory<Program>
     {
         base.Dispose(disposing);
         if (!disposing) return;
-        try { if (File.Exists(_dbPath)) File.Delete(_dbPath); } catch { /* best-effort */ }
+        if (_ownsDbFile)
+            try { if (File.Exists(_dbPath)) File.Delete(_dbPath); } catch { /* best-effort */ }
         try { if (Directory.Exists(_storageDir)) Directory.Delete(_storageDir, recursive: true); } catch { /* best-effort */ }
     }
 }

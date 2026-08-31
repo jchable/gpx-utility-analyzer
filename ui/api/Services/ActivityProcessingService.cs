@@ -1,6 +1,7 @@
 namespace GpxAnalyzer.Api.Services;
 
 using System.Diagnostics;
+using System.Globalization;
 using System.Text.Json;
 using GpxAnalyzer.Api.Data;
 using GpxAnalyzer.Api.Entities;
@@ -164,9 +165,9 @@ public class ActivityProcessingService
                 activity.ElevationLossM = stats.ElevationLossM;
                 activity.MovingTimeSeconds = stats.MovingTime.Seconds;
 
-                if (DateTime.TryParse(stats.StartTime, out var start))
+                if (TryParseUtc(stats.StartTime, out var start))
                     activity.StartTime = start;
-                if (DateTime.TryParse(stats.EndTime, out var end))
+                if (TryParseUtc(stats.EndTime, out var end))
                     activity.EndTime = end;
 
                 // Phase B: auto-detect activity type from computed stats
@@ -241,7 +242,26 @@ public class ActivityProcessingService
             activity.Status = ProcessingStatus.Failed;
             activity.ErrorMessage = ex.Message;
             activity.UpdatedAt = DateTime.UtcNow;
-            await _db.SaveChangesAsync(ct);
+            // NOT `ct`: the most common reason we are here is that `ct` was cancelled
+            // (host shutdown), and saving with it throws immediately, leaving the row
+            // stuck in Analyzing with nothing to move it on.
+            await _db.SaveChangesAsync(CancellationToken.None);
         }
+    }
+
+    /// <summary>
+    /// Parses a timestamp from the CLI JSON contract as a UTC instant.
+    /// SummaryMapper emits a UTC instant with a trailing Z. With DateTimeStyles.None
+    /// .NET honours the Z by converting to the host's LOCAL time (and stamping
+    /// Kind = Local), so the stored value drifts by the host's UTC offset — and by its
+    /// current DST state — while CreatedAt/UpdatedAt and the dashboard's month
+    /// boundaries are all UtcNow.
+    /// </summary>
+    internal static bool TryParseUtc(string? value, out DateTime utc)
+    {
+        const DateTimeStyles utcStyles =
+            DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal;
+
+        return DateTime.TryParse(value, CultureInfo.InvariantCulture, utcStyles, out utc);
     }
 }
