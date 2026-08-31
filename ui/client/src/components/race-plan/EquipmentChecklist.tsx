@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, Trash2, Shield } from 'lucide-react';
-import type { RacePlanDetail, RacePlanUpdateRequest, RacePlanEquipmentItem, EquipmentCategory } from '../../types/race-plan';
+import { toRacePlanUpdateRequest } from '../../types/race-plan';
+import type { RacePlanDetail, RacePlanEquipmentItem, EquipmentCategory } from '../../types/race-plan';
 import { useUpdateRacePlan } from '../../hooks/useRacePlans';
 
 const CATEGORIES: EquipmentCategory[] = ['clothing', 'footwear', 'navigation', 'nutrition', 'safety', 'lighting', 'other'];
@@ -25,13 +26,7 @@ export default function EquipmentChecklist({ plan, readOnly }: Props) {
   const items: RacePlanEquipmentItem[] = plan.equipment ?? [];
 
   async function saveItems(updated: RacePlanEquipmentItem[]) {
-    const req: RacePlanUpdateRequest = {
-      name: plan.name,
-      activityType: plan.activityType,
-      status: plan.status,
-      performanceCoefficient: plan.performanceCoefficient,
-      equipment: updated,
-    };
+    const req = toRacePlanUpdateRequest(plan, { equipment: updated });
     await updatePlan.mutateAsync({ id: plan.id, data: req });
   }
 

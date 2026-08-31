@@ -17,7 +17,8 @@ import PerformanceCoefficientSlider from '../components/race-plan/PerformanceCoe
 import RacePlanShareModal from '../components/race-plan/RacePlanShareModal';
 import NutritionPlanner from '../components/race-plan/NutritionPlanner';
 import EquipmentChecklist from '../components/race-plan/EquipmentChecklist';
-import type { RacePlanDetail, RacePlanUpdateRequest } from '../types/race-plan';
+import { toRacePlanUpdateRequest } from '../types/race-plan';
+import type { RacePlanDetail } from '../types/race-plan';
 
 const STATUS_STYLE: Record<string, string> = {
   draft: 'bg-amber-500/15 text-amber-400',
@@ -71,12 +72,7 @@ export default function RacePlanDetailPage() {
     if (!plan) return;
     // Save coeff first if changed
     if (localCoeff != null && Math.abs(localCoeff - plan.performanceCoefficient) > 0.001) {
-      const req: RacePlanUpdateRequest = {
-        name: plan.name,
-        activityType: plan.activityType,
-        status: plan.status,
-        performanceCoefficient: localCoeff,
-      };
+      const req = toRacePlanUpdateRequest(plan, { performanceCoefficient: localCoeff });
       await updatePlan.mutateAsync({ id: plan.id, data: req });
     }
     await computeTimes.mutateAsync(plan.id);
@@ -290,15 +286,12 @@ function PlanMetaForm({ plan }: { plan: RacePlanDetail }) {
   async function handleSave() {
     await updatePlan.mutateAsync({
       id: plan!.id,
-      data: {
-        name: plan!.name,
-        activityType: plan!.activityType,
+      data: toRacePlanUpdateRequest(plan!, {
         status: form.status,
-        performanceCoefficient: plan!.performanceCoefficient,
         raceDate: form.raceDate || null,
         startTime: form.startTime || null,
         targetTimeSeconds: form.targetTimeSeconds,
-      },
+      }),
     });
     setEditing(false);
   }

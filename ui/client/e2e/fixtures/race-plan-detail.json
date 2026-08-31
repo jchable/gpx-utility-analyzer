@@ -1,0 +1,154 @@
+{
+  "id": "plan-1",
+  "name": "UTMB 2026",
+  "description": "Full loop around the Mont-Blanc massif",
+  "activityType": "trail",
+  "status": "draft",
+  "language": "en",
+  "routeId": "route-1",
+
+  "distanceKm": 171.5,
+  "elevationGainM": 10000,
+  "elevationLossM": 10000,
+  "maxElevationM": 2537,
+  "minElevationM": 1035,
+
+  "raceDate": "2026-06-06",
+  "startTime": "04:00",
+  "startLatitude": 45.9237,
+  "startLongitude": 6.8694,
+
+  "targetTimeSeconds": 144000,
+  "targetTimeBSeconds": 158400,
+  "targetTimeCSeconds": 172800,
+  "performanceCoefficient": 0.75,
+  "sweatRateMLPerHour": 700,
+
+  "equipment": [
+    { "name": "Head torch", "category": "lighting", "isMandatory": true },
+    { "name": "Waterproof jacket", "category": "clothing", "isMandatory": true }
+  ],
+
+  "isPublic": false,
+  "shareToken": null,
+
+  "linkedActivityId": null,
+
+  "checkpoints": [
+    {
+      "id": "cp-1",
+      "order": 0,
+      "name": "Chamonix",
+      "type": "start",
+      "distanceKm": 0,
+      "elevationM": 1035,
+      "latitude": 45.9237,
+      "longitude": 6.8694,
+      "cutoffTimeSeconds": null,
+      "targetArrivalSeconds": 0,
+      "plannedPauseSeconds": null,
+      "isCrewAccessible": true,
+      "crewNotes": null,
+      "hasDropBag": false,
+      "dropBagContents": null,
+      "equipmentTake": null,
+      "equipmentLeave": null,
+      "notes": null
+    },
+    {
+      "id": "cp-2",
+      "order": 1,
+      "name": "Les Contamines",
+      "type": "aid_station",
+      "distanceKm": 31.4,
+      "elevationM": 1167,
+      "latitude": 45.8214,
+      "longitude": 6.7278,
+      "cutoffTimeSeconds": 25200,
+      "targetArrivalSeconds": 18000,
+      "plannedPauseSeconds": 600,
+      "isCrewAccessible": true,
+      "crewNotes": "Swap bottles",
+      "hasDropBag": true,
+      "dropBagContents": [{ "item": "Gels", "qty": 4 }],
+      "equipmentTake": null,
+      "equipmentLeave": null,
+      "notes": null
+    },
+    {
+      "id": "cp-3",
+      "order": 2,
+      "name": "Courmayeur",
+      "type": "checkpoint",
+      "distanceKm": 80.9,
+      "elevationM": 1190,
+      "latitude": 45.7909,
+      "longitude": 6.9694,
+      "cutoffTimeSeconds": 66600,
+      "targetArrivalSeconds": 54000,
+      "plannedPauseSeconds": 1200,
+      "isCrewAccessible": true,
+      "crewNotes": null,
+      "hasDropBag": true,
+      "dropBagContents": null,
+      "equipmentTake": null,
+      "equipmentLeave": null,
+      "notes": null
+    },
+    {
+      "id": "cp-4",
+      "order": 3,
+      "name": "Chamonix Finish",
+      "type": "finish",
+      "distanceKm": 171.5,
+      "elevationM": 1035,
+      "latitude": 45.9237,
+      "longitude": 6.8694,
+      "cutoffTimeSeconds": 165600,
+      "targetArrivalSeconds": 144000,
+      "plannedPauseSeconds": null,
+      "isCrewAccessible": true,
+      "crewNotes": null,
+      "hasDropBag": false,
+      "dropBagContents": null,
+      "equipmentTake": null,
+      "equipmentLeave": null,
+      "notes": null
+    }
+  ],
+
+  "nutritionItems": [
+    {
+      "id": "ni-1",
+      "atCheckpointId": "cp-2",
+      "fromCheckpointId": null,
+      "toCheckpointId": null,
+      "productId": null,
+      "productName": "Energy gel",
+      "caloriesKcal": 100,
+      "carbsG": 25,
+      "sodiumMg": 50,
+      "quantity": 2,
+      "unit": "unit",
+      "timeOffsetSeconds": null,
+      "notes": null
+    }
+  ],
+
+  "profile": [
+    { "distance": 0, "elevation": 1035, "grade": 0, "toblerSpeed": 5.0 },
+    { "distance": 31.4, "elevation": 1167, "grade": 2.1, "toblerSpeed": 4.4 },
+    { "distance": 80.9, "elevation": 1190, "grade": -1.2, "toblerSpeed": 4.8 },
+    { "distance": 171.5, "elevation": 1035, "grade": -3.4, "toblerSpeed": 5.2 }
+  ],
+
+  "points": [
+    [6.8694, 45.9237, 1035],
+    [6.7278, 45.8214, 1167],
+    [6.9694, 45.7909, 1190],
+    [6.8694, 45.9237, 1035]
+  ],
+
+  "createdAt": "2026-01-10T09:00:00Z",
+  "updatedAt": "2026-02-01T18:30:00Z"
+}
