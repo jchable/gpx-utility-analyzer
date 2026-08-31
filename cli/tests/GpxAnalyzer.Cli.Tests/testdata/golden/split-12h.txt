@@ -185,9 +185,9 @@
     }
   },
   "anomalies": {
-    "quality_score": 89,
-    "total_count": 3,
-    "info_count": 1,
+    "quality_score": 90,
+    "total_count": 2,
+    "info_count": 0,
     "warning_count": 2,
     "critical_count": 0,
     "distance_impact_m": -76133.58736822504,
@@ -205,19 +205,6 @@
         "distance_impact_m": -76133.58736822504,
         "time_impact_s": 86100,
         "description": "Signal loss: 23h55m00s gap between consecutive points",
-        "was_corrected": false
-      },
-      {
-        "type": "gps_drift",
-        "category": "position",
-        "severity": "info",
-        "start_index": 0,
-        "end_index": 1,
-        "start_time": "2024-01-01T10:05:00Z",
-        "end_time": "2024-01-02T10:00:00Z",
-        "distance_impact_m": 0,
-        "time_impact_s": 0,
-        "description": "Position oscillation during stop: max drift 133m from centroid, inflated distance: 0m",
         "was_corrected": false
       },
       {

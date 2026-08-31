@@ -149,6 +149,13 @@ public static class PositionAnomalyDetector
     {
         foreach (var stop in stops)
         {
+            // A recording gap is not drift. Drift is the receiver reporting movement
+            // while stationary; a gap is the absence of fixes entirely, and its two
+            // endpoints are far apart because hours passed, not because the receiver
+            // misbehaved. The stop detector already classified it.
+            if (stop.SpansRecordingGap)
+                continue;
+
             // Find point indices for this stop
             int startIdx = -1, endIdx = -1;
             for (int i = 0; i < points.Count; i++)
