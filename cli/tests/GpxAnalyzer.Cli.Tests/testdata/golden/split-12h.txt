@@ -179,30 +179,52 @@
     "seconds": 86400
   },
   "moving_time": {
-    "display": "1d 0h 0m 0s",
-    "seconds": 86400
+    "display": "5m 0s",
+    "seconds": 300
   },
   "stopped_time": {
-    "display": "0s",
-    "seconds": 0
+    "display": "23h 55m 0s",
+    "seconds": 86100
   },
   "avg_speed_kmh": 0.011091723569557529,
-  "avg_moving_speed_kmh": 0.011091723569557529,
+  "avg_moving_speed_kmh": 3.194416388032568,
   "max_speed_kmh": 3.194416388032568,
   "avg_pace": "5409:26 min/km",
-  "avg_moving_pace": "5409:26 min/km",
+  "avg_moving_pace": "18:46 min/km",
   "point_count": 3,
   "segment_count": 1,
   "points_per_km": 11.269664197463092,
-  "stop_count": 0,
+  "stop_count": 1,
   "total_stop_time": {
-    "display": "0s",
-    "seconds": 0
+    "display": "23h 55m 0s",
+    "seconds": 86100
   },
   "avg_stop_duration": {
-    "display": "0s",
-    "seconds": 0
+    "display": "23h 55m 0s",
+    "seconds": 86100
   },
+  "longest_stop": {
+    "start_time": "2024-01-01T10:05:00Z",
+    "end_time": "2024-01-02T10:00:00Z",
+    "duration": {
+      "display": "23h 55m 0s",
+      "seconds": 86100
+    },
+    "lat": 48.858999999999995,
+    "lon": 2.355
+  },
+  "stops": [
+    {
+      "start_time": "2024-01-01T10:05:00Z",
+      "end_time": "2024-01-02T10:00:00Z",
+      "duration": {
+        "display": "23h 55m 0s",
+        "seconds": 86100
+      },
+      "lat": 48.858999999999995,
+      "lon": 2.355
+    }
+  ],
   "effort": {
     "naismith_time": {
       "display": "4m 41s",
@@ -216,8 +238,8 @@
       "display": "5m 7s",
       "seconds": 307.0812291
     },
-    "performance_ratio_naismith": 306.75,
-    "performance_ratio_tobler": 454.1,
+    "performance_ratio_naismith": 1.07,
+    "performance_ratio_tobler": 1.58,
     "kilometre_effort": 0.4,
     "itra_points": 0.4,
     "itra_category": "XXS",
@@ -233,12 +255,12 @@
     }
   },
   "anomalies": {
-    "quality_score": 90,
-    "total_count": 2,
+    "quality_score": 85,
+    "total_count": 3,
     "info_count": 0,
-    "warning_count": 2,
+    "warning_count": 3,
     "critical_count": 0,
-    "distance_impact_m": -76133.58736822504,
+    "distance_impact_m": -75929.68687803294,
     "time_impact_s": 86400,
     "correction_applied": false,
     "anomalies": [
@@ -253,6 +275,19 @@
         "distance_impact_m": -76133.58736822504,
         "time_impact_s": 86100,
         "description": "Signal loss: 23h55m00s gap between consecutive points",
+        "was_corrected": false
+      },
+      {
+        "type": "gps_drift",
+        "category": "position",
+        "severity": "warning",
+        "start_index": 0,
+        "end_index": 1,
+        "start_time": "2024-01-01T10:05:00Z",
+        "end_time": "2024-01-02T10:00:00Z",
+        "distance_impact_m": 203.90049019209644,
+        "time_impact_s": 0,
+        "description": "Position oscillation during stop: max drift 133m from centroid, inflated distance: 204m",
         "was_corrected": false
       },
       {

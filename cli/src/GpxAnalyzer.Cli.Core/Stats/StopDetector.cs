@@ -175,8 +175,12 @@ public static class StopDetector
         if (duration < cfg.MinDuration)
             return null;
 
-        // Reject if the person actually moved too far
-        if (cfg.MaxDistance > 0)
+        // Reject if the person actually moved too far — but only when the interval
+        // was recorded. Across a recording gap the displacement is movement during
+        // unrecorded time, not jitter at a standstill, and the preset limits
+        // (30-100 m) are jitter tolerances. Applying them there discards the pause
+        // entirely and charges all of it to moving time.
+        if (cfg.MaxDistance > 0 && !SpansRecordingGap(points, startIdx, endIdx - 1))
         {
             double dist = DistanceCalculator.Haversine(
                 points[startIdx].Lat, points[startIdx].Lon,
@@ -202,6 +206,18 @@ public static class StopDetector
             Lat = sumLat / n,
             Lon = sumLon / n
         };
+    }
+
+    /// <summary>
+    /// True when any interval inside [startIdx, endIdx] exceeds the pipeline's
+    /// recording-gap threshold — i.e. the device stopped logging.
+    /// </summary>
+    private static bool SpansRecordingGap(List<TrackPoint> points, int startIdx, int endIdx)
+    {
+        for (int i = startIdx + 1; i <= endIdx && i < points.Count; i++)
+            if (points[i].Time - points[i - 1].Time > Elevation.ElevationSmoother.GapThreshold)
+                return true;
+        return false;
     }
 
     public static TimeSpan TotalStopTime(List<Stop> stops)
