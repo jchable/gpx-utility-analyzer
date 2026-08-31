@@ -442,4 +442,39 @@ public class AnomalyCorrectorTests
             Assert.Equal(deltas[0], d, 8);
     }
 
+    // -- #83: a freeze longer than moving time must not zero the estimate
+    [Fact]
+    public void ApplyFrozenSectionDistances_FrozenLongerThanMovingTime_StillEstimatesDistance()
+    {
+        var t0 = DateTime.Parse("2024-01-01T10:00:00Z").ToUniversalTime();
+        var points = new List<TrackPoint>();
+        for (int i = 0; i < 10; i++)
+            points.Add(new TrackPoint { Lat = 48.0 + i * 0.0009, Lon = 2.0, Time = t0.AddSeconds(i * 30) });
+
+        // Frozen indices 4..7 (900 s of impact) with only 300 s of moving time
+        var s = new Summary
+        {
+            MovingTime = TimeSpan.FromSeconds(300),
+            AnomalyReport = new AnomalyReport
+            {
+                Anomalies =
+                [
+                    new TrackAnomaly
+                    {
+                        Type = AnomalyType.GpsFrozen,
+                        StartIndex = 4, EndIndex = 7,
+                        TimeImpactS = 900, WasCorrected = true,
+                    },
+                ],
+            },
+        };
+        SpeedCalculator.EnrichPoints(points);
+
+        AnomalyCorrector.ApplyFrozenSectionDistances(points, s);
+
+        double frozenDist = 0;
+        for (int i = 4; i <= 7; i++) frozenDist += points[i].DistFromPrev;
+        Assert.True(frozenDist > 0,
+            "the frozen section must receive an estimated distance, not zero");
+    }
 }
