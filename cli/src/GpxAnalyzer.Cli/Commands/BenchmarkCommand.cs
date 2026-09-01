@@ -55,7 +55,7 @@ public static class BenchmarkCommand
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Error parsing {file}: {ex.Message}");
-                return;
+                return 1;
             }
 
             var points = doc.AllPoints();
@@ -142,10 +142,12 @@ public static class BenchmarkCommand
                 catch (Exception ex)
                 {
                     Console.Error.WriteLine($"Error writing CSV: {ex.Message}");
+                    return 1;
                 }
             }
 
             Console.Error.WriteLine($"Wall time: {wallClock.Elapsed.TotalSeconds:F1}s");
+            return 0;
         });
 
         return cmd;

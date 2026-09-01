@@ -136,4 +136,21 @@ public class CliGoldenTests
         Assert.Equal(1, r.ExitCode);
         Assert.Contains("Required argument missing for command: 'analyze'.", r.StdOut + r.StdErr);
     }
+
+    [Fact]
+    public void Benchmark_MissingFile_ExitsNonZero()
+    {
+        var r = CliRunner.Run("benchmark", "missing.gpx", "--dem-auto-download", "false");
+        Assert.Equal(1, r.ExitCode);
+        Assert.Contains("Error parsing", r.StdErr);
+    }
+
+    [Fact]
+    public void Merge_NoValidFile_ExitsNonZero()
+    {
+        var r = CliRunner.Run("merge", "missing.gpx", "--output", "out.gpx",
+            "--dem-auto-download", "false");
+        Assert.Equal(1, r.ExitCode);
+        Assert.Contains("no valid GPX files", r.StdErr);
+    }
 }

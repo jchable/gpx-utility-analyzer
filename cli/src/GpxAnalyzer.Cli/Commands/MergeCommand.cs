@@ -60,7 +60,7 @@ public static class MergeCommand
             if (resolvedFiles.Count == 0)
             {
                 Console.Error.WriteLine("Error: no GPX files found");
-                return;
+                return 1;
             }
 
             var docs = new List<GpxDocument>();
@@ -80,7 +80,7 @@ public static class MergeCommand
             if (docs.Count == 0)
             {
                 Console.Error.WriteLine("Error: no valid GPX files to merge");
-                return;
+                return 1;
             }
 
             var merged = GpxMerger.Merge(docs, sort);
@@ -97,7 +97,7 @@ public static class MergeCommand
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Error writing {output}: {ex.Message}");
-                return;
+                return 1;
             }
 
             if (analyze)
@@ -111,6 +111,8 @@ public static class MergeCommand
                 var (summary, _) = ComputePipeline.Compute(merged.AllPoints(), merged.SegmentCount(), cfg);
                 formatter.Format(Console.Out, output, summary, cfg.StopConfig);
             }
+
+            return 0;
         });
 
         return cmd;
