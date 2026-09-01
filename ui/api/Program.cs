@@ -174,6 +174,10 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var startupLogger = scope.ServiceProvider
+        .GetRequiredService<ILoggerFactory>().CreateLogger("GpxAnalyzer.Api.Startup");
+
+    await ExternalActivityDeduplication.LogRowsAboutToBeRemovedAsync(db, startupLogger);
     db.Database.Migrate();
 
     // Seed roles

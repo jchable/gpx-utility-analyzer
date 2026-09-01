@@ -104,11 +104,16 @@ public class WebhooksController : ControllerBase
 
         var externalId = evt.ExternalActivityId;
 
-        // Check for duplicate
-        var exists = await _db.Activities.AnyAsync(a => a.Source == provider && a.ExternalId == externalId);
+        // Check for duplicate — scoped to the owning user, matching
+        // IX_Activities_UserId_Source_ExternalId. Two athletes who shared the same
+        // workout each receive their own event and each get their own row.
+        var exists = await _db.Activities.AnyAsync(a =>
+            a.UserId == integration.UserId && a.Source == provider && a.ExternalId == externalId);
         if (exists)
         {
-            _logger.LogInformation("Activity {ExternalId} from {Provider} already exists, skipping", externalId, provider);
+            _logger.LogInformation(
+                "Activity {ExternalId} from {Provider} already exists for user {UserId}, skipping",
+                externalId, provider, integration.UserId);
             return Ok();
         }
 

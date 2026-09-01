@@ -131,10 +131,10 @@ namespace GpxAnalyzer.Api.Migrations
 
                     b.HasIndex("Status");
 
-                    b.HasIndex("Source", "ExternalId")
-                        .IsUnique();
-
                     b.HasIndex("UserId", "StartTime");
+
+                    b.HasIndex("UserId", "Source", "ExternalId")
+                        .IsUnique();
 
                     b.ToTable("Activities");
                 });
