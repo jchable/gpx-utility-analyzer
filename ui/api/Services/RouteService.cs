@@ -75,7 +75,9 @@ public class RouteService
         _db.Routes.Add(route);
         await _db.SaveChangesAsync(ct);
 
-        _logger.LogInformation("Route created: {Id} ({Name})", route.Id, route.Name);
+        // The route id is enough to find the row; its name and source filename are user
+        // text and must not reach a log line verbatim (CodeQL cs/log-forging).
+        _logger.LogInformation("Route created: {Id}", route.Id);
         return route;
     }
 
@@ -110,7 +112,7 @@ public class RouteService
 
         await _db.SaveChangesAsync(ct);
 
-        _logger.LogInformation("Route updated: {Id} ({Name}), {Dist:F1} km", route.Id, route.Name, route.DistanceKm);
+        _logger.LogInformation("Route updated: {Id}, {Dist:F1} km", route.Id, route.DistanceKm);
         return route;
     }
 
@@ -215,8 +217,8 @@ public class RouteService
             _db.Routes.Add(route);
             await _db.SaveChangesAsync(ct);
 
-            _logger.LogInformation("Route imported from GPX '{File}': {Id}, {Points} points, {Dist:F1} km",
-                filename, route.Id, points.Count, route.DistanceKm);
+            _logger.LogInformation("Route imported from GPX: {Id}, {Points} points, {Dist:F1} km",
+                route.Id, points.Count, route.DistanceKm);
 
             return route;
         }

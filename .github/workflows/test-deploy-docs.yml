@@ -12,6 +12,10 @@ on:
       - 'ai-analyzer/docs/**'
       - 'README.md'
 
+# Read-only: this workflow only builds the docs to prove a PR does not break them.
+permissions:
+  contents: read
+
 jobs:
   test-build:
     name: Test Build
