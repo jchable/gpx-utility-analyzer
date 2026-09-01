@@ -78,6 +78,7 @@ public class WebhookRoutingTests
         ApiFactory factory, StravaApiStub stub, string? subscriptionId = null)
         => factory.WithWebHostBuilder(builder =>
         {
+            builder.UseSetting("Integrations:strava:WebhookSecret", "test-webhook-secret");
             if (subscriptionId is not null)
                 builder.UseSetting("Integrations:Strava:SubscriptionId", subscriptionId);
 
@@ -129,7 +130,7 @@ public class WebhookRoutingTests
         await SeedIntegrationAsync(factory, bob.User.Id, "2002", "bob-token");
 
         // Bob (athlete 2002) finishes a run.
-        var resp = await client.PostAsJsonAsync("/api/webhooks/strava", new
+        var resp = await client.PostAsJsonAsync("/api/webhooks/strava?secret=test-webhook-secret", new
         {
             object_type = "activity",
             aspect_type = "create",
@@ -161,7 +162,7 @@ public class WebhookRoutingTests
         await SeedIntegrationAsync(factory, alice.User.Id, "1001", "alice-token");
 
         // Bob (athlete 2002, not connected here) finishes a run.
-        var resp = await client.PostAsJsonAsync("/api/webhooks/strava", new
+        var resp = await client.PostAsJsonAsync("/api/webhooks/strava?secret=test-webhook-secret", new
         {
             object_type = "activity",
             aspect_type = "create",
@@ -194,7 +195,7 @@ public class WebhookRoutingTests
         await SeedIntegrationAsync(factory, alice.User.Id, "1001", "alice-token");
 
         // An anonymous attacker's minimal injection payload: no owner_id.
-        var resp = await client.PostAsJsonAsync("/api/webhooks/strava", new
+        var resp = await client.PostAsJsonAsync("/api/webhooks/strava?secret=test-webhook-secret", new
         {
             object_type = "activity",
             aspect_type = "create",
@@ -220,7 +221,7 @@ public class WebhookRoutingTests
         await SeedIntegrationAsync(factory, alice.User.Id, "1001", "alice-token");
 
         // Correct owner, but the event was not issued against our subscription.
-        var resp = await client.PostAsJsonAsync("/api/webhooks/strava", new
+        var resp = await client.PostAsJsonAsync("/api/webhooks/strava?secret=test-webhook-secret", new
         {
             subscription_id = 999L,
             object_type = "activity",
@@ -245,7 +246,7 @@ public class WebhookRoutingTests
         var alice = await TestHelpers.RegisterAsync(client, $"alice4_{Guid.NewGuid():N}@test.local");
         await SeedIntegrationAsync(factory, alice.User.Id, "1001", "alice-token");
 
-        var resp = await client.PostAsJsonAsync("/api/webhooks/strava", new
+        var resp = await client.PostAsJsonAsync("/api/webhooks/strava?secret=test-webhook-secret", new
         {
             subscription_id = 12345L,
             object_type = "activity",
@@ -259,5 +260,28 @@ public class WebhookRoutingTests
         var activity = Assert.Single(await StravaActivitiesAsync(factory));
         Assert.Equal(Guid.Parse(alice.User.Id), activity.UserId);
         Assert.Equal("alice-token", stub.LastAuthorizationToken);
+    }
+
+    [Fact]
+    public async Task Webhook_WithoutSecret_IsRejectedBeforeUsingCredentials()
+    {
+        using var baseFactory = new ApiFactory();
+        var stub = new StravaApiStub();
+        using var factory = WithStravaStub(baseFactory, stub);
+        var client = factory.CreateClient();
+        var alice = await TestHelpers.RegisterAsync(client, $"unsigned_{Guid.NewGuid():N}@test.local");
+        await SeedIntegrationAsync(factory, alice.User.Id, "1001", "alice-token");
+
+        var resp = await client.PostAsJsonAsync("/api/webhooks/strava", new
+        {
+            object_type = "activity",
+            aspect_type = "create",
+            object_id = 9999L,
+            owner_id = 1001L,
+        });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, resp.StatusCode);
+        Assert.Null(stub.LastAuthorizationToken);
+        Assert.Empty(await StravaActivitiesAsync(factory));
     }
 }

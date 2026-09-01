@@ -39,14 +39,38 @@ public class ActivityProcessingService
 
     public async Task ProcessActivityAsync(Guid activityId, Guid userId, CancellationToken ct = default)
     {
-        var totalSw = Stopwatch.StartNew();
+        var activity = await _db.Activities.FindAsync([activityId], CancellationToken.None);
+        if (activity is null || activity.UserId != userId) return;
+        await ProcessClaimedActivityAsync(activity, ct);
+    }
 
-        var activity = await _db.Activities.FindAsync([activityId], ct);
-        if (activity is null)
+    public async Task ProcessActivityAsync(
+        Guid activityId, Guid userId, Guid leaseId, CancellationToken ct = default)
+    {
+        var claimed = await _db.Activities
+            .Where(a => a.Id == activityId && a.UserId == userId &&
+                a.ProcessingLeaseId == leaseId &&
+                (a.Status == ProcessingStatus.Pending || a.Status == ProcessingStatus.Recovering))
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(a => a.Status, ProcessingStatus.Analyzing)
+                .SetProperty(a => a.ProcessingLeaseExpiresAt, DateTime.UtcNow.AddMinutes(30)),
+                CancellationToken.None);
+        if (claimed != 1)
         {
-            _logger.LogWarning("Activity {Id} not found, skipping processing", activityId);
+            _logger.LogInformation("Activity {Id} lease was already consumed, skipping duplicate request", activityId);
             return;
         }
+
+        var activity = await _db.Activities.FindAsync([activityId], CancellationToken.None);
+        if (activity is null) return;
+        await ProcessClaimedActivityAsync(activity, ct);
+    }
+
+    private async Task ProcessClaimedActivityAsync(Entities.Activity activity, CancellationToken ct)
+    {
+        var totalSw = Stopwatch.StartNew();
+        var activityId = activity.Id;
+        var userId = activity.UserId;
 
         _logger.LogInformation("Starting processing for activity {Id} ({Name}, type={Type}, source={Source})",
             activityId, activity.Name, activity.ActivityType, activity.Source);
@@ -229,6 +253,8 @@ public class ActivityProcessingService
             }
 
             activity.Status = ProcessingStatus.Completed;
+            activity.ProcessingLeaseId = null;
+            activity.ProcessingLeaseExpiresAt = null;
             activity.UpdatedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync(ct);
 
@@ -240,6 +266,8 @@ public class ActivityProcessingService
             totalSw.Stop();
             _logger.LogError(ex, "[{Id}] Processing failed after {Elapsed:F1}s: {Message}", activityId, totalSw.Elapsed.TotalSeconds, ex.Message);
             activity.Status = ProcessingStatus.Failed;
+            activity.ProcessingLeaseId = null;
+            activity.ProcessingLeaseExpiresAt = null;
             activity.ErrorMessage = ex.Message;
             activity.UpdatedAt = DateTime.UtcNow;
             // NOT `ct`: the most common reason we are here is that `ct` was cancelled

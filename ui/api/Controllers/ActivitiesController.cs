@@ -2,6 +2,7 @@ namespace GpxAnalyzer.Api.Controllers;
 
 using System.Text.Json;
 using System.Threading.Channels;
+using GpxAnalyzer.Api.BackgroundServices;
 using GpxAnalyzer.Api.Auth;
 using GpxAnalyzer.Api.Data;
 using GpxAnalyzer.Api.Dto;
@@ -18,14 +19,14 @@ public class ActivitiesController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly GpxStorageService _storage;
-    private readonly Channel<(Guid ActivityId, Guid UserId)> _processingChannel;
+    private readonly Channel<ProcessingRequest> _processingChannel;
     private readonly GpxAnalysisService _analysisService;
     private readonly ProfileComputationService _profileService;
 
     public ActivitiesController(
         AppDbContext db,
         GpxStorageService storage,
-        Channel<(Guid ActivityId, Guid UserId)> processingChannel,
+        Channel<ProcessingRequest> processingChannel,
         GpxAnalysisService analysisService,
         ProfileComputationService profileService)
     {
@@ -142,6 +143,7 @@ public class ActivitiesController : ControllerBase
         if (language.Length > 2) language = language[..2];
 
         var userId = User.GetUserId();
+        var leaseId = Guid.NewGuid();
         var activity = new Activity
         {
             Id = Guid.NewGuid(),
@@ -151,13 +153,15 @@ public class ActivitiesController : ControllerBase
             GpxFilePath = relativePath,
             Source = "upload",
             Status = ProcessingStatus.Pending,
+            ProcessingLeaseId = leaseId,
+            ProcessingLeaseExpiresAt = DateTime.UtcNow.AddMinutes(1),
             Language = language,
         };
 
         _db.Activities.Add(activity);
         await _db.SaveChangesAsync();
 
-        await _processingChannel.Writer.WriteAsync((activity.Id, userId));
+        await _processingChannel.Writer.WriteAsync(new ProcessingRequest(activity.Id, userId, leaseId));
 
         return CreatedAtAction(nameof(GetActivity), new { id = activity.Id }, new ActivityDetailDto
         {
@@ -271,7 +275,14 @@ public class ActivitiesController : ControllerBase
         var language = Request.Headers.AcceptLanguage.FirstOrDefault()?.Split(',')[0]?.Trim() ?? "en";
         if (language.Length > 2) language = language[..2];
 
+        if (activity.Status is ProcessingStatus.Pending or ProcessingStatus.Recovering or
+            ProcessingStatus.Analyzing or ProcessingStatus.AiProcessing)
+            return Accepted();
+
+        var leaseId = Guid.NewGuid();
         activity.Status = ProcessingStatus.Pending;
+        activity.ProcessingLeaseId = leaseId;
+        activity.ProcessingLeaseExpiresAt = DateTime.UtcNow.AddMinutes(1);
         activity.ErrorMessage = null;
         activity.AiReportJson = null;
         activity.ProfileJson = null;
@@ -281,7 +292,7 @@ public class ActivitiesController : ControllerBase
         activity.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
 
-        await _processingChannel.Writer.WriteAsync((id, User.GetUserId()));
+        await _processingChannel.Writer.WriteAsync(new ProcessingRequest(id, User.GetUserId(), leaseId));
 
         return Accepted();
     }
@@ -299,8 +310,15 @@ public class ActivitiesController : ControllerBase
         var language = Request.Headers.AcceptLanguage.FirstOrDefault()?.Split(',')[0]?.Trim() ?? "en";
         if (language.Length > 2) language = language[..2];
 
+        if (activity.Status is ProcessingStatus.Pending or ProcessingStatus.Recovering or
+            ProcessingStatus.Analyzing or ProcessingStatus.AiProcessing)
+            return Accepted();
+
+        var leaseId = Guid.NewGuid();
         activity.FixAnomaliesOnNextRun = true;
         activity.Status = ProcessingStatus.Pending;
+        activity.ProcessingLeaseId = leaseId;
+        activity.ProcessingLeaseExpiresAt = DateTime.UtcNow.AddMinutes(1);
         activity.ErrorMessage = null;
         activity.AiReportJson = null;
         activity.ProfileJson = null;
@@ -310,7 +328,7 @@ public class ActivitiesController : ControllerBase
         activity.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
 
-        await _processingChannel.Writer.WriteAsync((id, User.GetUserId()));
+        await _processingChannel.Writer.WriteAsync(new ProcessingRequest(id, User.GetUserId(), leaseId));
 
         return Accepted();
     }

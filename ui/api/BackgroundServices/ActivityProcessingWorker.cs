@@ -5,12 +5,12 @@ using GpxAnalyzer.Api.Services;
 
 public class ActivityProcessingWorker : BackgroundService
 {
-    private readonly Channel<(Guid ActivityId, Guid UserId)> _channel;
+    private readonly Channel<ProcessingRequest> _channel;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<ActivityProcessingWorker> _logger;
 
     public ActivityProcessingWorker(
-        Channel<(Guid ActivityId, Guid UserId)> channel,
+        Channel<ProcessingRequest> channel,
         IServiceScopeFactory scopeFactory,
         ILogger<ActivityProcessingWorker> logger)
     {
@@ -23,14 +23,15 @@ public class ActivityProcessingWorker : BackgroundService
     {
         _logger.LogInformation("Activity processing worker started");
 
-        await foreach (var (activityId, userId) in _channel.Reader.ReadAllAsync(stoppingToken))
+        await foreach (var request in _channel.Reader.ReadAllAsync(stoppingToken))
         {
+            var (activityId, userId, leaseId) = request;
             try
             {
                 _logger.LogInformation("Processing activity {Id} for user {UserId}", activityId, userId);
                 using var scope = _scopeFactory.CreateScope();
                 var processingService = scope.ServiceProvider.GetRequiredService<ActivityProcessingService>();
-                await processingService.ProcessActivityAsync(activityId, userId, stoppingToken);
+                await processingService.ProcessActivityAsync(activityId, userId, leaseId, stoppingToken);
             }
             catch (Exception ex)
             {

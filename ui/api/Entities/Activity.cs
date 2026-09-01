@@ -23,6 +23,8 @@ public class Activity
     public string Source { get; set; } = "upload";
     public string? ExternalId { get; set; }
     public ProcessingStatus Status { get; set; } = ProcessingStatus.Pending;
+    public Guid? ProcessingLeaseId { get; set; }
+    public DateTime? ProcessingLeaseExpiresAt { get; set; }
     public string? ErrorMessage { get; set; }
     public string Language { get; set; } = "en";
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

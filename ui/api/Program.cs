@@ -136,7 +136,7 @@ else if (routingProvider == "osrm")
 }
 
 // Processing channel — carries (ActivityId, UserId) for multi-user context
-builder.Services.AddSingleton(Channel.CreateUnbounded<(Guid ActivityId, Guid UserId)>());
+builder.Services.AddSingleton(Channel.CreateUnbounded<ProcessingRequest>());
 // Registered BEFORE the worker so stranded rows are requeued before it starts reading.
 builder.Services.AddHostedService<ProcessingRecoveryService>();
 builder.Services.AddHostedService<ActivityProcessingWorker>();

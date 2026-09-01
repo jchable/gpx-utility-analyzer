@@ -1,7 +1,10 @@
 namespace GpxAnalyzer.Api.Controllers;
 
 using System.Threading.Channels;
+using System.Security.Cryptography;
+using System.Text;
 using GpxAnalyzer.Api.Data;
+using GpxAnalyzer.Api.BackgroundServices;
 using GpxAnalyzer.Api.Entities;
 using GpxAnalyzer.Api.Services;
 using GpxAnalyzer.Api.Services.Integrations;
@@ -17,21 +20,24 @@ public class WebhooksController : ControllerBase
     private readonly AppDbContext _db;
     private readonly GpxStorageService _storage;
     private readonly IEnumerable<IActivityImporter> _importers;
-    private readonly Channel<(Guid ActivityId, Guid UserId)> _processingChannel;
+    private readonly Channel<ProcessingRequest> _processingChannel;
     private readonly ILogger<WebhooksController> _logger;
+    private readonly ISettingsService _settings;
 
     public WebhooksController(
         AppDbContext db,
         GpxStorageService storage,
         IEnumerable<IActivityImporter> importers,
-        Channel<(Guid ActivityId, Guid UserId)> processingChannel,
-        ILogger<WebhooksController> logger)
+        Channel<ProcessingRequest> processingChannel,
+        ILogger<WebhooksController> logger,
+        ISettingsService settings)
     {
         _db = db;
         _storage = storage;
         _importers = importers;
         _processingChannel = processingChannel;
         _logger = logger;
+        _settings = settings;
     }
 
     // Strava webhook validation (GET)
@@ -65,6 +71,17 @@ public class WebhooksController : ControllerBase
         var importer = _importers.FirstOrDefault(i => i.ProviderName == provider);
         if (importer is null) return NotFound();
 
+        var expectedSecret = await _settings.GetAsync($"Integrations:{provider}:WebhookSecret");
+        var suppliedSecret = Request.Query["secret"].ToString();
+        if (string.IsNullOrWhiteSpace(expectedSecret) ||
+            !CryptographicOperations.FixedTimeEquals(
+                Encoding.UTF8.GetBytes(expectedSecret),
+                Encoding.UTF8.GetBytes(suppliedSecret)))
+        {
+            _logger.LogWarning("Rejected unauthenticated webhook for {Provider}", provider);
+            return Unauthorized();
+        }
+
         // Read + validate the body once, before any credential is selected.
         var evt = await importer.ReadWebhookEventAsync(HttpContext);
         if (evt is null) return Ok(); // not an activity-create event, or failed validation
@@ -95,6 +112,8 @@ public class WebhooksController : ControllerBase
             return Ok();
         }
 
+        string? uncommittedPath = null;
+        var activitySaved = false;
         try
         {
             // Refresh token if needed
@@ -113,6 +132,8 @@ public class WebhooksController : ControllerBase
 
             var imported = await importer.FetchActivityAsync(externalId, integration.AccessToken);
             var relativePath = await _storage.StoreAsync(imported.GpxStream, $"{provider}_{externalId}.gpx");
+            uncommittedPath = relativePath;
+            var leaseId = Guid.NewGuid();
 
             var activity = new Activity
             {
@@ -124,17 +145,33 @@ public class WebhooksController : ControllerBase
                 Source = provider,
                 ExternalId = externalId,
                 Status = ProcessingStatus.Pending,
+                ProcessingLeaseId = leaseId,
+                ProcessingLeaseExpiresAt = DateTime.UtcNow.AddMinutes(1),
             };
 
             _db.Activities.Add(activity);
             await _db.SaveChangesAsync();
+            activitySaved = true;
 
-            await _processingChannel.Writer.WriteAsync((activity.Id, integration.UserId));
+            await _processingChannel.Writer.WriteAsync(
+                new ProcessingRequest(activity.Id, integration.UserId, leaseId));
 
             _logger.LogInformation("Imported activity {ExternalId} from {Provider} as {Id} for user {UserId}", externalId, provider, activity.Id, integration.UserId);
         }
         catch (Exception ex)
         {
+            if (!activitySaved && uncommittedPath is not null)
+            {
+                try
+                {
+                    await _storage.DeleteAsync(uncommittedPath);
+                }
+                catch (Exception cleanupEx)
+                {
+                    _logger.LogWarning(cleanupEx,
+                        "Failed to clean up uncommitted webhook file {Path}", uncommittedPath);
+                }
+            }
             _logger.LogError(ex, "Failed to import activity {ExternalId} from {Provider}", externalId, provider);
         }
 

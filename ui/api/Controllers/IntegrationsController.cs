@@ -63,9 +63,19 @@ public class IntegrationsController : ControllerBase
 
         // Bind the flow to the caller: the callback arrives as a browser navigation
         // with no Authorization header, so the user id has to travel in `state`.
+        var nonce = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+        var userId = User.GetUserId();
+        _db.OAuthStates.Add(new OAuthState
+        {
+            Nonce = nonce,
+            UserId = userId,
+            Provider = provider,
+            ExpiresAt = DateTime.UtcNow.Add(StateLifetime),
+        });
+        await _db.SaveChangesAsync();
         var protector = _dataProtection.CreateProtector(StatePurpose);
         var state = protector.Protect(
-            $"{User.GetUserId()}|{provider}|{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}");
+            $"{userId}|{provider}|{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}|{nonce}");
 
         var authUrl = await importer.GetAuthorizationUrlAsync(callbackUrl, state);
 
@@ -84,7 +94,18 @@ public class IntegrationsController : ControllerBase
         var importer = _importers.FirstOrDefault(i => i.ProviderName == provider);
         if (importer is null) return NotFound();
 
-        if (!TryReadState(state, provider, out var userId))
+        var stateData = TryReadState(state, provider);
+        if (stateData is null)
+            return BadRequest(new { code = "INVALID_OAUTH_STATE" });
+
+        var (userId, nonce) = stateData.Value;
+        // Consume before exchanging the provider code. A callback can be retried,
+        // but the signed state must never authorize a second account binding.
+        var consumed = await _db.OAuthStates
+            .Where(s => s.Nonce == nonce && s.UserId == userId &&
+                s.Provider == provider && s.ExpiresAt >= DateTime.UtcNow)
+            .ExecuteDeleteAsync();
+        if (consumed != 1)
             return BadRequest(new { code = "INVALID_OAUTH_STATE" });
 
         // Build the exchange code: OAuth 2 uses "code", OAuth 1.0a uses "oauth_token|oauth_verifier"
@@ -130,23 +151,25 @@ public class IntegrationsController : ControllerBase
         return Redirect("/integrations");
     }
 
-    private bool TryReadState(string? state, string provider, out Guid userId)
+    private (Guid UserId, string Nonce)? TryReadState(string? state, string provider)
     {
-        userId = Guid.Empty;
-        if (string.IsNullOrEmpty(state)) return false;
+        if (string.IsNullOrEmpty(state)) return null;
 
         string plain;
         try { plain = _dataProtection.CreateProtector(StatePurpose).Unprotect(state); }
-        catch (CryptographicException) { return false; }
+        catch (CryptographicException) { return null; }
 
         var parts = plain.Split('|');
-        if (parts.Length != 3) return false;
-        if (!Guid.TryParse(parts[0], out userId)) return false;
-        if (!string.Equals(parts[1], provider, StringComparison.Ordinal)) return false;
-        if (!long.TryParse(parts[2], out var issuedAt)) return false;
+        if (parts.Length != 4) return null;
+        if (!Guid.TryParse(parts[0], out var userId)) return null;
+        if (!string.Equals(parts[1], provider, StringComparison.Ordinal)) return null;
+        if (!long.TryParse(parts[2], out var issuedAt)) return null;
+        if (parts[3].Length != 64) return null;
 
         var age = DateTimeOffset.UtcNow - DateTimeOffset.FromUnixTimeSeconds(issuedAt);
-        return age >= TimeSpan.Zero && age <= StateLifetime;
+        return age >= TimeSpan.Zero && age <= StateLifetime
+            ? (userId, parts[3])
+            : null;
     }
 
     [HttpDelete("{provider}")]

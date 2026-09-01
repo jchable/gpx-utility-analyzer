@@ -227,4 +227,42 @@ public class ProcessingRecoveryTests
             Assert.Equal(ProcessingStatus.Failed, activity.Status);
         }
     }
+
+    [Fact]
+    public async Task ProcessingClaim_WithWrongUserOrLease_LeavesActivityPending()
+    {
+        await using var factory = new ApiFactory();
+        var client = factory.CreateClient();
+        var auth = await TestHelpers.RegisterAsync(client, $"lease_{Guid.NewGuid():N}@test.local");
+        var activityId = Guid.NewGuid();
+        var userId = Guid.Parse(auth.User.Id);
+        var leaseId = Guid.NewGuid();
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            db.Activities.Add(new Activity
+            {
+                Id = activityId,
+                UserId = userId,
+                Name = "leased",
+                ActivityType = "trail",
+                GpxFilePath = "missing.gpx",
+                Status = ProcessingStatus.Pending,
+                ProcessingLeaseId = leaseId,
+                ProcessingLeaseExpiresAt = DateTime.UtcNow.AddMinutes(1),
+            });
+            await db.SaveChangesAsync();
+
+            var service = scope.ServiceProvider.GetRequiredService<ActivityProcessingService>();
+            await service.ProcessActivityAsync(activityId, Guid.NewGuid(), leaseId);
+            await service.ProcessActivityAsync(activityId, userId, Guid.NewGuid());
+        }
+
+        using var verifyScope = factory.Services.CreateScope();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var activity = await verifyDb.Activities.AsNoTracking().SingleAsync(a => a.Id == activityId);
+        Assert.Equal(ProcessingStatus.Pending, activity.Status);
+        Assert.Equal(leaseId, activity.ProcessingLeaseId);
+    }
 }

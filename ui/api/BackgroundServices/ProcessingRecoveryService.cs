@@ -16,16 +16,17 @@ public class ProcessingRecoveryService : IHostedService
     private static readonly ProcessingStatus[] NonTerminal =
     [
         ProcessingStatus.Pending,
+        ProcessingStatus.Recovering,
         ProcessingStatus.Analyzing,
         ProcessingStatus.AiProcessing,
     ];
 
-    private readonly Channel<(Guid ActivityId, Guid UserId)> _channel;
+    private readonly Channel<ProcessingRequest> _channel;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<ProcessingRecoveryService> _logger;
 
     public ProcessingRecoveryService(
-        Channel<(Guid ActivityId, Guid UserId)> channel,
+        Channel<ProcessingRequest> channel,
         IServiceScopeFactory scopeFactory,
         ILogger<ProcessingRecoveryService> logger)
     {
@@ -39,9 +40,12 @@ public class ProcessingRecoveryService : IHostedService
         using var scope = _scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
+        var now = DateTime.UtcNow;
         var stranded = await db.Activities
-            .Where(a => NonTerminal.Contains(a.Status))
-            .Select(a => new { a.Id, a.UserId })
+            .Where(a => NonTerminal.Contains(a.Status) &&
+                (a.Status != ProcessingStatus.Recovering ||
+                 a.ProcessingLeaseExpiresAt == null || a.ProcessingLeaseExpiresAt <= now))
+            .Select(a => new { a.Id, a.UserId, a.Status, a.ProcessingLeaseId })
             .ToListAsync(cancellationToken);
 
         if (stranded.Count == 0) return;
@@ -52,11 +56,18 @@ public class ProcessingRecoveryService : IHostedService
 
         foreach (var a in stranded)
         {
-            // Reset to Pending so the status the client sees matches reality.
-            await db.Activities.Where(x => x.Id == a.Id)
-                .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, ProcessingStatus.Pending),
+            var leaseId = Guid.NewGuid();
+            var claimed = await db.Activities
+                .Where(x => x.Id == a.Id && x.Status == a.Status &&
+                    x.ProcessingLeaseId == a.ProcessingLeaseId)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(x => x.Status, ProcessingStatus.Recovering)
+                    .SetProperty(x => x.ProcessingLeaseId, leaseId)
+                    .SetProperty(x => x.ProcessingLeaseExpiresAt, now.AddMinutes(1)),
                     cancellationToken);
-            await _channel.Writer.WriteAsync((a.Id, a.UserId), cancellationToken);
+            if (claimed == 1)
+                await _channel.Writer.WriteAsync(
+                    new ProcessingRequest(a.Id, a.UserId, leaseId), cancellationToken);
         }
     }
 
