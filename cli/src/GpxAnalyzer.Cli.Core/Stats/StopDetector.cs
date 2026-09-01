@@ -74,7 +74,7 @@ public static class StopDetector
 
         for (int i = 1; i < points.Count; i++)
         {
-            if (points[i].StartsNewSegment)
+            if (points[i].BreaksPath)
             {
                 if (inStop)
                 {
