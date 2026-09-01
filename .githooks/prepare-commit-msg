@@ -1,0 +1,11 @@
+#!/bin/sh
+# Append the DCO trailer that .github/workflows/dco.yml requires, unless the
+# message already carries one. Without it the check goes red on every PR and
+# the only remedy is rewriting history, which dev's branch protection forbids.
+#
+# Enable once per clone:  git config core.hooksPath .githooks
+
+msg_file="$1"
+sob="Signed-off-by: $(git config user.name) <$(git config user.email)>"
+
+grep -qiF "$sob" "$msg_file" || printf '\n%s\n' "$sob" >> "$msg_file"

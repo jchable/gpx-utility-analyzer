@@ -24,6 +24,13 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          # Commits up to and including this one predate the sign-off habit. They can
+          # never be repaired: signing them means rewriting history, and both `dev` and
+          # `main` refuse force-pushes. Enforcing on them would leave the promotion PR
+          # permanently red with no action available to anyone, so they are exempt.
+          # .githooks/prepare-commit-msg is what stops this recurring; never move this
+          # SHA forward to excuse a new commit.
+          DCO_EXEMPT_THROUGH: 392b1ec7b109fbd8153cf73fd27c9a6db542e5d7
         run: |
           set -euo pipefail
           echo "Checking commits in range ${BASE_SHA}..${HEAD_SHA}"
@@ -32,6 +39,14 @@ jobs:
           for sha in $(git rev-list --no-merges "${BASE_SHA}..${HEAD_SHA}"); do
             subject=$(git log -1 --format='%s' "$sha")
             author="$(git log -1 --format='%an <%ae>' "$sha")"
+            # Pre-enforcement history. Fail closed: if the exempt commit is not in this
+            # checkout we cannot prove a commit predates it, so we check it normally.
+            if git rev-parse -q --verify "${DCO_EXEMPT_THROUGH}^{commit}" >/dev/null &&
+               git merge-base --is-ancestor "$sha" "${DCO_EXEMPT_THROUGH}"; then
+              echo "⏭️  $sha  $subject"
+              echo "     predates DCO enforcement, exempt"
+              continue
+            fi
             # A valid sign-off line matching the commit author (case-insensitive)
             if git log -1 --format='%B' "$sha" | grep -qiE '^Signed-off-by: .+ <.+@.+>'; then
               echo "✅ $sha  $subject"
@@ -44,7 +59,11 @@ jobs:
           if [ "$failed" -ne 0 ]; then
             echo ""
             echo "One or more commits are missing a DCO sign-off."
-            echo "Fix with:  git rebase --signoff ${BASE_SHA}   &&   git push --force-with-lease"
+            echo "Sign off at commit time — 'dev' and 'main' forbid force-pushes, so a"
+            echo "pushed commit cannot be signed retroactively."
+            echo "  git config core.hooksPath .githooks   # once per clone, then it is automatic"
+            echo "  git commit -s                         # or sign by hand"
+            echo "On an unpushed branch:  git rebase --signoff ${BASE_SHA} && git push --force-with-lease"
             echo "See CONTRIBUTING.md for details."
             exit 1
           fi

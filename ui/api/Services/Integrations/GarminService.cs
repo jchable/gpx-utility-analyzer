@@ -138,7 +138,7 @@ public class GarminService : IActivityImporter
 
             var json = await response.Content.ReadFromJsonAsync<JsonElement>();
             var userId = json.ValueKind == JsonValueKind.Object
-                ? WebhookJson.ReadAccountId(json, "userId") ?? WebhookJson.ReadAccountId(json, "userID")
+                ? WebhookJson.ReadProviderId(json, "userId") ?? WebhookJson.ReadProviderId(json, "userID")
                 : null;
 
             if (string.IsNullOrWhiteSpace(userId))
@@ -200,7 +200,7 @@ public class GarminService : IActivityImporter
 
         // Garmin identifies the athlete with userId; without it the event cannot
         // be attributed to a user and must be dropped rather than guessed.
-        return new WebhookEvent(externalId, WebhookJson.ReadAccountId(entry, "userId"));
+        return new WebhookEvent(externalId, WebhookJson.ReadProviderId(entry, "userId"));
     }
 
     public async Task<ImportedActivity> FetchActivityAsync(string externalId, string accessToken)

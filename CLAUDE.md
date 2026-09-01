@@ -41,10 +41,23 @@ docker-compose.prod.yml       → Prod overlay (PostgreSQL)
 cd cli
 dotnet build src/GpxAnalyzer.Cli/            # Build CLI
 dotnet build src/GpxAnalyzer.Cli.Core/       # Build shared library
-dotnet test tests/GpxAnalyzer.Cli.Tests/     # Run all tests (79 tests)
+dotnet test tests/GpxAnalyzer.Cli.Tests/     # Run all tests (389 tests)
 ```
 
-Requires .NET 9.0+. Key dependency: `System.CommandLine` (CLI framework).
+Requires .NET 9.0+. Key dependency: `System.CommandLine` 2.0.11 — the modern API (`SetAction`, `parseResult.GetValue(option)`, `GetRequiredValue(argument)`, `DefaultValueFactory`). The pre-2.0 `SetHandler`/`InvocationContext`/`GetValueForOption` API is gone.
+
+### Characterization tests (`cli/tests/.../Characterization/`)
+
+`CliRunner` spawns the **built binary** in a throwaway cwd; `Golden` pins its stdout byte-for-byte.
+
+- `CliGoldenTests` (13) — behavioural output · `CliHelpGoldenTests` (5) — `--help` layout
+- `CliDefaultsTests` (15) — pins the observable *effect* of the 12 option defaults that 2.x no longer prints in `--help`
+- `CliParseTests` — unknown options, invalid `--format`, the `--flag=value` equals form
+
+Rules:
+- Regenerate with `UPDATE_GOLDEN=1`; a golden may change **only** as the direct consequence of an intended fix, and the diff must be explainable. Verify "nothing moved" by regenerating and diffing, never by assumption.
+- `CliRunner` sandboxes DEM: it redirects `LOCALAPPDATA`/`XDG_DATA_HOME`/`HOME` **and** occupies the cache root's name with a regular file so `TileDownloader` throws before opening a socket. Without this the suite reads the developer's real SRTM cache and silently downloads tiles (`--dem-auto-download` defaults to **true**).
+- The benchmark table embeds timings and emits box-drawing characters in the Windows OEM code page — reuse `Golden`'s normalizer.
 
 ### .NET CLI Architecture
 
@@ -89,6 +102,18 @@ Two projects with a shared library pattern:
 - `--enrich` flag: writes per-point computed metrics as `gpxa:TrackPointMetrics` extensions in exported GPX
 - `SummaryMapper.ToGpxStats()`: maps `Summary` to `GpxStats` for API consumption
 
+### Segment boundaries — ownership model
+
+A trackpoint carries three independent flags. Getting their ownership wrong silently corrupts distance and time:
+
+- `StartsNewSegment` — **structural, source-owned**. Describes the input file (first point of each `<trkseg>`); written only by the GPX layer, preserved by clone/split/merge/write. Compute stages *read* it, never write it. `GpsFilter` must transfer it when it drops the point carrying it.
+- `AfterRecordingGap` — derived, reassigned outright by `SpeedCalculator.EnrichPoints` on every pass.
+- `SpeedClamped` — derived, reassigned outright by `ClampSpeeds` on every pass.
+
+Consumers read intent, not provenance: **`BreaksRecordedTime`** (segment ∨ gap) governs elapsed/moving time, **`BreaksPath`** (that ∨ clamp) governs distance, elevation and stop detection. A clamp discredits the *distance* between two fixes but not the *seconds* that elapsed — hence two predicates.
+
+`ComputePipeline` re-runs `EnrichPoints`/`ClampSpeeds` after `--fix-anomalies`, so any flag a pass can only ever set (never clear) accumulates across re-runs.
+
 ### JSON Contract
 
 The JSON output from `analyze --format json` (defined in `Output/JsonModels.cs`) is the contract between CLI and AI analyzer projects. The `JsonSummary` class defines the schema. Optional biometric fields (`heart_rate`, `power`, `cadence`, `temperature`) are included when GPX extension data is present, omitted otherwise. The `filtered_points` field appears when GPS outliers were removed.
@@ -105,13 +130,13 @@ dotnet build ai-analyzer/src/GpxAiAnalyzer.Core/GpxAiAnalyzer.Core.csproj
 dotnet build ai-analyzer/src/GpxAiAnalyzer/GpxAiAnalyzer.csproj
 
 # Tests (xUnit)
-dotnet test ai-analyzer/tests/GpxAiAnalyzer.Tests/
+dotnet test ai-analyzer/tests/GpxAiAnalyzer.Tests/       # 100 tests
 ```
 
 ### API Integration Tests
 
 ```bash
-dotnet test ui/api.Tests/GpxAnalyzer.Api.Tests.csproj   # 27 tests (auth + multi-user isolation)
+dotnet test ui/api.Tests/GpxAnalyzer.Api.Tests.csproj   # 157 tests (auth + multi-user isolation)
 ```
 
 Requires .NET 9.0+.
@@ -149,6 +174,7 @@ npm install
 npm run dev      # Vite dev server on http://localhost:5173 (proxies /api → :5000)
 npm run build    # Production build (tsc + vite)
 npm run lint     # ESLint
+npm run test     # Vitest unit tests (jsdom, 23 tests)
 ```
 
 ### API Architecture
@@ -160,6 +186,12 @@ npm run lint     # ESLint
 - `DashboardController` — aggregated summary stats (`/api/dashboard/summary`)
 - `IntegrationsController` — OAuth connect/disconnect/callback (`/api/integrations`)
 - `WebhooksController` — Strava webhook handler (`/api/webhooks/strava`)
+- `AuthController` — register/login/refresh/logout (JWT + rotating refresh tokens)
+- `ProfileController` — athlete profile (`/api/profile`)
+- `RacePlansController` — race plans, checkpoints, nutrition, sharing (`/api/race-plans`)
+- `RoutesController` — route editor + routing (`/api/routes`)
+- `NutritionProductsController` — nutrition catalogue (`/api/nutrition-products`)
+- `SettingsController` — per-user and global settings (`/api/settings`, `/api/settings/global`)
 
 **API endpoints**:
 | Method | Route | Description |
@@ -185,20 +217,27 @@ npm run lint     # ESLint
 - `ProfileComputationService` — parses enriched GPX extensions, computes Minetti GAP, smoothing, downsampling (500 pts for charts), full-precision GeoJSON track for map
 - `AiAnalysisService` — creates `TrackAnalyzer` from `ProviderRegistry` using configuration
 - `GpxStorageService` — file-based GPX storage (GUID-prefixed filenames, original archived as zip)
+- `RacePlanService` / `RacePlanTimeCalculationService` — race plans and predicted checkpoint times
+- `RouteService` / `RouteElevationService` / `Routing/` (`OsrmRoutingService`, `OrsRoutingService`) — route editor
+- `NutritionProductService`, `CalorieCalculator`, `SettingsService`, `Email/` (`NoOpEmailService` / `SmtpEmailService`)
 
 **Integrations** (`Services/Integrations/`):
 - `IActivityImporter` — interface for external providers (OAuth + webhook + activity fetch)
 - `StravaService` — Strava OAuth2, webhook handling, stream→GPX reconstruction
+- `GarminService` — Garmin OAuth 1.0a, webhook handling, FIT→GPX conversion (`FitToGpxConverter`)
+- Webhooks require a shared secret in the query string (`?secret=`) — **Strava cannot send custom headers**. The API refuses to start if a provider has credentials but no `Integrations:{provider}:WebhookSecret`, and `SettingsController` rejects a save that would produce that state.
 
 **Background processing**:
 - `Channel<Guid>` (unbounded) as in-process queue
 - `ActivityProcessingWorker` (`BackgroundService`) reads from channel, delegates to `ActivityProcessingService`
 - Processing states: `Pending` → `Analyzing` (GPX analysis + profile computation) → `AiProcessing` (AI) → `Completed` / `Failed`
+- `ProcessingRecoveryService` (`IHostedService`) reclaims **expired leases** at startup and on a timer (`Processing:LeaseSweepIntervalSeconds`, default 30s). Work is claimed by a compare-and-swap into `Recovering`, so an unexpired lease is left alone.
+- **The queue is in-memory, so the deployment is single-replica.** `docker-compose.prod.yml` pins `deploy.replicas: 1`; a second replica would re-enqueue the same rows — N analyses and N *paid AI calls* per activity.
 
 **Data** (`Data/`, `Entities/`):
 - EF Core with dual DB support: **SQLite** (dev) / **PostgreSQL** (prod) via `Database:Provider` config
-- Entities: `Activity` (includes `ProfileJson`, `TrackGeoJson` for precomputed chart/map data), `Integration`
-- `ProcessingStatus` enum: `Pending`, `Analyzing`, `AiProcessing`, `Completed`, `Failed` (stored as string)
+- Entities: `Activity` (includes `ProfileJson`, `TrackGeoJson`, `SplitsJson` precomputed blobs), `Integration`, `OAuthState` (single-use signed callback nonces), `ApplicationUser`, `RefreshToken`, `AthleteProfile`, `RacePlan`, `Route`, `NutritionProduct`, `GlobalSetting`
+- `ProcessingStatus` enum: `Pending`, `Analyzing`, `AiProcessing`, `Recovering`, `Completed`, `Failed` (stored as string)
 - Auto-creates DB on startup (`EnsureCreated()`)
 
 **Configuration** (`appsettings.json`):
@@ -374,7 +413,10 @@ Two email backends via `IEmailService`:
 - **EF Core SQLite + DateTimeOffset**: SQLite provider does NOT support `DateTimeOffset` in ORDER BY or WHERE. All entities use `DateTime` (UTC), not `DateTimeOffset`.
 - **EF Core SQLite + SumAsync on empty set**: Returns NULL causing crash. Use `Select(a => (double?)a.Field).SumAsync() ?? 0` or materialize first.
 - **EF Core SQLite + enum string conversion**: Complex query chains with string-converted enums can fail EF Core translation. Materializing with `ToListAsync()` first is safer for dashboard-style queries.
-- **Go DEM memory**: Large tracks spanning many SRTM tiles can use significant memory. Use `--dem-max-memory` flag or preload handles memory checks.
+- **DEM memory**: Large tracks spanning many SRTM tiles can use significant memory. Use `--dem-max-memory` flag or preload handles memory checks.
+- **Vitest must track Vite**: vite 8 builds with rolldown, so an older vitest bundling its own rollup-based vite produces incompatible plugin types at `tsc` time. Keep vitest in a version whose peer range covers the vite major, and take `defineConfig` from `vitest/config` (not `vite`) so the `test` block types.
+- **`[Collection("Integration")]`**: any `ui/api.Tests` class touching `ApiFactory`/`AppDbContext`/the worker needs it. Without it the class runs in parallel with the background worker and destabilises unrelated tests.
+- **Stale `obj/` after a branch switch**: a `CS1705` assembly-version error usually means stale build artifacts, not broken code — delete `bin`/`obj` for the affected project graph and re-restore.
 
 ## E2E Testing — Playwright
 
@@ -385,7 +427,7 @@ The client has a Playwright E2E test suite with **full API mocking** (no backend
 ```bash
 cd ui/client
 npm run build            # Required: tests run against preview build
-npm run e2e              # All tests (desktop + mobile, ~102 tests)
+npm run e2e              # All tests (desktop + mobile, 136 tests)
 npm run e2e:desktop      # Desktop only (Desktop Chrome 1280×720)
 npm run e2e:mobile       # Mobile only (iPhone 14 viewport, Chromium)
 npm run e2e:report       # Open HTML report
@@ -424,7 +466,7 @@ When you need up-to-date documentation for a library or framework (ASP.NET Core,
 
 ## Environment
 
-- .NET 9.0, Node 22+, React 19, Vite 7, TypeScript 5.9
+- .NET 9.0, Node 22+, React 19, Vite 8, TypeScript 5.9, Vitest 4
 - For local scripts and system operations, use **PowerShell** (Python is not installed)
 - After a modification or an addition on the source code, rebuild and test the modified component.
 - After a modification in the backend, use ef core migrations for database changes, and apply it to the current compose deployment once the feature finished
@@ -432,3 +474,5 @@ When you need up-to-date documentation for a library or framework (ASP.NET Core,
 - After changes, redeploy on compose (`docker compose up --build -d`) for the user to test.
 - At the end of a new feature, suggest to tracked only added or modified in this feature and in a second step to commit your work. Propose a commit message without git commit yourself.
 - **Commits**: do NOT add a `Co-Authored-By` trailer. Commit directly without any co-author line.
+- **DCO**: CI checks every non-merge commit in a PR for a `Signed-off-by` trailer. Use `git commit -s`. Run `git config core.hooksPath .githooks` once per clone and `.githooks/prepare-commit-msg` adds the trailer for you. (Branch protection requires an approving review, not a green check, so a missing sign-off shows red without blocking a merge. It also forbids force-pushes to `dev` and `main`, so an unsigned commit cannot be fixed after it is pushed — sign it the first time.)
+- **No floating package versions**: never `Version="*"` in a `.csproj`. Two projects restored at different times then resolve different versions of the same assembly and the build fails with `CS1705`, which `dotnet build` only surfaces after a stale `obj/` is involved. Major-bounded ranges (`9.*`) are the existing deliberate style in `ui/api`.

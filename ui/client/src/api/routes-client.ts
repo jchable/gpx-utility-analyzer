@@ -119,8 +119,16 @@ export const routesApi = {
     const a = document.createElement('a');
     a.href = url;
     a.download = filename ?? `route-${id}.${format}`;
+    // Firefox only honours a programmatic click on an anchor that is in the document,
+    // and revoking the blob URL in the same tick can cancel the download that click
+    // just started. Attach it, then tear both down on the next turn of the loop.
+    a.style.display = 'none';
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    setTimeout(() => {
+      a.remove();
+      URL.revokeObjectURL(url);
+    }, 0);
   },
 
   // --- Routing preview ---

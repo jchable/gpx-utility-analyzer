@@ -102,11 +102,26 @@ public class GpxStorageService
         await using (var dest = File.Create(zipPath))
             await src.CopyToAsync(dest, ct);
 
-        // Extract the GPX from the zip
+        // Extract the GPX from the zip.
+        //
+        // entry.FullName belongs to the archive, not to us. We write these archives
+        // ourselves today, but they round-trip through object storage that other
+        // systems can reach, so an entry naming "../../x" must not be able to write
+        // outside the temp directory it was handed (Zip Slip, CodeQL cs/zipslip).
         using var zip = ZipFile.OpenRead(zipPath);
-        var entry = zip.Entries.FirstOrDefault()
-            ?? throw new InvalidOperationException($"No entries in archive: {archiveKey}");
-        var extractedPath = Path.Combine(tempDir, entry.FullName);
+        // A directory entry has an empty Name. ExtractToFile on one fails with an
+        // exception this method does not define, which would reach the caller as a 500
+        // on reanalysis, so take the first real file and say plainly when there is none.
+        var entry = zip.Entries.FirstOrDefault(e => !string.IsNullOrEmpty(e.Name))
+            ?? throw new InvalidOperationException($"No file entries in archive: {archiveKey}");
+
+        var extractRoot = Path.GetFullPath(tempDir) + Path.DirectorySeparatorChar;
+        var extractedPath = Path.GetFullPath(Path.Combine(tempDir, entry.FullName));
+        if (!extractedPath.StartsWith(extractRoot, StringComparison.Ordinal))
+            throw new InvalidOperationException(
+                $"Archive entry escapes the extraction directory: {archiveKey}");
+
+        Directory.CreateDirectory(Path.GetDirectoryName(extractedPath)!);
         entry.ExtractToFile(extractedPath);
 
         return new LocalFileLease(extractedPath, tempDir);
