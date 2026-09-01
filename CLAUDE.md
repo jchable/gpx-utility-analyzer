@@ -230,11 +230,13 @@ npm run lint     # ESLint
 - `Channel<Guid>` (unbounded) as in-process queue
 - `ActivityProcessingWorker` (`BackgroundService`) reads from channel, delegates to `ActivityProcessingService`
 - Processing states: `Pending` → `Analyzing` (GPX analysis + profile computation) → `AiProcessing` (AI) → `Completed` / `Failed`
+- `ProcessingRecoveryService` (`IHostedService`) reclaims **expired leases** at startup and on a timer (`Processing:LeaseSweepIntervalSeconds`, default 30s). Work is claimed by a compare-and-swap into `Recovering`, so an unexpired lease is left alone.
+- **The queue is in-memory, so the deployment is single-replica.** `docker-compose.prod.yml` pins `deploy.replicas: 1`; a second replica would re-enqueue the same rows — N analyses and N *paid AI calls* per activity.
 
 **Data** (`Data/`, `Entities/`):
 - EF Core with dual DB support: **SQLite** (dev) / **PostgreSQL** (prod) via `Database:Provider` config
-- Entities: `Activity` (includes `ProfileJson`, `TrackGeoJson` for precomputed chart/map data), `Integration`
-- `ProcessingStatus` enum: `Pending`, `Analyzing`, `AiProcessing`, `Completed`, `Failed` (stored as string)
+- Entities: `Activity` (includes `ProfileJson`, `TrackGeoJson`, `SplitsJson` precomputed blobs), `Integration`, `OAuthState` (single-use signed callback nonces), `ApplicationUser`, `RefreshToken`, `AthleteProfile`, `RacePlan`, `Route`, `NutritionProduct`, `GlobalSetting`
+- `ProcessingStatus` enum: `Pending`, `Analyzing`, `AiProcessing`, `Recovering`, `Completed`, `Failed` (stored as string)
 - Auto-creates DB on startup (`EnsureCreated()`)
 
 **Configuration** (`appsettings.json`):
