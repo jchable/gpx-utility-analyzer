@@ -81,6 +81,51 @@ public class GpxWriterCumulativeDistanceTests
         Assert.Equal(summary.TotalDistance, LastCumDist(processed), 6);
     }
 
+    /// <summary>
+    /// The other half of the agreement, and the commoner one: a &lt;trkseg&gt; break too short
+    /// to read as a recording gap. Auto-pause and manual pause produce these constantly.
+    ///
+    /// Distance was the only statistic that ignored a structural boundary - elevation sections
+    /// and stop runs split on BreaksPath, recorded time skips on BreaksRecordedTime, but
+    /// EnrichPoints looked only at the time delta - so a 2 minute pause banked the straight
+    /// line across it into total_distance_m (333.6 m for a track with 222.4 m of measured
+    /// path). Fixing only the writer would have swapped an overstatement for an
+    /// understatement; both sides now exclude the hop.
+    /// </summary>
+    [Fact]
+    public void Compute_ShortTrksegBreak_ExcludesTheHopFromBothTheTotalAndTheCumDist()
+    {
+        const string gpx = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="test">
+              <trk><name>t</name>
+                <trkseg>
+                  <trkpt lat="45.0000" lon="6.0"><ele>100</ele><time>2024-01-01T10:00:00Z</time></trkpt>
+                  <trkpt lat="45.0010" lon="6.0"><ele>100</ele><time>2024-01-01T10:01:00Z</time></trkpt>
+                </trkseg>
+                <trkseg>
+                  <trkpt lat="45.0020" lon="6.0"><ele>100</ele><time>2024-01-01T10:03:00Z</time></trkpt>
+                  <trkpt lat="45.0030" lon="6.0"><ele>100</ele><time>2024-01-01T10:04:00Z</time></trkpt>
+                </trkseg>
+              </trk>
+            </gpx>
+            """;
+        using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(gpx));
+        var doc = GpxParser.Parse(stream);
+        var cfg = new ComputeConfig
+        {
+            SmoothingLevel = "none", TrackSmoothing = "none",
+            StopConfig = StopDetector.Presets[StopDetector.PresetHiking],
+            MaxReasonableSpeed = 8.0,
+        };
+        var (s, pts) = ComputePipeline.Compute(doc.AllPoints(), doc.SegmentCount(), cfg);
+
+        // Three 0.001 deg hops of ~111.2 m each, but the middle one crosses the break.
+        var oneHop = DistanceCalculator.Haversine(45.0000, 6.0, 45.0010, 6.0);
+        Assert.Equal(2 * oneHop, s.TotalDistance, 6);
+        Assert.Equal(s.TotalDistance, LastCumDist(pts), 6);
+    }
+
     // ------------------------------------------------------------------------------ fixture
 
     /// <summary>
