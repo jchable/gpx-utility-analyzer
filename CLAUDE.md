@@ -46,6 +46,19 @@ dotnet test tests/GpxAnalyzer.Cli.Tests/     # Run all tests (389 tests)
 
 Requires .NET 9.0+. Key dependency: `System.CommandLine` 2.0.11 — the modern API (`SetAction`, `parseResult.GetValue(option)`, `GetRequiredValue(argument)`, `DefaultValueFactory`). The pre-2.0 `SetHandler`/`InvocationContext`/`GetValueForOption` API is gone.
 
+### Characterization tests (`cli/tests/.../Characterization/`)
+
+`CliRunner` spawns the **built binary** in a throwaway cwd; `Golden` pins its stdout byte-for-byte.
+
+- `CliGoldenTests` (13) — behavioural output · `CliHelpGoldenTests` (5) — `--help` layout
+- `CliDefaultsTests` (15) — pins the observable *effect* of the 12 option defaults that 2.x no longer prints in `--help`
+- `CliParseTests` — unknown options, invalid `--format`, the `--flag=value` equals form
+
+Rules:
+- Regenerate with `UPDATE_GOLDEN=1`; a golden may change **only** as the direct consequence of an intended fix, and the diff must be explainable. Verify "nothing moved" by regenerating and diffing, never by assumption.
+- `CliRunner` sandboxes DEM: it redirects `LOCALAPPDATA`/`XDG_DATA_HOME`/`HOME` **and** occupies the cache root's name with a regular file so `TileDownloader` throws before opening a socket. Without this the suite reads the developer's real SRTM cache and silently downloads tiles (`--dem-auto-download` defaults to **true**).
+- The benchmark table embeds timings and emits box-drawing characters in the Windows OEM code page — reuse `Golden`'s normalizer.
+
 ### .NET CLI Architecture
 
 Two projects with a shared library pattern:
