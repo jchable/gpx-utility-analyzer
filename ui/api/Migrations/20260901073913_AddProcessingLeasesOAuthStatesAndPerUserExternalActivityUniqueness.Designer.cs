@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GpxAnalyzer.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260901064417_AddProcessingLeasesOAuthStatesAndExternalActivityUniqueness")]
-    partial class AddProcessingLeasesOAuthStatesAndExternalActivityUniqueness
+    [Migration("20260901073913_AddProcessingLeasesOAuthStatesAndPerUserExternalActivityUniqueness")]
+    partial class AddProcessingLeasesOAuthStatesAndPerUserExternalActivityUniqueness
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -134,10 +134,10 @@ namespace GpxAnalyzer.Api.Migrations
 
                     b.HasIndex("Status");
 
-                    b.HasIndex("Source", "ExternalId")
-                        .IsUnique();
-
                     b.HasIndex("UserId", "StartTime");
+
+                    b.HasIndex("UserId", "Source", "ExternalId")
+                        .IsUnique();
 
                     b.ToTable("Activities");
                 });

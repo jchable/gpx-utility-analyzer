@@ -119,10 +119,7 @@ public class StravaService : IActivityImporter
         var expectedSubscription = await _settings.GetAsync("Integrations:Strava:SubscriptionId");
         if (!string.IsNullOrEmpty(expectedSubscription))
         {
-            if (!body.TryGetProperty("subscription_id", out var sub)) return null;
-            var actual = sub.ValueKind == JsonValueKind.Number
-                ? sub.GetInt64().ToString()
-                : sub.GetString();
+            var actual = WebhookJson.ReadAccountId(body, "subscription_id");
             if (!string.Equals(actual, expectedSubscription, StringComparison.Ordinal))
             {
                 _logger.LogWarning("Rejected Strava webhook for unknown subscription {Subscription}", actual);
@@ -130,19 +127,19 @@ public class StravaService : IActivityImporter
             }
         }
 
-        if (!body.TryGetProperty("object_type", out var objectType) ||
-            !body.TryGetProperty("aspect_type", out var aspectType) ||
-            objectType.GetString() != "activity" ||
-            aspectType.GetString() != "create")
+        // Every read below is type-guarded: the body is unauthenticated input, and a
+        // wrongly-typed field used to escape as a 500 (#132).
+        if (WebhookJson.ReadString(body, "object_type") != "activity" ||
+            WebhookJson.ReadString(body, "aspect_type") != "create")
             return null;
 
-        if (!body.TryGetProperty("object_id", out var objectId)) return null;
+        if (!WebhookJson.TryReadNumericId(body, "object_id", out var externalId))
+        {
+            _logger.LogWarning("Dropped Strava webhook: object_id was missing or not a numeric id");
+            return null;
+        }
 
-        string? ownerId = body.TryGetProperty("owner_id", out var owner)
-            ? (owner.ValueKind == JsonValueKind.Number ? owner.GetInt64().ToString() : owner.GetString())
-            : null;
-
-        return new WebhookEvent(objectId.GetInt64().ToString(), ownerId);
+        return new WebhookEvent(externalId, WebhookJson.ReadAccountId(body, "owner_id"));
     }
 
     public async Task<ImportedActivity> FetchActivityAsync(string externalId, string accessToken)

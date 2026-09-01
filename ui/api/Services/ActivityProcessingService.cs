@@ -66,7 +66,30 @@ public class ActivityProcessingService
         await ProcessClaimedActivityAsync(activity, ct);
     }
 
+    /// <summary>
+    /// Runs the pipeline, tolerating the activity being deleted underneath it.
+    ///
+    /// A DELETE can land at any point in a run (#131). Every write then affects zero
+    /// rows and EF raises <see cref="DbUpdateConcurrencyException"/> — an ordinary
+    /// outcome here, not a worker crash: there is simply nothing left to record
+    /// progress against.
+    /// </summary>
     private async Task ProcessClaimedActivityAsync(Entities.Activity activity, CancellationToken ct)
+    {
+        try
+        {
+            await RunPipelineAsync(activity, ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            _logger.LogInformation(
+                "[{Id}] Activity was deleted while it was being processed; abandoning the run",
+                activity.Id);
+            _db.ChangeTracker.Clear();
+        }
+    }
+
+    private async Task RunPipelineAsync(Entities.Activity activity, CancellationToken ct)
     {
         var totalSw = Stopwatch.StartNew();
         var activityId = activity.Id;
@@ -260,6 +283,12 @@ public class ActivityProcessingService
 
             totalSw.Stop();
             _logger.LogInformation("[{Id}] Processing completed in {Elapsed:F1}s (status=Completed)", activityId, totalSw.Elapsed.TotalSeconds);
+        }
+        // Let the caller record "the row is gone" rather than reporting a failure
+        // against an activity that no longer exists.
+        catch (DbUpdateConcurrencyException)
+        {
+            throw;
         }
         catch (Exception ex)
         {

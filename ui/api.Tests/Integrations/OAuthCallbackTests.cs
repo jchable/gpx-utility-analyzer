@@ -98,4 +98,64 @@ public class OAuthCallbackTests
         var integration = await db.Integrations.SingleAsync();
         Assert.Equal(Guid.Parse(auth.User.Id), integration.UserId);
     }
+
+    // ─── Defect D: abandoned flows must not accumulate ───────────────────────
+
+    /// <summary>
+    /// OAuthStates rows were deleted only by a SUCCESSFUL callback. Every user who
+    /// started a connect and then closed the tab left a row behind for good, so the
+    /// table grew without bound on nothing but abandoned flows.
+    /// </summary>
+    [Fact]
+    public async Task Connect_PurgesExpiredOAuthStates()
+    {
+        using var baseFactory = new ApiFactory();
+        using var factory = WithOAuthStub(baseFactory);
+        var client = factory.CreateClient();
+        var auth = await TestHelpers.RegisterAsync(client, $"oauth_gc_{Guid.NewGuid():N}@test.local");
+        var authed = factory.CreateClient();
+        authed.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", auth.AccessToken);
+
+        var abandoned = new[] { "ABANDONED-1", "ABANDONED-2", "ABANDONED-3" };
+        var stillValid = "STILL-VALID";
+
+        using (var seed = factory.Services.CreateScope())
+        {
+            var db = seed.ServiceProvider.GetRequiredService<AppDbContext>();
+            foreach (var nonce in abandoned)
+                db.OAuthStates.Add(new GpxAnalyzer.Api.Entities.OAuthState
+                {
+                    Nonce = nonce,
+                    UserId = Guid.Parse(auth.User.Id),
+                    Provider = "strava",
+                    ExpiresAt = DateTime.UtcNow.AddMinutes(-30),   // flows nobody finished
+                });
+
+            db.OAuthStates.Add(new GpxAnalyzer.Api.Entities.OAuthState
+            {
+                Nonce = stillValid,
+                UserId = Guid.Parse(auth.User.Id),
+                Provider = "strava",
+                ExpiresAt = DateTime.UtcNow.AddMinutes(10),        // someone is mid-flow
+            });
+            await db.SaveChangesAsync();
+        }
+
+        (await authed.PostAsync("/api/integrations/strava/connect", null)).EnsureSuccessStatusCode();
+
+        using var verify = factory.Services.CreateScope();
+        var verifyDb = verify.ServiceProvider.GetRequiredService<AppDbContext>();
+        var nonces = await verifyDb.OAuthStates.Select(s => s.Nonce).ToListAsync();
+
+        foreach (var nonce in abandoned)
+            Assert.DoesNotContain(nonce, nonces);
+
+        // An unexpired flow belongs to a user who is still in the provider's consent
+        // screen — purging it would break their connect.
+        Assert.Contains(stillValid, nonces);
+
+        // The nonce this very request created is naturally still there.
+        Assert.Equal(2, nonces.Count);
+    }
 }

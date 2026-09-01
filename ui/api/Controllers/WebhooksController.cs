@@ -71,14 +71,33 @@ public class WebhooksController : ControllerBase
         var importer = _importers.FirstOrDefault(i => i.ProviderName == provider);
         if (importer is null) return NotFound();
 
+        // The secret arrives in the query string because Strava cannot send custom
+        // headers on its webhook POSTs — the callback URL is the only channel. It is
+        // therefore already exposed to access logs, so it must never be echoed into
+        // ours: nothing below logs either the supplied or the expected value.
         var expectedSecret = await _settings.GetAsync($"Integrations:{provider}:WebhookSecret");
         var suppliedSecret = Request.Query["secret"].ToString();
-        if (string.IsNullOrWhiteSpace(expectedSecret) ||
-            !CryptographicOperations.FixedTimeEquals(
+
+        if (string.IsNullOrWhiteSpace(expectedSecret))
+        {
+            // WebhookSecretValidator makes a CONFIGURED provider without a secret a
+            // startup failure, so reaching here means the provider has no credentials
+            // and could not import anything even if we let the event through.
+            _logger.LogWarning(
+                "Rejected {Provider} webhook: the provider has no webhook secret configured " +
+                "(Integrations:{Provider}:WebhookSecret) and no credentials to import with",
+                provider, provider);
+            return Unauthorized();
+        }
+
+        if (!CryptographicOperations.FixedTimeEquals(
                 Encoding.UTF8.GetBytes(expectedSecret),
                 Encoding.UTF8.GetBytes(suppliedSecret)))
         {
-            _logger.LogWarning("Rejected unauthenticated webhook for {Provider}", provider);
+            _logger.LogWarning(
+                "Rejected {Provider} webhook: the callback URL carried a wrong or missing secret. " +
+                "If this started after a secret change, re-register the subscription with the new " +
+                "callback URL", provider);
             return Unauthorized();
         }
 
@@ -96,19 +115,37 @@ public class WebhooksController : ControllerBase
             i => i.Provider == provider && i.IsActive && i.ExternalUserId == evt.OwnerId);
         if (integration is null)
         {
-            _logger.LogWarning(
-                "Received {Provider} webhook for owner {OwnerId} with no matching active integration",
-                provider, evt.OwnerId);
+            // An integration with no external user id can never be matched, so say so
+            // instead of leaving the operator to wonder why nothing imports (#130).
+            var unroutable = await _db.Integrations.CountAsync(
+                i => i.Provider == provider && i.IsActive && i.ExternalUserId == null);
+
+            if (unroutable > 0)
+                _logger.LogWarning(
+                    "Received {Provider} webhook for owner {OwnerId} with no matching active " +
+                    "integration. {Count} active {Provider} integration(s) have no external user id " +
+                    "and can never be matched — those accounts must reconnect",
+                    provider, evt.OwnerId, unroutable, provider);
+            else
+                _logger.LogWarning(
+                    "Received {Provider} webhook for owner {OwnerId} with no matching active integration",
+                    provider, evt.OwnerId);
+
             return Ok(); // Acknowledge but don't process
         }
 
         var externalId = evt.ExternalActivityId;
 
-        // Check for duplicate
-        var exists = await _db.Activities.AnyAsync(a => a.Source == provider && a.ExternalId == externalId);
+        // Check for duplicate — scoped to the owning user, matching
+        // IX_Activities_UserId_Source_ExternalId. Two athletes who shared the same
+        // workout each receive their own event and each get their own row.
+        var exists = await _db.Activities.AnyAsync(a =>
+            a.UserId == integration.UserId && a.Source == provider && a.ExternalId == externalId);
         if (exists)
         {
-            _logger.LogInformation("Activity {ExternalId} from {Provider} already exists, skipping", externalId, provider);
+            _logger.LogInformation(
+                "Activity {ExternalId} from {Provider} already exists for user {UserId}, skipping",
+                externalId, provider, integration.UserId);
             return Ok();
         }
 

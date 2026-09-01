@@ -41,12 +41,14 @@ public class IntegrationsController : ControllerBase
         var result = _importers.Select(importer =>
         {
             var integration = integrations.FirstOrDefault(i => i.Provider == importer.ProviderName);
+            var connected = integration?.IsActive ?? false;
             return new IntegrationDto
             {
                 Provider = importer.ProviderName,
-                IsConnected = integration?.IsActive ?? false,
+                IsConnected = connected,
                 ExternalUserId = integration?.ExternalUserId,
                 ConnectedAt = integration?.CreatedAt,
+                NeedsReconnect = connected && string.IsNullOrEmpty(integration?.ExternalUserId),
             };
         }).ToList();
 
@@ -60,6 +62,14 @@ public class IntegrationsController : ControllerBase
         if (importer is null) return NotFound(new { code = "UNKNOWN_PROVIDER" });
 
         var callbackUrl = $"{Request.Scheme}://{Request.Host}/api/integrations/{provider}/callback";
+
+        // Only a SUCCESSFUL callback consumes its nonce, so every flow a user
+        // abandoned — closing the tab on the provider's consent screen — used to stay
+        // in the table for good. Purging on the way in bounds it to the flows that
+        // are actually still live.
+        await _db.OAuthStates
+            .Where(s => s.ExpiresAt < DateTime.UtcNow)
+            .ExecuteDeleteAsync();
 
         // Bind the flow to the caller: the callback arrives as a browser navigation
         // with no Authorization header, so the user id has to travel in `state`.

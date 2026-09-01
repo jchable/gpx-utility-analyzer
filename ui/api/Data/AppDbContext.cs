@@ -65,7 +65,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
         {
             e.HasIndex(a => a.StartTime);
             e.HasIndex(a => a.Status);
-            e.HasIndex(a => new { a.Source, a.ExternalId }).IsUnique();
+            // Scoped per user on purpose: two athletes who shared the same workout
+            // both legitimately hold the provider's activity id. Only re-importing
+            // it for the SAME user is a duplicate.
+            e.HasIndex(a => new { a.UserId, a.Source, a.ExternalId }).IsUnique();
             e.HasIndex(a => new { a.UserId, a.StartTime });
         });
         builder.Entity<Route>(e =>
