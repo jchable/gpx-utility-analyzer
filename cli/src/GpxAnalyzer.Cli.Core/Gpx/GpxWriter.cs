@@ -120,6 +120,17 @@ public static class GpxWriter
         {
             var tp = points[i];
 
+            // Every statistic this tool reports is segment-dependent - elevation sections,
+            // stop runs and recorded time all break at a <trkseg> boundary. Writing one
+            // flattened segment made the numbers change the moment the file was read back:
+            // `merge --analyze` printed D+ 40 m and `analyze` on the file it had just written
+            // printed D+ 70 m.
+            if (i > 0 && tp.BreaksRecordedTime)
+            {
+                w.WriteEndElement();                    // trkseg
+                w.WriteStartElement("trkseg", GpxNs);
+            }
+
             if (i > 0)
             {
                 cumDist += Stats.DistanceCalculator.Haversine(
