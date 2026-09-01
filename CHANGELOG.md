@@ -16,11 +16,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   developer's real SRTM cache (#135), and the 12 option defaults that
   System.CommandLine 2.x no longer prints now pinned by their observable effect.
 - **Client**: Vitest unit-test harness.
-- **Build**: open-source project health files (`CONTRIBUTING.md`,
-  `CODE_OF_CONDUCT.md`, `SECURITY.md`, `SUPPORT.md`, `CODEOWNERS`, issue and PR
-  templates); a CI workflow building and testing the CLI, AI analyzer, API and
-  React client plus Playwright E2E; a DCO sign-off check on pull requests; and
-  Dependabot coverage for NuGet, npm, GitHub Actions and Docker.
 - **Release**: a `/release` skill codifying the manual half of cutting a version.
 
 ### Changed
@@ -67,6 +62,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   input is provided.
 - **CLI + API**: biometrics preserved on export, and the power namespace now
   round-trips.
+- **Build**: platform-native optional dependencies reconciled after `npm ci`,
+  working around the npm lockfile bug that broke the rollup native binary.
+
+## [0.1.1] - 2026-07-09
+
+### Added
+
+- **Project health**: contributor governance files (`CONTRIBUTING.md`,
+  `CODE_OF_CONDUCT.md`, `SECURITY.md`, `SUPPORT.md`), `CODEOWNERS`, issue forms
+  and a pull-request template, this `CHANGELOG.md`, funding metadata and README
+  badges.
+- **CI**: a build and test workflow covering the CLI, AI analyzer, API and React
+  client, plus a DCO sign-off check on pull requests, and Dependabot coverage for
+  NuGet, npm, GitHub Actions and Docker.
+- **Docs**: AGPL-3.0 license, and winget install instructions for the CLI
+  (`Coderise.gpx-analyzer`).
+
+### Changed
+
+- **winget**: package identifier set to `Coderise.gpx-analyzer`, manifests bumped
+  to schema 1.12.0.
+- **CI**: CodeQL moved to GitHub's default setup, and the APT repository update
+  workflow removed.
+- **E2E**: mocks and specs updated to match the current UI.
+
+### Fixed
+
+- **Installer**: registry values written under the 64-bit view (`SetRegView 64`),
+  so the installed path is visible to 64-bit callers.
+- **Release**: the winget submission uses the version without its leading `v`.
+- **winget**: installer SHA256 corrected to match the rebuilt v0.1.0-alpha asset.
+- **i18n**: repaired invalid `settings.json` for both English and French.
+- **Docs**: broken links that were failing the Docusaurus build.
+- **Client**: `npm audit fix` on the vite and workbox dependency trees
+  (21 vulnerabilities down to 2).
 
 ## [0.1.0-alpha] - 2026-06-19
 
@@ -86,4 +116,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [Unreleased]: https://github.com/jchable/gpx-utility-analyzer/compare/v0.2.0...HEAD
 [0.2.0]: https://github.com/jchable/gpx-utility-analyzer/compare/v0.1.1...v0.2.0
+[0.1.1]: https://github.com/jchable/gpx-utility-analyzer/compare/v0.1.0-alpha...v0.1.1
 [0.1.0-alpha]: https://github.com/jchable/gpx-utility-analyzer/releases/tag/v0.1.0-alpha
