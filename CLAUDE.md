@@ -185,6 +185,12 @@ npm run lint     # ESLint
 - `DashboardController` — aggregated summary stats (`/api/dashboard/summary`)
 - `IntegrationsController` — OAuth connect/disconnect/callback (`/api/integrations`)
 - `WebhooksController` — Strava webhook handler (`/api/webhooks/strava`)
+- `AuthController` — register/login/refresh/logout (JWT + rotating refresh tokens)
+- `ProfileController` — athlete profile (`/api/profile`)
+- `RacePlansController` — race plans, checkpoints, nutrition, sharing (`/api/race-plans`)
+- `RoutesController` — route editor + routing (`/api/routes`)
+- `NutritionProductsController` — nutrition catalogue (`/api/nutrition-products`)
+- `SettingsController` — per-user and global settings (`/api/settings`, `/api/settings/global`)
 
 **API endpoints**:
 | Method | Route | Description |
@@ -210,10 +216,15 @@ npm run lint     # ESLint
 - `ProfileComputationService` — parses enriched GPX extensions, computes Minetti GAP, smoothing, downsampling (500 pts for charts), full-precision GeoJSON track for map
 - `AiAnalysisService` — creates `TrackAnalyzer` from `ProviderRegistry` using configuration
 - `GpxStorageService` — file-based GPX storage (GUID-prefixed filenames, original archived as zip)
+- `RacePlanService` / `RacePlanTimeCalculationService` — race plans and predicted checkpoint times
+- `RouteService` / `RouteElevationService` / `Routing/` (`OsrmRoutingService`, `OrsRoutingService`) — route editor
+- `NutritionProductService`, `CalorieCalculator`, `SettingsService`, `Email/` (`NoOpEmailService` / `SmtpEmailService`)
 
 **Integrations** (`Services/Integrations/`):
 - `IActivityImporter` — interface for external providers (OAuth + webhook + activity fetch)
 - `StravaService` — Strava OAuth2, webhook handling, stream→GPX reconstruction
+- `GarminService` — Garmin OAuth 1.0a, webhook handling, FIT→GPX conversion (`FitToGpxConverter`)
+- Webhooks require a shared secret in the query string (`?secret=`) — **Strava cannot send custom headers**. The API refuses to start if a provider has credentials but no `Integrations:{provider}:WebhookSecret`, and `SettingsController` rejects a save that would produce that state.
 
 **Background processing**:
 - `Channel<Guid>` (unbounded) as in-process queue
