@@ -83,8 +83,11 @@ public static class TimeSplitter
             previousPoint = p;
         }
 
-        // Final segment
-        if (currentPoints.Count > 0)
+        // Final segment. The boundary clear above can fire on the very last point, leaving a
+        // trailing block holding nothing but that one point - the same junk the in-loop guard
+        // rejects, and a split with no distance and no time. A single-point INPUT is not junk
+        // though: there is nothing else it could ever produce.
+        if (currentPoints.Count > 1 || (currentPoints.Count == 1 && segments.Count == 0))
         {
             segments.Add(new TimeSegment
             {
