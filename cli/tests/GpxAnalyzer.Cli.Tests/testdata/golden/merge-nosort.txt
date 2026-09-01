@@ -3,7 +3,7 @@
   "total_distance_m": 2473.9369883194986,
   "total_distance_3d_m": 2473.9412135493562,
   "total_distance_km": 2.4739369883194984,
-  "elevation_gain_m": 15.666666666666664,
+  "elevation_gain_m": 2.3333333333333286,
   "elevation_loss_m": 0,
   "max_elevation_m": 55,
   "min_elevation_m": 39.333333333333336,
@@ -14,79 +14,57 @@
     "seconds": 86700
   },
   "moving_time": {
-    "display": "10m 0s",
-    "seconds": 600
+    "display": "30m 0s",
+    "seconds": 1800
   },
   "stopped_time": {
-    "display": "23h 55m 0s",
-    "seconds": 86100
+    "display": "0s",
+    "seconds": 0
   },
   "avg_speed_kmh": 0.10272402719665738,
-  "avg_moving_speed_kmh": 14.843621929916992,
+  "avg_moving_speed_kmh": 4.947873976638997,
   "max_speed_kmh": 3.194454946646669,
   "avg_pace": "584:05 min/km",
-  "avg_moving_pace": "4:02 min/km",
+  "avg_moving_pace": "12:07 min/km",
   "point_count": 9,
   "segment_count": 1,
   "points_per_km": 3.6379261244295233,
-  "stop_count": 1,
+  "stop_count": 0,
   "total_stop_time": {
-    "display": "23h 55m 0s",
-    "seconds": 86100
+    "display": "0s",
+    "seconds": 0
   },
   "avg_stop_duration": {
-    "display": "23h 55m 0s",
-    "seconds": 86100
+    "display": "0s",
+    "seconds": 0
   },
-  "longest_stop": {
-    "start_time": "2024-01-01T10:05:00Z",
-    "end_time": "2024-01-02T10:00:00Z",
-    "duration": {
-      "display": "23h 55m 0s",
-      "seconds": 86100
-    },
-    "lat": 48.858999999999995,
-    "lon": 2.355
-  },
-  "stops": [
-    {
-      "start_time": "2024-01-01T10:05:00Z",
-      "end_time": "2024-01-02T10:00:00Z",
-      "duration": {
-        "display": "23h 55m 0s",
-        "seconds": 86100
-      },
-      "lat": 48.858999999999995,
-      "lon": 2.355
-    }
-  ],
   "effort": {
     "naismith_time": {
-      "display": "31m 15s",
-      "seconds": 1875.2346315
+      "display": "29m 55s",
+      "seconds": 1795.2346315
     },
     "tobler_time": {
       "display": "29m 34s",
       "seconds": 1774.1151561
     },
     "munter_time": {
-      "display": "38m 17s",
-      "seconds": 2297.0432894
+      "display": "37m 17s",
+      "seconds": 2237.0432894
     },
-    "performance_ratio_naismith": 0.32,
-    "performance_ratio_tobler": 0.34,
-    "kilometre_effort": 2.6,
-    "itra_points": 2.6,
+    "performance_ratio_naismith": 1,
+    "performance_ratio_tobler": 1.01,
+    "kilometre_effort": 2.5,
+    "itra_points": 2.5,
     "itra_category": "XXS",
     "equivalent_flat_distance_km": 2.5,
     "terrain_difficulty": {
-      "score": 1.1,
+      "score": 1,
       "grade": "Easy",
       "avg_grade_percent": 0.1,
       "max_grade_percent": 0.5,
       "grade_variance": 0.03,
       "steep_section_ratio": 0,
-      "elevation_per_km": 6.3
+      "elevation_per_km": 0.9
     }
   },
   "anomalies": {

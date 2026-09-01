@@ -96,7 +96,7 @@ public static class ComputePipeline
         s.LongestStop = StopDetector.LongestStop(s.Stops);
         s.AvgStopDuration = StopDetector.AvgStopDuration(s.Stops);
         s.StoppedTime = s.TotalStopTime;
-        s.MovingTime = s.TotalTime - s.StoppedTime;
+        s.MovingTime = RecordedTime(points) - s.StoppedTime;
         if (s.MovingTime < TimeSpan.Zero)
             s.MovingTime = TimeSpan.Zero;
 
@@ -157,7 +157,7 @@ public static class ComputePipeline
                 s.LongestStop = StopDetector.LongestStop(s.Stops);
                 s.AvgStopDuration = StopDetector.AvgStopDuration(s.Stops);
                 s.StoppedTime = s.TotalStopTime;
-                s.MovingTime = s.TotalTime - s.StoppedTime;
+                s.MovingTime = RecordedTime(points) - s.StoppedTime;
                 if (s.MovingTime < TimeSpan.Zero) s.MovingTime = TimeSpan.Zero;
 
                 s.Speed = SpeedCalculator.ComputeSpeed(s.TotalDistance, s.TotalTime, s.MovingTime);
@@ -172,5 +172,18 @@ public static class ComputePipeline
         }
 
         return (s, points);
+    }
+
+    private static TimeSpan RecordedTime(List<TrackPoint> points)
+    {
+        var recorded = TimeSpan.Zero;
+        for (var i = 1; i < points.Count; i++)
+        {
+            if (points[i].StartsNewSegment) continue;
+            var interval = points[i].Time - points[i - 1].Time;
+            if (interval > TimeSpan.Zero)
+                recorded += interval;
+        }
+        return recorded;
     }
 }

@@ -74,6 +74,17 @@ public static class StopDetector
 
         for (int i = 1; i < points.Count; i++)
         {
+            if (points[i].StartsNewSegment)
+            {
+                if (inStop)
+                {
+                    var stop = BuildStop(points, stopStart, lastSlowIdx + 1, cfg);
+                    if (stop != null) stops.Add(stop);
+                }
+                inStop = false;
+                continue;
+            }
+
             bool isSlow = points[i].CalcSpeed <= cfg.MaxSpeed;
 
             if (isSlow && !inStop)

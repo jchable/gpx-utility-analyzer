@@ -73,6 +73,7 @@ public static class SpeedCalculator
             {
                 points[i].CalcSpeed = 0;
                 points[i].DistFromPrev = 0;
+                points[i].StartsNewSegment = true;
                 continue;
             }
 
@@ -101,6 +102,7 @@ public static class SpeedCalculator
             {
                 points[i].CalcSpeed = 0;
                 points[i].DistFromPrev = 0;
+                points[i].StartsNewSegment = true;
                 clamped++;
             }
         }

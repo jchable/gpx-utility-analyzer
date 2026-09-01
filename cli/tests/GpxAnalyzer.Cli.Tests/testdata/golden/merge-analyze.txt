@@ -3,7 +3,7 @@
   "total_distance_m": 1268.7059528605555,
   "total_distance_3d_m": 1268.7109572721797,
   "total_distance_km": 1.2687059528605555,
-  "elevation_gain_m": 17.333333333333336,
+  "elevation_gain_m": 5.666666666666671,
   "elevation_loss_m": 0,
   "max_elevation_m": 55,
   "min_elevation_m": 37.666666666666664,
@@ -18,8 +18,8 @@
     "seconds": 1500
   },
   "stopped_time": {
-    "display": "23h 40m 0s",
-    "seconds": 85200
+    "display": "0s",
+    "seconds": 0
   },
   "avg_speed_kmh": 0.05267983195268743,
   "avg_moving_speed_kmh": 3.044894286865333,
@@ -29,64 +29,42 @@
   "point_count": 9,
   "segment_count": 1,
   "points_per_km": 7.0938423357340366,
-  "stop_count": 1,
+  "stop_count": 0,
   "total_stop_time": {
-    "display": "23h 40m 0s",
-    "seconds": 85200
+    "display": "0s",
+    "seconds": 0
   },
   "avg_stop_duration": {
-    "display": "23h 40m 0s",
-    "seconds": 85200
+    "display": "0s",
+    "seconds": 0
   },
-  "longest_stop": {
-    "start_time": "2024-01-01T10:20:00Z",
-    "end_time": "2024-01-02T10:00:00Z",
-    "duration": {
-      "display": "23h 40m 0s",
-      "seconds": 85200
-    },
-    "lat": 48.861999999999995,
-    "lon": 2.3579999999999997
-  },
-  "stops": [
-    {
-      "start_time": "2024-01-01T10:20:00Z",
-      "end_time": "2024-01-02T10:00:00Z",
-      "duration": {
-        "display": "23h 40m 0s",
-        "seconds": 85200
-      },
-      "lat": 48.861999999999995,
-      "lon": 2.3579999999999997
-    }
-  ],
   "effort": {
     "naismith_time": {
-      "display": "16m 57s",
-      "seconds": 1017.468286
+      "display": "15m 47s",
+      "seconds": 947.468286
     },
     "tobler_time": {
       "display": "15m 14s",
       "seconds": 914.5620082
     },
     "munter_time": {
-      "display": "20m 19s",
-      "seconds": 1219.8353575
+      "display": "19m 27s",
+      "seconds": 1167.3353575
     },
-    "performance_ratio_naismith": 1.47,
+    "performance_ratio_naismith": 1.58,
     "performance_ratio_tobler": 1.64,
-    "kilometre_effort": 1.4,
-    "itra_points": 1.4,
+    "kilometre_effort": 1.3,
+    "itra_points": 1.3,
     "itra_category": "XXS",
     "equivalent_flat_distance_km": 1.3,
     "terrain_difficulty": {
-      "score": 1.2,
+      "score": 1.1,
       "grade": "Easy",
       "avg_grade_percent": 0.2,
       "max_grade_percent": 0.4,
       "grade_variance": 0.02,
       "steep_section_ratio": 0,
-      "elevation_per_km": 13.7
+      "elevation_per_km": 4.5
     }
   },
   "anomalies": {

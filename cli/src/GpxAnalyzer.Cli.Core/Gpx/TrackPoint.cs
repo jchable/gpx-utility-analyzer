@@ -13,6 +13,7 @@ public class TrackPoint
     public double Speed { get; set; }      // from GPX (m/s)
     public double CalcSpeed { get; set; }  // computed from distance/time
     public double DistFromPrev { get; set; } // meters from previous point
+    public bool StartsNewSegment { get; set; } // no measurable path from previous point
 
     // Biometrics (null = not present in source GPX)
     public int? HeartRate { get; set; }

@@ -268,7 +268,7 @@ public class StopDetectorTests
     }
 
     [Fact]
-    public void DetectStops_AutoPauseGap_CountsAsAStopEvenWhenTheUserMoved()
+    public void DetectStops_RecordingGapIsUnknownTime_NotAStop()
     {
         var t0 = DateTime.Parse("2024-01-01T10:00:00Z").ToUniversalTime();
         var points = new List<TrackPoint>();
@@ -293,10 +293,7 @@ public class StopDetectorTests
         SpeedCalculator.EnrichPoints(points);
         var stops = StopDetector.DetectStops(points, StopDetector.Presets[StopDetector.PresetHiking]);
 
-        Assert.NotEmpty(stops);
-        var total = StopDetector.TotalStopTime(stops);
-        Assert.True(total >= TimeSpan.FromMinutes(40),
-            $"the 45 min auto-pause should be counted as stopped time, got {total}");
+        Assert.Empty(stops);
     }
 
     [Fact]

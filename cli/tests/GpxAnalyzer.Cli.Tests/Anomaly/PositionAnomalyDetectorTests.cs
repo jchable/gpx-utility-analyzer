@@ -30,7 +30,7 @@ public class PositionAnomalyDetectorTests
 
     /// <summary>
     /// A track that moves, stops recording for three hours (a paused watch), then
-    /// resumes 500 m away. The stop detector correctly reports the pause as a stop.
+    /// resumes 500 m away. The missing interval is unknown time, not an observed stop.
     /// </summary>
     private static List<TrackPoint> TrackWithARecordingGap()
     {
@@ -81,16 +81,13 @@ public class PositionAnomalyDetectorTests
     }
 
     // #138 — a recording gap is the ABSENCE of fixes; its endpoints are far apart
-    // because hours passed, not because the receiver misbehaved. Since the #80 fix
-    // made the stop detector report such a pause as a stop, the drift detector
-    // started emitting a gps_drift advisory across every paused watch.
+    // because hours passed, not because the receiver misbehaved.
     [Fact]
     public void Detect_RecordingGap_DoesNotReportGpsDrift()
     {
         var (stops, anomalies) = Run(TrackWithARecordingGap());
 
-        // The pause must still be recognised as a stop (that is the #80 behaviour).
-        Assert.Contains(stops, s => s.Duration >= TimeSpan.FromHours(2));
+        Assert.Empty(stops);
 
         Assert.DoesNotContain(anomalies, a => a.Type == AnomalyType.GpsDrift);
     }
@@ -108,13 +105,13 @@ public class PositionAnomalyDetectorTests
     }
 
     [Fact]
-    public void DetectStops_RecordingGap_MarksTheStopAsSpanningOne()
+    public void DetectStops_RecordingGap_DoesNotCreateAnObservedStop()
     {
         var points = TrackWithARecordingGap();
         SpeedCalculator.EnrichPoints(points);
 
         var stops = StopDetector.DetectStops(points, Cfg());
 
-        Assert.Contains(stops, s => s.SpansRecordingGap);
+        Assert.Empty(stops);
     }
 }
