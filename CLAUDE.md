@@ -414,6 +414,9 @@ Two email backends via `IEmailService`:
 - **EF Core SQLite + SumAsync on empty set**: Returns NULL causing crash. Use `Select(a => (double?)a.Field).SumAsync() ?? 0` or materialize first.
 - **EF Core SQLite + enum string conversion**: Complex query chains with string-converted enums can fail EF Core translation. Materializing with `ToListAsync()` first is safer for dashboard-style queries.
 - **DEM memory**: Large tracks spanning many SRTM tiles can use significant memory. Use `--dem-max-memory` flag or preload handles memory checks.
+- **Vitest must track Vite**: vite 8 builds with rolldown, so an older vitest bundling its own rollup-based vite produces incompatible plugin types at `tsc` time. Keep vitest in a version whose peer range covers the vite major, and take `defineConfig` from `vitest/config` (not `vite`) so the `test` block types.
+- **`[Collection("Integration")]`**: any `ui/api.Tests` class touching `ApiFactory`/`AppDbContext`/the worker needs it. Without it the class runs in parallel with the background worker and destabilises unrelated tests.
+- **Stale `obj/` after a branch switch**: a `CS1705` assembly-version error usually means stale build artifacts, not broken code — delete `bin`/`obj` for the affected project graph and re-restore.
 
 ## E2E Testing — Playwright
 
