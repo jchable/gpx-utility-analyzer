@@ -26,13 +26,12 @@ public static class BenchmarkRunner
             if (cfg.Verbose)
                 Console.Error.Write($"\r  [{i + 1}/{combos.Count}] {combo.Label()}");
 
-            // Deep-copy points to avoid mutation side effects
-            var pointsCopy = cfg.Points.Select(p => new TrackPoint
-            {
-                Lat = p.Lat, Lon = p.Lon, Ele = p.Ele, Time = p.Time,
-                Speed = p.Speed, HeartRate = p.HeartRate, Cadence = p.Cadence,
-                Power = p.Power, Temperature = p.Temperature
-            }).ToList();
+            // Copy the points so one combination's in-place mutations cannot reach the
+            // next one. Clone() is a memberwise copy: a hand-listed projection silently
+            // drops whatever field is added to TrackPoint next, and dropping
+            // StartsNewSegment made `benchmark` flatten the recording boundaries that
+            // `analyze` honours.
+            var pointsCopy = cfg.Points.Select(p => p.Clone()).ToList();
 
             var computeCfg = BuildComputeConfig(combo, cfg.DemSource, cfg.MaxHR);
             var sw = Stopwatch.StartNew();
