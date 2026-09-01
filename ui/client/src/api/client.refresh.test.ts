@@ -86,4 +86,25 @@ describe('tryRefreshToken single-flight', () => {
     expect(dataCalls).toBe(2);
     expect(refreshCalls).toBe(1);
   });
+
+  it('does not restore tokens when logout occurs while refresh is in flight', async () => {
+    let releaseResponse!: () => void;
+    const responseGate = new Promise<void>((resolve) => { releaseResponse = resolve; });
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      await responseGate;
+      return new Response(
+        JSON.stringify({ accessToken: 'obsolete-access', refreshToken: 'obsolete-refresh' }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      );
+    }));
+
+    const refresh = tryRefreshToken();
+    localStorage.removeItem('gpx_access_token');
+    localStorage.removeItem('gpx_refresh_token');
+    releaseResponse();
+
+    await expect(refresh).resolves.toBe(false);
+    expect(localStorage.getItem('gpx_access_token')).toBeNull();
+    expect(localStorage.getItem('gpx_refresh_token')).toBeNull();
+  });
 });

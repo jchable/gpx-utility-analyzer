@@ -32,6 +32,8 @@ async function doRefresh(refreshToken: string): Promise<boolean> {
     if (!res.ok) return false;
 
     const data = await res.json();
+    if (localStorage.getItem(REFRESH_KEY) !== refreshToken)
+      return false;
     localStorage.setItem(TOKEN_KEY, data.accessToken);
     localStorage.setItem(REFRESH_KEY, data.refreshToken);
     return true;
