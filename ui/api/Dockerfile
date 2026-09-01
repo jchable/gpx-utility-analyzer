@@ -23,7 +23,7 @@ RUN --mount=type=cache,id=nuget,target=/root/.nuget/packages \
 # ============================================
 # Stage 2: Runtime
 # ============================================
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
 # Install libicu for globalization (if needed)
