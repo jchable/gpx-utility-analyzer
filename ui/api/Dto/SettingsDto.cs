@@ -44,6 +44,16 @@ public class StravaCredentialsDto
     public string ClientId { get; set; } = "";
     public bool HasClientSecret { get; set; }
     public string ClientSecret { get; set; } = "";
+
+    /// <summary>
+    /// Required once the provider has credentials: without it every inbound webhook
+    /// is rejected with 401 and imports stop silently. Like the client secret it is
+    /// reported as a boolean and never echoed back — it travels in the callback
+    /// URL's query string, which makes it a credential in its own right.
+    /// </summary>
+    public bool HasWebhookSecret { get; set; }
+
+    public string WebhookSecret { get; set; } = "";
 }
 
 public class GarminCredentialsDto
@@ -51,4 +61,9 @@ public class GarminCredentialsDto
     public string ConsumerKey { get; set; } = "";
     public bool HasConsumerSecret { get; set; }
     public string ConsumerSecret { get; set; } = "";
+
+    /// <inheritdoc cref="StravaCredentialsDto.HasWebhookSecret"/>
+    public bool HasWebhookSecret { get; set; }
+
+    public string WebhookSecret { get; set; } = "";
 }

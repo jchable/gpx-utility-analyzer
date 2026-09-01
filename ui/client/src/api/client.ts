@@ -257,7 +257,17 @@ export const api = {
     });
     if (!res.ok) {
       const text = await res.text();
-      throw new Error(`API error ${res.status}: ${text}`);
+      // A rejected save carries { code, message } and the message is the whole point
+      // of the rejection (it names the config key to set and the callback URL to
+      // re-register). Surface it instead of dumping the raw JSON envelope.
+      let detail = text;
+      try {
+        const parsed = JSON.parse(text);
+        detail = parsed?.message ?? parsed?.code ?? text;
+      } catch {
+        /* not JSON — fall back to the raw body */
+      }
+      throw new Error(detail || `API error ${res.status}`);
     }
   },
 

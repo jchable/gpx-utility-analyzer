@@ -106,8 +106,8 @@ export default function SystemSettingsPage() {
     return {
       aiProvider: { ...globalSettings.aiProvider, apiKey: '' },
       integrations: {
-        strava: { ...globalSettings.integrations.strava, clientSecret: '' },
-        garmin: { ...globalSettings.integrations.garmin, consumerSecret: '' },
+        strava: { ...globalSettings.integrations.strava, clientSecret: '', webhookSecret: '' },
+        garmin: { ...globalSettings.integrations.garmin, consumerSecret: '', webhookSecret: '' },
       },
     };
   }, [globalSettings]);
@@ -159,7 +159,14 @@ export default function SystemSettingsPage() {
 
   const handleSave = async () => {
     setSaved(false);
-    await updateMutation.mutateAsync(form);
+    try {
+      await updateMutation.mutateAsync(form);
+    } catch {
+      // A refused save is an expected outcome (e.g. credentials without a webhook
+      // secret). The mutation's isError branch renders why; swallow the rejection
+      // so it does not surface as an unhandled promise.
+      return;
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
@@ -225,6 +232,28 @@ export default function SystemSettingsPage() {
                     type="password"
                   />
                 </FieldGroup>
+                {/* Mandatory alongside the credentials: without it every inbound
+                    webhook is rejected with 401 and the save is refused. */}
+                <div className="sm:col-span-2">
+                  <FieldGroup
+                    label={
+                      <>
+                        {t('webhookSecret')}
+                        {(globalSettings?.integrations.strava.hasWebhookSecret ?? false) && (
+                          <ConfiguredBadge label={t('configured')} />
+                        )}
+                      </>
+                    }
+                  >
+                    <TextInput
+                      value={form.integrations.strava.webhookSecret}
+                      onChange={(v) => updateStrava('webhookSecret', v)}
+                      placeholder={t('placeholder.newSecret')}
+                      type="password"
+                    />
+                    <p className="text-xs text-content-muted mt-1">{t('webhookSecretHint')}</p>
+                  </FieldGroup>
+                </div>
               </div>
             </div>
 
@@ -259,6 +288,26 @@ export default function SystemSettingsPage() {
                     type="password"
                   />
                 </FieldGroup>
+                <div className="sm:col-span-2">
+                  <FieldGroup
+                    label={
+                      <>
+                        {t('webhookSecret')}
+                        {(globalSettings?.integrations.garmin.hasWebhookSecret ?? false) && (
+                          <ConfiguredBadge label={t('configured')} />
+                        )}
+                      </>
+                    }
+                  >
+                    <TextInput
+                      value={form.integrations.garmin.webhookSecret}
+                      onChange={(v) => updateGarmin('webhookSecret', v)}
+                      placeholder={t('placeholder.newSecret')}
+                      type="password"
+                    />
+                    <p className="text-xs text-content-muted mt-1">{t('webhookSecretHint')}</p>
+                  </FieldGroup>
+                </div>
               </div>
             </div>
           </div>
@@ -309,19 +358,27 @@ export default function SystemSettingsPage() {
         </SectionCard>
 
         {/* Save button */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleSave}
-            disabled={updateMutation.isPending}
-            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white font-medium rounded-lg transition-colors"
-          >
-            {updateMutation.isPending ? t('saving') : t('saveSettings')}
-          </button>
-          {saved && <span className="text-emerald-400 text-sm">{t('savedSuccess')}</span>}
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleSave}
+              disabled={updateMutation.isPending}
+              className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white font-medium rounded-lg transition-colors"
+            >
+              {updateMutation.isPending ? t('saving') : t('saveSettings')}
+            </button>
+            {saved && <span className="text-emerald-400 text-sm">{t('savedSuccess')}</span>}
+          </div>
           {updateMutation.isError && (
-            <span className="text-red-400 text-sm">
+            // A refusal explains which key to set and which callback URL to
+            // re-register, so it is rendered as a readable block rather than an
+            // inline one-liner that would collapse its line breaks.
+            <div
+              role="alert"
+              className="text-red-400 text-sm whitespace-pre-line rounded-lg border border-red-500/30 bg-red-500/10 p-3"
+            >
               {t('saveFailed', { message: updateMutation.error.message })}
-            </span>
+            </div>
           )}
         </div>
       </div>
