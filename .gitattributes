@@ -1,0 +1,3 @@
+# Hooks are run by Git's own shell. A CRLF checkout would make
+# prepare-commit-msg append a sign-off line ending in a stray CR.
+.githooks/* text eol=lf
