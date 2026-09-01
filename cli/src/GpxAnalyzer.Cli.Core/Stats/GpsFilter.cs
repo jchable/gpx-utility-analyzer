@@ -18,6 +18,12 @@ public static class GpsFilter
     /// Returns the filtered list and the number of removed points.
     ///
     /// <para>
+    /// <c>Removed</c> is a conservation figure: <c>Filtered.Count + Removed == points.Count</c>
+    /// always holds. It is what <c>filtered_points</c> reports, so it must count every point
+    /// that left the track, including the ones a discarded anchor rejected on its way out -
+    /// those are dropped too, not reinstated.
+    /// </para>
+    /// <para>
     /// <see cref="TrackPoint.StartsNewSegment"/> is structural and source-owned: it says the
     /// input file opened a &lt;trkseg&gt; at this point, and every compute stage downstream
     /// only reads it. This pass is the one exception, and only because it deletes points -
@@ -70,8 +76,10 @@ public static class GpsFilter
                     // The anchor, not the stream of points, is the outlier.
                     // Drop the anchor and restart from here.
                     filtered.RemoveAt(filtered.Count - 1);
-                    removed++;                            // the discarded anchor
-                    removed -= consecutiveRejections - 1; // un-count points rejected against it
+                    // The points it rejected stay rejected — they never re-enter the list, so
+                    // they must stay counted. Discounting them made Removed disagree with the
+                    // list it describes and under-reported filtered_points.
+                    removed++; // the discarded anchor, on top of the rejections it caused
                     // The anchor is going too, and it may itself have opened a segment (or
                     // have inherited one from an earlier drop).
                     pendingSegmentStart |= anchor.StartsNewSegment;

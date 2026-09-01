@@ -96,4 +96,47 @@ public class GpsFilterTests
         Assert.Equal(1, removed);
         Assert.Equal(19, filtered.Count);
     }
+
+    /// <summary>
+    /// Removed describes the list that is returned alongside it: every point that is not in
+    /// Filtered was removed, so Filtered.Count + Removed must equal the input count. The
+    /// re-anchor path used to discount the points a bad anchor had rejected without putting
+    /// them back, so filtered_points under-reported what the track actually lost.
+    /// </summary>
+    [Fact]
+    public void FilterOutliers_ReAnchorsOntoALaterPoint_RemovedAccountsForEveryDroppedPoint()
+    {
+        var t0 = DateTime.Parse("2024-01-01T10:00:00Z").ToUniversalTime();
+        var points = new List<TrackPoint>
+        {
+            // A cold-start fix at 0,0 rejects everything measured against it.
+            new() { Lat = 0.0, Lon = 0.0, Time = t0 },
+        };
+        for (int i = 1; i <= 20; i++)
+            points.Add(new TrackPoint { Lat = 48.0 + i * 0.00006, Lon = 2.0, Time = t0.AddSeconds(i * 5) });
+
+        var (filtered, removed) = GpsFilter.FilterOutliers(points, 4.0);
+
+        // The path under test must actually have been taken.
+        Assert.True(removed > 0, "expected the bad anchor to be dropped");
+        Assert.Equal(points.Count, filtered.Count + removed);
+    }
+
+    [Theory]
+    [InlineData(4.0)]
+    [InlineData(25.0)]
+    public void FilterOutliers_WhateverItDrops_RemovedAlwaysMatchesTheReturnedList(double maxSpeed)
+    {
+        var t0 = DateTime.Parse("2024-01-01T10:00:00Z").ToUniversalTime();
+        var points = new List<TrackPoint>();
+        for (int i = 0; i < 40; i++)
+            points.Add(new TrackPoint { Lat = 48.0 + i * 0.00006, Lon = 2.0, Time = t0.AddSeconds(i * 5) });
+        // A four-point excursion: long enough to trip the re-anchor limit.
+        for (int i = 10; i < 14; i++)
+            points[i] = new TrackPoint { Lat = 49.5 + i * 0.01, Lon = 3.5, Time = t0.AddSeconds(i * 5) };
+
+        var (filtered, removed) = GpsFilter.FilterOutliers(points, maxSpeed);
+
+        Assert.Equal(points.Count, filtered.Count + removed);
+    }
 }

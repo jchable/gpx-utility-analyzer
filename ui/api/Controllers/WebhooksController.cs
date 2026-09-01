@@ -71,6 +71,12 @@ public class WebhooksController : ControllerBase
         var importer = _importers.FirstOrDefault(i => i.ProviderName == provider);
         if (importer is null) return NotFound();
 
+        // From here on the registered importer's own name stands in for the route
+        // segment. They are equal by construction — the lookup above matched on it —
+        // but this one is server-owned, which keeps unvalidated request text out of
+        // settings keys and out of log lines (CodeQL cs/log-forging).
+        provider = importer.ProviderName;
+
         // The secret arrives in the query string because Strava cannot send custom
         // headers on its webhook POSTs — the callback URL is the only channel. It is
         // therefore already exposed to access logs, so it must never be echoed into

@@ -1,6 +1,7 @@
 namespace GpxAnalyzer.Api.Services.Integrations;
 
 using System.Net.Http.Headers;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Xml.Linq;
@@ -97,13 +98,24 @@ public class StravaService : IActivityImporter
         };
     }
 
+    /// <summary>
+    /// Answers Strava's subscription handshake (GET with hub.mode / hub.verify_token).
+    ///
+    /// The guard is driven by request input by design — that is what a webhook handshake
+    /// is — so what matters is that the decision rests on a shared secret the caller must
+    /// already know, compared without leaking its length or contents through timing.
+    /// </summary>
     public async Task<bool> ValidateSubscriptionAsync(HttpContext context)
     {
         var verifyToken = await _settings.GetAsync("Integrations:Strava:WebhookVerifyToken", "gpx-analyzer")
             ?? "gpx-analyzer";
         var mode = context.Request.Query["hub.mode"].ToString();
         var token = context.Request.Query["hub.verify_token"].ToString();
-        return mode == "subscribe" && token == verifyToken;
+
+        return mode == "subscribe"
+            && CryptographicOperations.FixedTimeEquals(
+                Encoding.UTF8.GetBytes(verifyToken),
+                Encoding.UTF8.GetBytes(token));
     }
 
     public async Task<WebhookEvent?> ReadWebhookEventAsync(HttpContext context)
@@ -119,7 +131,7 @@ public class StravaService : IActivityImporter
         var expectedSubscription = await _settings.GetAsync("Integrations:Strava:SubscriptionId");
         if (!string.IsNullOrEmpty(expectedSubscription))
         {
-            var actual = WebhookJson.ReadAccountId(body, "subscription_id");
+            var actual = WebhookJson.ReadProviderId(body, "subscription_id");
             if (!string.Equals(actual, expectedSubscription, StringComparison.Ordinal))
             {
                 _logger.LogWarning("Rejected Strava webhook for unknown subscription {Subscription}", actual);
@@ -139,7 +151,7 @@ public class StravaService : IActivityImporter
             return null;
         }
 
-        return new WebhookEvent(externalId, WebhookJson.ReadAccountId(body, "owner_id"));
+        return new WebhookEvent(externalId, WebhookJson.ReadProviderId(body, "owner_id"));
     }
 
     public async Task<ImportedActivity> FetchActivityAsync(string externalId, string accessToken)

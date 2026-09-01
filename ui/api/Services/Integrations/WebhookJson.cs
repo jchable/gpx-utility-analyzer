@@ -16,6 +16,12 @@ using System.Text.Json;
 internal static class WebhookJson
 {
     /// <summary>
+    /// Longest provider-side identifier we accept. Strava sends numbers; Garmin sends
+    /// UUID-shaped strings. Anything longer is not an id we know how to use.
+    /// </summary>
+    private const int MaxProviderIdLength = 128;
+
+    /// <summary>
     /// A provider's numeric activity id (Strava <c>object_id</c>, Garmin
     /// <c>activityId</c>). Both document these as JSON integers, and the value goes
     /// straight into a provider API URL, so the documented type is required.
@@ -32,21 +38,49 @@ internal static class WebhookJson
     }
 
     /// <summary>
-    /// An account identifier (Strava <c>owner_id</c> / <c>subscription_id</c>, Garmin
-    /// <c>userId</c>). Providers disagree here — Strava sends numbers, Garmin sends
-    /// opaque strings — so both are accepted and anything else is a drop.
+    /// A provider-side account identifier (Strava <c>owner_id</c> / <c>subscription_id</c>,
+    /// Garmin <c>userId</c>). Providers disagree on the JSON type — Strava sends numbers,
+    /// Garmin sends opaque strings — so both are accepted and anything else is a drop.
+    ///
+    /// <para>
+    /// The accepted value is constrained to <see cref="IsWellFormedProviderId"/>'s character
+    /// set. These ids are compared against stored ones, written to the database and named in
+    /// operator log lines, all from an unauthenticated body: a value carrying CR/LF could
+    /// forge log entries (CodeQL <c>cs/log-forging</c>). Validating once here is worth more
+    /// than escaping at each of those sites, and no real provider id needs the excluded
+    /// characters.
+    /// </para>
     /// </summary>
-    public static string? ReadAccountId(JsonElement parent, string property)
+    public static string? ReadProviderId(JsonElement parent, string property)
     {
         if (!parent.TryGetProperty(property, out var element)) return null;
 
-        return element.ValueKind switch
+        var value = element.ValueKind switch
         {
-            JsonValueKind.Number when element.TryGetInt64(out var value)
-                => value.ToString(CultureInfo.InvariantCulture),
+            JsonValueKind.Number when element.TryGetInt64(out var number)
+                => number.ToString(CultureInfo.InvariantCulture),
             JsonValueKind.String => element.GetString(),
             _ => null,
         };
+
+        return IsWellFormedProviderId(value) ? value : null;
+    }
+
+    /// <summary>
+    /// Digits, letters and the few separators real provider ids use. Deliberately excludes
+    /// every control character, whitespace and newline.
+    /// </summary>
+    private static bool IsWellFormedProviderId(string? value)
+    {
+        if (string.IsNullOrEmpty(value) || value.Length > MaxProviderIdLength) return false;
+
+        foreach (var c in value)
+        {
+            var ok = char.IsAsciiLetterOrDigit(c) || c is '-' or '_' or '.' or ':';
+            if (!ok) return false;
+        }
+
+        return true;
     }
 
     /// <summary>A string field, or null when absent or of any other kind.</summary>
