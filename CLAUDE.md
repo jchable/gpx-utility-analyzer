@@ -89,6 +89,18 @@ Two projects with a shared library pattern:
 - `--enrich` flag: writes per-point computed metrics as `gpxa:TrackPointMetrics` extensions in exported GPX
 - `SummaryMapper.ToGpxStats()`: maps `Summary` to `GpxStats` for API consumption
 
+### Segment boundaries — ownership model
+
+A trackpoint carries three independent flags. Getting their ownership wrong silently corrupts distance and time:
+
+- `StartsNewSegment` — **structural, source-owned**. Describes the input file (first point of each `<trkseg>`); written only by the GPX layer, preserved by clone/split/merge/write. Compute stages *read* it, never write it. `GpsFilter` must transfer it when it drops the point carrying it.
+- `AfterRecordingGap` — derived, reassigned outright by `SpeedCalculator.EnrichPoints` on every pass.
+- `SpeedClamped` — derived, reassigned outright by `ClampSpeeds` on every pass.
+
+Consumers read intent, not provenance: **`BreaksRecordedTime`** (segment ∨ gap) governs elapsed/moving time, **`BreaksPath`** (that ∨ clamp) governs distance, elevation and stop detection. A clamp discredits the *distance* between two fixes but not the *seconds* that elapsed — hence two predicates.
+
+`ComputePipeline` re-runs `EnrichPoints`/`ClampSpeeds` after `--fix-anomalies`, so any flag a pass can only ever set (never clear) accumulates across re-runs.
+
 ### JSON Contract
 
 The JSON output from `analyze --format json` (defined in `Output/JsonModels.cs`) is the contract between CLI and AI analyzer projects. The `JsonSummary` class defines the schema. Optional biometric fields (`heart_rate`, `power`, `cadence`, `temperature`) are included when GPX extension data is present, omitted otherwise. The `filtered_points` field appears when GPS outliers were removed.
