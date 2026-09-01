@@ -52,6 +52,11 @@ public static class SplitCommand
             var prefix = parseResult.GetValue(prefixOpt) ?? "segment";
             var format = parseResult.GetValue(formatOption) ?? "text";
 
+            // #136: `split` takes exactly one file, so a lone unknown option binds to it as a
+            // value and would otherwise be reported as a missing file rather than a typo.
+            if (InputDiagnostics.ReportUnrecognizedOption([file]))
+                return 1;
+
             var splitInterval = ParseDuration(interval);
             if (splitInterval <= TimeSpan.Zero)
             {
@@ -66,6 +71,7 @@ public static class SplitCommand
                 demSkipValOpt, elevAlgoOpt, trackSmoothOpt, dpEpsOpt, segMinLenOpt, segMaxDevOpt,
                 maxHrOpt, maxSpeedOpt);
 
+            int failures = 0;
             try
             {
                 var doc = GpxParser.ParseFile(file);
@@ -96,15 +102,21 @@ public static class SplitCommand
                     catch (Exception ex)
                     {
                         Console.Error.WriteLine($"  Error processing segment {i + 1}: {ex.Message}");
+                        failures++;
                     }
                 }
             }
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Error: {ex.Message}");
+                failures++;
             }
 
-            return 0;
+            // #139: this used to print the error and then fall through to `return 0`, so a
+            // bad *argument* exited 1 while a bad *file* exited 0 and `split bad.gpx && next`
+            // walked straight through the &&. Same rule as `analyze` (#107): a run that could
+            // not produce what it was asked for exits non-zero.
+            return failures > 0 ? 1 : 0;
         });
 
         return cmd;

@@ -179,7 +179,7 @@ public static class ComputePipeline
         var recorded = TimeSpan.Zero;
         for (var i = 1; i < points.Count; i++)
         {
-            if (points[i].StartsNewSegment) continue;
+            if (points[i].BreaksRecordedTime) continue;
             var interval = points[i].Time - points[i - 1].Time;
             if (interval > TimeSpan.Zero)
                 recorded += interval;

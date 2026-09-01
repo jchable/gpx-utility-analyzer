@@ -24,16 +24,66 @@ public class CliParseTests
         Assert.Contains("--bogus", r.StdOut + r.StdErr);
     }
 
-    [Fact]
-    public void UnknownOption_OnAnalyze_IsSwallowedIntoTheFilesArgumentAndFails()
+    /// <summary>
+    /// #136. `analyze`, `merge` and `split` all take file arguments, so an unknown option is
+    /// bound to the argument as a VALUE rather than rejected by the parser - and the resolver
+    /// it reached then threw straight out of the handler, printing a stack trace.
+    ///
+    /// This test previously pinned that behaviour, asserting the raw resolver message
+    /// "--bogus is not a .gpx file"; it is updated deliberately. The contract is now: one
+    /// line, naming the offending token, and never a stack trace.
+    /// </summary>
+    [Theory]
+    [InlineData("analyze")]
+    [InlineData("merge")]
+    [InlineData("split")]
+    public void UnknownOption_OnAFileTakingCommand_IsOneLineAndNeverAStackTrace(string command)
     {
-        // analyze's files argument has OneOrMore arity, so an unknown option is bound to it
-        // as a value rather than rejected by the parser; the file resolver is what refuses it.
-        // The message below is this codebase's own (FileResolver), so it is pinned verbatim.
-        var r = CliRunner.Run("analyze", "--bogus", "--dem-auto-download", "false", "small.gpx");
+        var r = CliRunner.Run(command, "--bogus", "--dem-auto-download", "false");
+        var output = r.StdOut + r.StdErr;
 
         Assert.NotEqual(0, r.ExitCode);
-        Assert.Contains("--bogus is not a .gpx file", r.StdOut + r.StdErr);
+        Assert.Contains("--bogus", output);
+        Assert.DoesNotContain("Unhandled exception", output);
+        Assert.DoesNotContain("   at ", output);
+    }
+
+    /// <summary>
+    /// A mistyped FILENAME must stay distinguishable from a mistyped option: same exit code,
+    /// different diagnostic.
+    /// </summary>
+    [Theory]
+    [InlineData("analyze")]
+    [InlineData("merge")]
+    [InlineData("split")]
+    public void MissingFile_IsReportedAsAMissingFileNotAsAnUnknownOption(string command)
+    {
+        var r = CliRunner.Run(command, "missing.gpx", "--dem-auto-download", "false");
+        var output = r.StdOut + r.StdErr;
+
+        Assert.NotEqual(0, r.ExitCode);
+        Assert.Contains("missing.gpx", output);
+        Assert.DoesNotContain("unrecognized option", output);
+        Assert.DoesNotContain("Unhandled exception", output);
+    }
+
+    /// <summary>
+    /// A file argument that is not a GPX at all is a third, distinct case, and it is this
+    /// codebase's own message - pinned verbatim.
+    /// </summary>
+    [Theory]
+    [InlineData("analyze")]
+    [InlineData("merge")]
+    public void NonGpxFileArgument_KeepsItsOwnDiagnostic(string command)
+    {
+        var r = CliRunner.Run(
+            new CliOptions { Arrange = w => File.WriteAllText(Path.Combine(w, "notes.txt"), "x") },
+            command, "notes.txt", "--dem-auto-download", "false");
+        var output = r.StdOut + r.StdErr;
+
+        Assert.NotEqual(0, r.ExitCode);
+        Assert.Contains("notes.txt is not a .gpx file", output);
+        Assert.DoesNotContain("Unhandled exception", output);
     }
 
     [Fact]
@@ -64,7 +114,7 @@ public class CliParseTests
         // would build an auto-downloading DEM source, and the blocked cache is what stops that
         // from becoming a real network call. It also gives the assertion its teeth - a source
         // that got built would announce itself with the missing-tile warning.
-        var options = DemFixture.Offline(w => DemFixture.CreateDownloadBlockingCache(w));
+        var options = new CliOptions { Arrange = w => DemFixture.CreateDownloadBlockingCache(w) };
         var r = CliRunner.Run(options, command, "small.gpx",
             "--dem-cache", "blocked-cache", "--dem-auto-download=false");
 
@@ -76,7 +126,7 @@ public class CliParseTests
     [Fact]
     public void EqualsForm_OfAGlobalStringOption_IsAcceptedToo()
     {
-        var options = DemFixture.Offline(w => DemFixture.CreateDownloadBlockingCache(w));
+        var options = new CliOptions { Arrange = w => DemFixture.CreateDownloadBlockingCache(w) };
         var r = CliRunner.Run(options, "--format=json", "analyze",
             "--dem-cache", "blocked-cache", "--dem-auto-download=false", "small.gpx");
 

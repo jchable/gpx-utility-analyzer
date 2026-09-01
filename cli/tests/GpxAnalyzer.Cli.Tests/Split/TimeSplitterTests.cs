@@ -112,4 +112,72 @@ public class TimeSplitterTests
         Assert.Equal(t0.AddDays(1), segments[1].Points[0].Time);
         Assert.Equal(2, segments[1].Points.Count);
     }
+
+    /// <summary>
+    /// The in-loop flush refuses to emit a bucket holding nothing but the retained boundary
+    /// point. The trailing block had no such guard, so when the boundary clear fired on the
+    /// very last point - the retained boundary dropped, that one point kept - the run ended
+    /// with a one-point split: no distance, no time, every statistic zero.
+    /// </summary>
+    [Theory]
+    [InlineData(true)]      // a new <trkseg> opens on the last point
+    [InlineData(false)]     // ... or a recording gap does
+    public void ByTime_BoundaryClearOnTheLastPoint_DoesNotEmitAOnePointSegment(bool structural)
+    {
+        var t0 = DateTime.Parse("2024-01-01T10:00:00Z").ToUniversalTime();
+        var last = structural
+            ? new TrackPoint { Lat = 45.0, Lon = 2.0, Ele = 100, Time = t0.AddMinutes(35), StartsNewSegment = true }
+            : P(45.0, t0.AddMinutes(45));   // 25 min after the previous point: a recording gap
+
+        var points = new List<TrackPoint>
+        {
+            P(48.000, t0),
+            P(48.001, t0.AddMinutes(10)),
+            P(48.002, t0.AddMinutes(20)),
+            last,
+        };
+
+        var segments = TimeSplitter.ByTime(points, TimeSpan.FromMinutes(30));
+
+        Assert.Single(segments);
+        Assert.Equal(3, segments[0].Points.Count);
+        Assert.DoesNotContain(segments, s => s.Points.Count == 1);
+    }
+
+    /// <summary>
+    /// The guard must not swallow a genuine trailing bucket, nor a single-point input.
+    /// </summary>
+    [Fact]
+    public void ByTime_TrailingBucketWithRealPoints_IsStillEmitted()
+    {
+        var t0 = DateTime.Parse("2024-01-01T10:00:00Z").ToUniversalTime();
+        // 5-minute spacing throughout: the bucket change is not a recording gap, so the
+        // boundary point is retained rather than cleared.
+        var points = new List<TrackPoint>
+        {
+            P(48.000, t0),
+            P(48.001, t0.AddMinutes(10)),
+            P(48.002, t0.AddMinutes(20)),
+            P(48.003, t0.AddMinutes(25)),
+            P(48.004, t0.AddMinutes(32)),
+            P(48.005, t0.AddMinutes(36)),
+        };
+
+        var segments = TimeSplitter.ByTime(points, TimeSpan.FromMinutes(30));
+
+        Assert.Equal(2, segments.Count);
+        Assert.Equal(4, segments[0].Points.Count);
+        Assert.Equal(3, segments[1].Points.Count);   // retained boundary + the two real points
+    }
+
+    [Fact]
+    public void ByTime_SinglePointInput_StillYieldsThatPoint()
+    {
+        var t0 = DateTime.Parse("2024-01-01T10:00:00Z").ToUniversalTime();
+
+        var segments = TimeSplitter.ByTime([P(48.0, t0)], TimeSpan.FromHours(24));
+
+        Assert.Single(segments);
+        Assert.Single(segments[0].Points);
+    }
 }

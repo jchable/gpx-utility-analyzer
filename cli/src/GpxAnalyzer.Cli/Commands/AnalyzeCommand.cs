@@ -52,7 +52,13 @@ public static class AnalyzeCommand
             var enrich = parseResult.GetValue(enrichOpt);
 
             var formatter = FormatterFactory.Create(format, GpxAnalyzer.Cli.Output.JsonContext.Default.Options);
-            var resolvedFiles = FileResolver.ResolveFiles(files);
+
+            // #136: the files argument has OneOrMore arity, so an unknown option binds to it as
+            // a value and used to blow up inside FileResolver with a stack trace.
+            var resolvedFiles = InputDiagnostics.ResolveOrReport(files);
+            if (resolvedFiles is null)
+                return 1;
+
             var cfg = SharedFlags.BuildConfigFromParseResult(parseResult, presetOpt, stopSpeedOpt, stopDurationOpt,
                 elevThresholdOpt, smoothingOpt, demDirOpt, demCacheOpt, demAutoOpt, demMaxMemOpt,
                 demSkipValOpt, elevAlgoOpt, trackSmoothOpt, dpEpsOpt, segMinLenOpt, segMaxDevOpt,

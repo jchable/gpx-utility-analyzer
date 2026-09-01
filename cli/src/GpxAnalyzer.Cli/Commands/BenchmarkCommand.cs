@@ -70,7 +70,17 @@ public static class BenchmarkCommand
             }
             else if (!string.IsNullOrEmpty(vary))
             {
+                // #139: an unrecognised --vary used to warn and then silently run the default
+                // base combination, presenting one row of a matrix the user never asked for as
+                // if it were the answer.
                 combos = GenerateVaryCombos(vary);
+                if (combos.Count == 0)
+                {
+                    Console.Error.WriteLine(
+                        $"Error: --vary '{vary}' names no known axis - expected any of " +
+                        "preset, elev-algo, elev-smoothing, track-smoothing, dem, elev-params");
+                    return 1;
+                }
             }
             else
             {
@@ -203,9 +213,9 @@ public static class BenchmarkCommand
             }
         }
 
-        if (combos.Count == 0)
-            combos.Add(baseCfg);
-
+        // An empty result means nothing in --vary was recognised. Substituting the default
+        // base combination here would answer a question the user did not ask; the caller
+        // reports it instead.
         return combos;
     }
 }

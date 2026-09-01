@@ -59,7 +59,7 @@ public static class ElevationCalculator
         var start = 0;
         for (var i = 1; i <= points.Count; i++)
         {
-            if (i < points.Count && !points[i].StartsNewSegment)
+            if (i < points.Count && !points[i].BreaksPath)
                 continue;
 
             var section = points.GetRange(start, i - start);
