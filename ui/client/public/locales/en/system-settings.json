@@ -9,6 +9,8 @@
   "clientSecret": "Client Secret",
   "consumerKey": "Consumer Key",
   "consumerSecret": "Consumer Secret",
+  "webhookSecret": "Webhook Secret",
+  "webhookSecretHint": "Required once credentials are set, otherwise every incoming webhook is rejected and imports stop silently. Use a long random value, then register the provider's callback URL as https://<your-host>/api/webhooks/<provider>?secret=<the value>.",
   "configured": "Configured",
   "aiProvider": "AI Provider",
   "aiProviderHint": "Configure the AI model used to generate activity analysis reports.",

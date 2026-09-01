@@ -11,6 +11,11 @@ namespace GpxAnalyzer.Api.Services.Integrations;
 ///
 /// The secret is therefore mandatory: configuring a provider without one is a
 /// misconfiguration, and it fails loudly at startup rather than quietly at runtime.
+///
+/// Credentials are settable at runtime too, through the settings UI, which startup
+/// validation cannot cover. <see cref="FindMisconfigurationAsync"/> exposes the same
+/// rule and the same message so that save can refuse for the same reason, in the
+/// same words, before the configuration is written.
 /// </summary>
 public static class WebhookSecretValidator
 {
@@ -34,24 +39,60 @@ public static class WebhookSecretValidator
     /// </exception>
     public static async Task ValidateAsync(ISettingsService settings)
     {
+        var misconfiguration = await FindMisconfigurationAsync(key => settings.GetAsync(key));
+        if (misconfiguration is not null)
+            throw new InvalidOperationException(misconfiguration);
+    }
+
+    /// <summary>
+    /// The same rule, reusable before the configuration is written rather than only
+    /// after it is read back at startup (issue #143). Startup validation cannot see a
+    /// credential that did not exist at startup, so a credential saved at runtime
+    /// through the settings UI would 401 every webhook until the next restart — and
+    /// then stop that restart, long after the change that caused it.
+    ///
+    /// Returns the message describing the first provider that would have credentials
+    /// but no webhook secret in the state <paramref name="resolve"/> describes, or
+    /// <c>null</c> when every configured provider can receive webhooks. Callers get
+    /// the identical text the startup refusal uses, so neither path can drift.
+    /// </summary>
+    public static async Task<string?> FindMisconfigurationAsync(Func<string, Task<string?>> resolve)
+    {
         foreach (var provider in Providers)
         {
-            var configuredWith = await FirstConfiguredCredentialAsync(settings, provider);
+            var configuredWith = await FirstConfiguredCredentialAsync(resolve, provider);
             if (configuredWith is null) continue;
 
             var secretKey = $"Integrations:{provider.Section}:WebhookSecret";
-            var secret = await settings.GetAsync(secretKey);
+            var secret = await resolve(secretKey);
             if (!string.IsNullOrWhiteSpace(secret)) continue;
 
-            throw new InvalidOperationException(BuildMessage(provider, configuredWith, secretKey));
+            return BuildMessage(provider, configuredWith, secretKey);
         }
+
+        return null;
     }
 
+    /// <summary>
+    /// A resolver over the state that would RESULT from applying <paramref name="pending"/>
+    /// to what <paramref name="settings"/> already holds.
+    ///
+    /// A settings update only writes the keys it carries, so a client id and its
+    /// webhook secret may legitimately arrive in two separate requests. Validating
+    /// the request alone would reject that second request and would equally miss a
+    /// credential already stored; validating the resulting state gets both right.
+    /// </summary>
+    public static Func<string, Task<string?>> ResolveAfterApplying(
+        ISettingsService settings, IReadOnlyDictionary<string, string> pending)
+        => key => pending.TryGetValue(key, out var pendingValue)
+            ? Task.FromResult<string?>(pendingValue)
+            : settings.GetAsync(key);
+
     private static async Task<string?> FirstConfiguredCredentialAsync(
-        ISettingsService settings, Provider provider)
+        Func<string, Task<string?>> resolve, Provider provider)
     {
         foreach (var key in provider.CredentialKeys)
-            if (!string.IsNullOrWhiteSpace(await settings.GetAsync(key)))
+            if (!string.IsNullOrWhiteSpace(await resolve(key)))
                 return key;
 
         return null;

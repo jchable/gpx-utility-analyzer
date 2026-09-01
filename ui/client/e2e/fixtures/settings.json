@@ -19,12 +19,16 @@
     "strava": {
       "clientId": "12345",
       "hasClientSecret": true,
-      "clientSecret": ""
+      "clientSecret": "",
+      "hasWebhookSecret": true,
+      "webhookSecret": ""
     },
     "garmin": {
       "consumerKey": "",
       "hasConsumerSecret": false,
-      "consumerSecret": ""
+      "consumerSecret": "",
+      "hasWebhookSecret": false,
+      "webhookSecret": ""
     }
   }
 }

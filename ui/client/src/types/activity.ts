@@ -266,12 +266,18 @@ export interface StravaCredentials {
   clientId: string;
   hasClientSecret: boolean;
   clientSecret: string;
+  /** Required once the provider has credentials, or every inbound webhook is 401'd. */
+  hasWebhookSecret: boolean;
+  webhookSecret: string;
 }
 
 export interface GarminCredentials {
   consumerKey: string;
   hasConsumerSecret: boolean;
   consumerSecret: string;
+  /** Required once the provider has credentials, or every inbound webhook is 401'd. */
+  hasWebhookSecret: boolean;
+  webhookSecret: string;
 }
 
 export interface SplitsData {

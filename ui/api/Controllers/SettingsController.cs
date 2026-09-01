@@ -3,6 +3,7 @@ namespace GpxAnalyzer.Api.Controllers;
 using GpxAnalyzer.Api.Auth;
 using GpxAnalyzer.Api.Dto;
 using GpxAnalyzer.Api.Services;
+using GpxAnalyzer.Api.Services.Integrations;
 using GpxAiAnalyzer.Core.Providers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -83,11 +84,13 @@ public class SettingsController : ControllerBase
                 {
                     ClientId = await _settings.GetAsync("Integrations:Strava:ClientId") ?? "",
                     HasClientSecret = !string.IsNullOrEmpty(await _settings.GetAsync("Integrations:Strava:ClientSecret")),
+                    HasWebhookSecret = !string.IsNullOrWhiteSpace(await _settings.GetAsync("Integrations:Strava:WebhookSecret")),
                 },
                 Garmin = new GarminCredentialsDto
                 {
                     ConsumerKey = await _settings.GetAsync("Integrations:Garmin:ConsumerKey") ?? "",
                     HasConsumerSecret = !string.IsNullOrEmpty(await _settings.GetAsync("Integrations:Garmin:ConsumerSecret")),
+                    HasWebhookSecret = !string.IsNullOrWhiteSpace(await _settings.GetAsync("Integrations:Garmin:WebhookSecret")),
                 },
             },
         };
@@ -115,12 +118,34 @@ public class SettingsController : ControllerBase
             updates["Integrations:Strava:ClientId"] = dto.Integrations.Strava.ClientId;
         if (!string.IsNullOrEmpty(dto.Integrations.Strava.ClientSecret))
             updates["Integrations:Strava:ClientSecret"] = dto.Integrations.Strava.ClientSecret;
+        if (!string.IsNullOrEmpty(dto.Integrations.Strava.WebhookSecret))
+            updates["Integrations:Strava:WebhookSecret"] = dto.Integrations.Strava.WebhookSecret;
 
         // Garmin credentials
         if (!string.IsNullOrEmpty(dto.Integrations.Garmin.ConsumerKey))
             updates["Integrations:Garmin:ConsumerKey"] = dto.Integrations.Garmin.ConsumerKey;
         if (!string.IsNullOrEmpty(dto.Integrations.Garmin.ConsumerSecret))
             updates["Integrations:Garmin:ConsumerSecret"] = dto.Integrations.Garmin.ConsumerSecret;
+        if (!string.IsNullOrEmpty(dto.Integrations.Garmin.WebhookSecret))
+            updates["Integrations:Garmin:WebhookSecret"] = dto.Integrations.Garmin.WebhookSecret;
+
+        // Issue #143: startup refuses to boot a provider that has credentials but no
+        // webhook secret. Credentials saved here are invisible to that check until the
+        // next restart, so without this the save would silently 401 every webhook and
+        // then block the restart that finally reported it.
+        //
+        // The check is against the state this update WOULD produce, not the request
+        // body: only non-empty values are written above, so the client id and the
+        // webhook secret may legitimately arrive in separate requests.
+        var misconfiguration = await WebhookSecretValidator.FindMisconfigurationAsync(
+            WebhookSecretValidator.ResolveAfterApplying(_settings, updates));
+
+        // Refuse before persisting anything — a partial write would leave exactly the
+        // broken state this exists to prevent. Rejecting rather than generating a
+        // secret is deliberate: the operator needs its value to register the callback
+        // URL, so a generated one hidden in the database would only move the silence.
+        if (misconfiguration is not null)
+            return BadRequest(new { code = "WEBHOOK_SECRET_REQUIRED", message = misconfiguration });
 
         await _settings.SetGlobalManyAsync(updates);
         return NoContent();

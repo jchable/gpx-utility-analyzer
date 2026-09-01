@@ -9,6 +9,8 @@
   "clientSecret": "Client Secret",
   "consumerKey": "Consumer Key",
   "consumerSecret": "Consumer Secret",
+  "webhookSecret": "Secret de webhook",
+  "webhookSecretHint": "Obligatoire dès que des identifiants sont renseignés, sinon chaque webhook entrant est rejeté et les imports s'arrêtent silencieusement. Utilisez une valeur longue et aléatoire, puis enregistrez l'URL de rappel du fournisseur sous la forme https://<votre-hote>/api/webhooks/<fournisseur>?secret=<la valeur>.",
   "configured": "Configuré",
   "aiProvider": "Fournisseur IA",
   "aiProviderHint": "Configurez le modèle IA utilisé pour générer les rapports d'analyse d'activités.",
