@@ -131,7 +131,22 @@ public static class GpxWriter
                 w.WriteStartElement("trkseg", GpxNs);
             }
 
-            if (i > 0)
+            // gpxa:dist has to accumulate the SAME segments the stats pipeline counts into
+            // total_distance_m, or the file contradicts the summary written beside it. The
+            // pipeline sums TrackPoint.DistFromPrev, which EnrichPoints zeroes across a
+            // recording gap and ClampSpeeds zeroes for an over-speed segment - between them,
+            // exactly the segments BreaksPath describes as having no usable path.
+            //
+            // BreaksPath, not BreaksRecordedTime: the two differ on the speed clamp, and a
+            // clamp is precisely a case where the distance is discredited while the elapsed
+            // time is not. Distance is the thing being accumulated here, so the predicate
+            // that governs distance is the one to ask.
+            //
+            // Downstream this is not cosmetic. The API reads gpxa:dist into CumDist, which
+            // places every km-split boundary and is the ruler its best-effort sliding window
+            // measures against - so banked phantom distance turned a "best 10 km" into a
+            // window over less than 10 real kilometres (issue #144).
+            if (i > 0 && !tp.BreaksPath)
             {
                 cumDist += Stats.DistanceCalculator.Haversine(
                     points[i - 1].Lat, points[i - 1].Lon,
