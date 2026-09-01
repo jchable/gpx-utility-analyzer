@@ -292,18 +292,20 @@ public class ProfileComputationService
 
             for (var i = startIdx; i <= endIdx && i < points.Count; i++)
             {
-                // startIdx deliberately backs up one point before the split start,
-                // and endIdx advances one past the split end, so the boundary
-                // segment belongs to two consecutive splits. Attribute each segment
-                // to exactly one split: the one containing its END point. Without
-                // this gate every split double-counts one segment's elevation.
-                if (i > startIdx &&
-                    points[i].CumDist > splitStartDist &&
-                    points[i].CumDist <= splitEndDist)
+                if (i > 0)
                 {
-                    var dEle = points[i].Ele - points[i - 1].Ele;
-                    if (dEle > 0) elevGain += dEle;
-                    else elevLoss += Math.Abs(dEle);
+                    var segmentStart = points[i - 1].CumDist;
+                    var segmentEnd = points[i].CumDist;
+                    var segmentDistance = segmentEnd - segmentStart;
+                    var overlap = Math.Min(segmentEnd, splitEndDist)
+                                - Math.Max(segmentStart, splitStartDist);
+                    if (segmentDistance > 0 && overlap > 0)
+                    {
+                        var dEle = (points[i].Ele - points[i - 1].Ele)
+                                 * (overlap / segmentDistance);
+                        if (dEle > 0) elevGain += dEle;
+                        else elevLoss += Math.Abs(dEle);
+                    }
                 }
 
                 if (points[i].CumDist >= splitStartDist && points[i].CumDist <= splitEndDist)

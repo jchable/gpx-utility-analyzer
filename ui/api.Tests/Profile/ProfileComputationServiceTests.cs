@@ -166,6 +166,18 @@ public class ProfileComputationServiceTests
         Assert.InRange(summedLoss, activityLoss - 0.5, activityLoss + 0.5);
     }
 
+    [Fact]
+    public void ComputeFromEnrichedGpx_SegmentCrossingBoundary_IsSplitProportionally()
+    {
+        // Three 600 m segments at 10%: the 1 km boundary lies 400 m into the
+        // second segment. The 180 m total gain must be apportioned 100 m / 80 m.
+        var splits = ComputeSplitsFor(4, 600, i => 100 + (i * 60));
+
+        Assert.Equal(2, splits.Count);
+        Assert.Equal(100, splits[0].GetProperty("elevationGain").GetDouble(), 1);
+        Assert.Equal(80, splits[1].GetProperty("elevationGain").GetDouble(), 1);
+    }
+
     /// <summary>
     /// Builds an enriched GPX fixture, runs it through
     /// <see cref="ProfileComputationService.ComputeFromEnrichedGpx"/> and returns
