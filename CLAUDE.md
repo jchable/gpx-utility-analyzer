@@ -463,7 +463,7 @@ When you need up-to-date documentation for a library or framework (ASP.NET Core,
 
 ## Environment
 
-- .NET 9.0, Node 22+, React 19, Vite 7, TypeScript 5.9
+- .NET 9.0, Node 22+, React 19, Vite 8, TypeScript 5.9, Vitest 4
 - For local scripts and system operations, use **PowerShell** (Python is not installed)
 - After a modification or an addition on the source code, rebuild and test the modified component.
 - After a modification in the backend, use ef core migrations for database changes, and apply it to the current compose deployment once the feature finished
@@ -471,3 +471,5 @@ When you need up-to-date documentation for a library or framework (ASP.NET Core,
 - After changes, redeploy on compose (`docker compose up --build -d`) for the user to test.
 - At the end of a new feature, suggest to tracked only added or modified in this feature and in a second step to commit your work. Propose a commit message without git commit yourself.
 - **Commits**: do NOT add a `Co-Authored-By` trailer. Commit directly without any co-author line.
+- **DCO**: CI checks every non-merge commit in a PR for a `Signed-off-by` trailer. Use `git commit -s`. (Branch protection requires an approving review, not a green check, so a missing sign-off shows red without blocking a merge.)
+- **No floating package versions**: never `Version="*"` in a `.csproj`. Two projects restored at different times then resolve different versions of the same assembly and the build fails with `CS1705`, which `dotnet build` only surfaces after a stale `obj/` is involved. Major-bounded ranges (`9.*`) are the existing deliberate style in `ui/api`.
