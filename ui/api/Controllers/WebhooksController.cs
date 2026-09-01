@@ -115,9 +115,22 @@ public class WebhooksController : ControllerBase
             i => i.Provider == provider && i.IsActive && i.ExternalUserId == evt.OwnerId);
         if (integration is null)
         {
-            _logger.LogWarning(
-                "Received {Provider} webhook for owner {OwnerId} with no matching active integration",
-                provider, evt.OwnerId);
+            // An integration with no external user id can never be matched, so say so
+            // instead of leaving the operator to wonder why nothing imports (#130).
+            var unroutable = await _db.Integrations.CountAsync(
+                i => i.Provider == provider && i.IsActive && i.ExternalUserId == null);
+
+            if (unroutable > 0)
+                _logger.LogWarning(
+                    "Received {Provider} webhook for owner {OwnerId} with no matching active " +
+                    "integration. {Count} active {Provider} integration(s) have no external user id " +
+                    "and can never be matched — those accounts must reconnect",
+                    provider, evt.OwnerId, unroutable, provider);
+            else
+                _logger.LogWarning(
+                    "Received {Provider} webhook for owner {OwnerId} with no matching active integration",
+                    provider, evt.OwnerId);
+
             return Ok(); // Acknowledge but don't process
         }
 

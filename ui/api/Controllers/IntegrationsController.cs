@@ -41,12 +41,14 @@ public class IntegrationsController : ControllerBase
         var result = _importers.Select(importer =>
         {
             var integration = integrations.FirstOrDefault(i => i.Provider == importer.ProviderName);
+            var connected = integration?.IsActive ?? false;
             return new IntegrationDto
             {
                 Provider = importer.ProviderName,
-                IsConnected = integration?.IsActive ?? false,
+                IsConnected = connected,
                 ExternalUserId = integration?.ExternalUserId,
                 ConnectedAt = integration?.CreatedAt,
+                NeedsReconnect = connected && string.IsNullOrEmpty(integration?.ExternalUserId),
             };
         }).ToList();
 
