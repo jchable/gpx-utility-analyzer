@@ -62,7 +62,8 @@ public static class SpeedCalculator
 
     /// <summary>
     /// Computes distance from previous point and calculated speed for each point.
-    /// Points separated by a time gap larger than GapThreshold get zero distance and speed.
+    /// A segment with no measured path across it - a time gap larger than GapThreshold, or a
+    /// &lt;trkseg&gt; boundary in the source - gets zero distance and speed.
     ///
     /// Owns <see cref="TrackPoint.AfterRecordingGap"/> and assigns it outright on every point:
     /// ComputePipeline re-runs this pass once anomaly correction has rewritten the timestamps,
@@ -82,7 +83,22 @@ public static class SpeedCalculator
             var dt = points[i].Time - points[i - 1].Time;
             points[i].AfterRecordingGap = dt > ElevationSmoother.GapThreshold;
 
-            if (points[i].AfterRecordingGap)
+            // BreaksRecordedTime, not AfterRecordingGap alone. A <trkseg> boundary means the
+            // GPX said reception was lost or the receiver was off, so there is no measured
+            // path between these two fixes however few seconds separate them - the straight
+            // line across the break is an artefact of joining two recordings, not distance
+            // anyone covered.
+            //
+            // Distance used to be the one statistic that ignored that: elevation sections and
+            // stop runs split on BreaksPath and recorded time skips on BreaksRecordedTime, but
+            // this loop looked only at dt, so a pause under GapThreshold banked the hop into
+            // total_distance_m. That is also what left gpxa:dist unable to agree with the
+            // total it is written beside (issue #144).
+            //
+            // SpeedClamped is deliberately not consulted here: ClampSpeeds owns it and runs
+            // immediately after, so between the two passes DistFromPrev ends up zero on
+            // exactly the segments BreaksPath describes.
+            if (points[i].BreaksRecordedTime)
             {
                 points[i].CalcSpeed = 0;
                 points[i].DistFromPrev = 0;

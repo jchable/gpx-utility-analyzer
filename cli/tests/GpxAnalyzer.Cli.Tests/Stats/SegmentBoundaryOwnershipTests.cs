@@ -173,4 +173,170 @@ public class SegmentBoundaryOwnershipTests
         Assert.Equal(50, summary.Elevation.Gain, 6);
         Assert.All(processed, p => Assert.False(p.AfterRecordingGap));
     }
+
+    // ------------------------------------ GpsFilter must not destroy what it does not own
+    //
+    // Issue #142. FilterOutliers deletes points. StartsNewSegment is structural - it records
+    // that the source file opened a <trkseg> here - so deleting its carrier must move the
+    // boundary onto whichever point now begins that segment, not silently erase it.
+    //
+    // This is the common case, not a contrived one: the first fix after a device resumes
+    // recording is frequently bad (cold start, poor sky view) and its apparent speed is
+    // enormous precisely BECAUSE it spans the pause, which is exactly what makes the filter
+    // reject it. Segment-opening points are therefore over-represented among outliers.
+
+    [Fact]
+    public void FilterOutliers_DropsTheSegmentsFirstPoint_MovesTheBoundaryToItsSuccessor()
+    {
+        var points = new List<TrackPoint>
+        {
+            new() { Lat = 45.0000, Lon = 6.0, Time = T0 },
+            new() { Lat = 45.0010, Lon = 6.0, Time = T0.AddMinutes(1) },
+            // <trkseg> #2 opens here, on a cold-start fix 111 km away.
+            new() { Lat = 46.0000, Lon = 6.0, Time = T0.AddMinutes(2), StartsNewSegment = true },
+            new() { Lat = 45.0020, Lon = 6.0, Time = T0.AddMinutes(3) },
+            new() { Lat = 45.0030, Lon = 6.0, Time = T0.AddMinutes(4) },
+        };
+
+        var (filtered, removed) = GpsFilter.FilterOutliers(points, 4.0);
+
+        Assert.Equal(1, removed);
+        Assert.Equal(4, filtered.Count);
+        // The segment still opens; it just opens one point later.
+        Assert.True(filtered[2].StartsNewSegment);
+        Assert.Equal(1, filtered.Count(p => p.StartsNewSegment));
+    }
+
+    [Fact]
+    public void FilterOutliers_DropsSeveralPointsAtASegmentStart_BoundaryLandsOnTheFirstSurvivor()
+    {
+        var points = new List<TrackPoint>
+        {
+            new() { Lat = 45.0000, Lon = 6.0, Time = T0 },
+            new() { Lat = 45.0010, Lon = 6.0, Time = T0.AddMinutes(1) },
+            // Two consecutive bad fixes open <trkseg> #2 - still under the re-anchor limit.
+            new() { Lat = 46.0000, Lon = 6.0, Time = T0.AddMinutes(2), StartsNewSegment = true },
+            new() { Lat = 46.0010, Lon = 6.0, Time = T0.AddMinutes(3) },
+            new() { Lat = 45.0020, Lon = 6.0, Time = T0.AddMinutes(4) },
+            new() { Lat = 45.0030, Lon = 6.0, Time = T0.AddMinutes(5) },
+        };
+
+        var (filtered, removed) = GpsFilter.FilterOutliers(points, 4.0);
+
+        Assert.Equal(2, removed);
+        Assert.Equal(4, filtered.Count);
+        Assert.True(filtered[2].StartsNewSegment);
+        Assert.Equal(1, filtered.Count(p => p.StartsNewSegment));
+    }
+
+    [Fact]
+    public void FilterOutliers_ReAnchorsAwayFromASegmentStart_KeepsTheBoundary()
+    {
+        // The anchor itself is the outlier: it rejects MaxConsecutiveRejections points in a
+        // row and is discarded. It also happens to be the point that opened <trkseg> #2.
+        var points = new List<TrackPoint>
+        {
+            new() { Lat = 45.0000, Lon = 6.0, Time = T0 },
+            new() { Lat = 46.0000, Lon = 6.0, Time = T0.AddMinutes(1), StartsNewSegment = true },
+            new() { Lat = 45.0010, Lon = 6.0, Time = T0.AddMinutes(2) },
+            new() { Lat = 45.0020, Lon = 6.0, Time = T0.AddMinutes(3) },
+            new() { Lat = 45.0030, Lon = 6.0, Time = T0.AddMinutes(4) },
+            new() { Lat = 45.0040, Lon = 6.0, Time = T0.AddMinutes(5) },
+        };
+
+        var (filtered, _) = GpsFilter.FilterOutliers(points, 4.0);
+
+        Assert.DoesNotContain(filtered, p => p.Lat > 45.9);
+        Assert.Equal(1, filtered.Count(p => p.StartsNewSegment));
+        Assert.True(filtered[1].StartsNewSegment);
+    }
+
+    [Fact]
+    public void FilterOutliers_NoBoundaryInTheSource_DoesNotInventOne()
+    {
+        var points = new List<TrackPoint>
+        {
+            new() { Lat = 45.0000, Lon = 6.0, Time = T0 },
+            new() { Lat = 46.0000, Lon = 6.0, Time = T0.AddMinutes(1) },
+            new() { Lat = 45.0010, Lon = 6.0, Time = T0.AddMinutes(2) },
+        };
+
+        var (filtered, _) = GpsFilter.FilterOutliers(points, 4.0);
+
+        Assert.All(filtered, p => Assert.False(p.StartsNewSegment));
+    }
+
+    /// <summary>
+    /// The end-to-end consequence, read off a real GPX. A file whose second &lt;trkseg&gt;
+    /// opens on an over-speed fix must, after filtering, report exactly what the same file
+    /// reports when that fix is simply not in the source.
+    ///
+    /// Before the fix the boundary died with the point, so the 120 s pause between the two
+    /// segments was counted as recorded (hence moving) time and the 30 m step across the
+    /// pause was counted as climb.
+    /// </summary>
+    [Fact]
+    public void Compute_OutlierOpensASegment_MatchesTheSameTrackWithoutTheOutlier()
+    {
+        const string bad =
+            """<trkpt lat="46.0000" lon="6.0"><ele>130</ele><time>2024-01-01T10:02:00Z</time></trkpt>""";
+
+        var withOutlier = AnalyzeTwoSegmentGpx(bad);
+        var withoutOutlier = AnalyzeTwoSegmentGpx("");
+
+        Assert.Equal(1, withOutlier.FilteredPoints);
+        Assert.Equal(0, withoutOutlier.FilteredPoints);
+
+        // What the track without the outlier is: three 60 s intervals of recorded time
+        // (the 120 s across the segment break is not one), and no climb at all - the 30 m
+        // step between the segments happened while the recorder was off.
+        Assert.Equal(TimeSpan.FromMinutes(3), withoutOutlier.MovingTime);
+        Assert.Equal(0, withoutOutlier.Elevation.Gain, 6);
+
+        Assert.Equal(withoutOutlier.TotalDistance, withOutlier.TotalDistance, 6);
+        Assert.Equal(withoutOutlier.MovingTime, withOutlier.MovingTime);
+        Assert.Equal(withoutOutlier.Elevation.Gain, withOutlier.Elevation.Gain, 6);
+    }
+
+    /// <summary>
+    /// Two &lt;trkseg&gt;s 120 s apart - a pause short enough that no recording-gap heuristic
+    /// fires, so the structural boundary is the only thing marking it. The second segment
+    /// resumes 30 m higher and one metre along, which is what makes the boundary observable
+    /// in both moving time and elevation gain.
+    /// </summary>
+    private static Summary AnalyzeTwoSegmentGpx(string extraFirstPoint)
+    {
+        var gpx = $"""
+            <?xml version="1.0" encoding="utf-8"?>
+            <gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="test">
+              <trk><name>t</name>
+                <trkseg>
+                  <trkpt lat="45.0000" lon="6.0"><ele>100</ele><time>2024-01-01T10:00:00Z</time></trkpt>
+                  <trkpt lat="45.0010" lon="6.0"><ele>100</ele><time>2024-01-01T10:01:00Z</time></trkpt>
+                </trkseg>
+                <trkseg>
+                  {extraFirstPoint}
+                  <trkpt lat="45.0020" lon="6.0"><ele>130</ele><time>2024-01-01T10:03:00Z</time></trkpt>
+                  <trkpt lat="45.0030" lon="6.0"><ele>130</ele><time>2024-01-01T10:04:00Z</time></trkpt>
+                  <trkpt lat="45.0040" lon="6.0"><ele>130</ele><time>2024-01-01T10:05:00Z</time></trkpt>
+                </trkseg>
+              </trk>
+            </gpx>
+            """;
+
+        using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(gpx));
+        var doc = GpxParser.Parse(stream);
+
+        var cfg = new ComputeConfig
+        {
+            ElevationThreshold = 2.0,
+            SmoothingLevel = "none",
+            TrackSmoothing = "none",
+            StopConfig = StopDetector.Presets[StopDetector.PresetHiking],
+            MaxReasonableSpeed = 4.0,
+        };
+
+        var (summary, _) = ComputePipeline.Compute(doc.AllPoints(), doc.SegmentCount(), cfg);
+        return summary;
+    }
 }
