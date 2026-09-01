@@ -114,7 +114,7 @@ public class CliParseTests
         // would build an auto-downloading DEM source, and the blocked cache is what stops that
         // from becoming a real network call. It also gives the assertion its teeth - a source
         // that got built would announce itself with the missing-tile warning.
-        var options = DemFixture.Offline(w => DemFixture.CreateDownloadBlockingCache(w));
+        var options = new CliOptions { Arrange = w => DemFixture.CreateDownloadBlockingCache(w) };
         var r = CliRunner.Run(options, command, "small.gpx",
             "--dem-cache", "blocked-cache", "--dem-auto-download=false");
 
@@ -126,7 +126,7 @@ public class CliParseTests
     [Fact]
     public void EqualsForm_OfAGlobalStringOption_IsAcceptedToo()
     {
-        var options = DemFixture.Offline(w => DemFixture.CreateDownloadBlockingCache(w));
+        var options = new CliOptions { Arrange = w => DemFixture.CreateDownloadBlockingCache(w) };
         var r = CliRunner.Run(options, "--format=json", "analyze",
             "--dem-cache", "blocked-cache", "--dem-auto-download=false", "small.gpx");
 

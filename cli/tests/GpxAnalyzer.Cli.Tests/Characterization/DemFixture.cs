@@ -75,26 +75,13 @@ internal static class DemFixture
     }
 
     /// <summary>
-    /// Environment for the child CLI that (a) redirects DemSource.DefaultCacheDir() into the
-    /// throwaway working directory so the developer's real SRTM cache cannot leak into a
-    /// result, and (b) points every proxy variable at a refused loopback port as a second
-    /// line of defence should a download ever get as far as HTTP.
-    /// </summary>
-    internal static Dictionary<string, string> OfflineEnvironment(string home) => new()
-    {
-        ["LOCALAPPDATA"] = home,        // DefaultCacheDir() on Windows
-        ["XDG_DATA_HOME"] = home,       // ... and via GetFolderPath(LocalApplicationData) on Unix
-        ["HOME"] = home,
-        ["HTTP_PROXY"] = "http://127.0.0.1:1",
-        ["HTTPS_PROXY"] = "http://127.0.0.1:1",
-        ["ALL_PROXY"] = "http://127.0.0.1:1",
-        ["NO_PROXY"] = "",
-    };
-
-    /// <summary>
-    /// The tile paths DemSource.DefaultCacheDir() resolves to when the environment from
-    /// <see cref="OfflineEnvironment"/> is in force. Both the Windows/XDG_DATA_HOME layout
-    /// and the $HOME/.local/share fallback are returned so the fixture works either way.
+    /// The tile paths DemSource.DefaultCacheDir() resolves to inside a run's sandbox. Both the
+    /// Windows/XDG_DATA_HOME layout and the $HOME/.local/share fallback are returned so the
+    /// fixture works either way.
+    ///
+    /// Redirecting that lookup is <see cref="CliRunner"/>'s job and is unconditional (#135):
+    /// there is no per-test opt-in to forget, so a test that never mentions DEM at all still
+    /// cannot read the developer's own SRTM cache.
     /// </summary>
     internal static IEnumerable<string> DefaultCacheTilePaths(string home)
     {
@@ -107,21 +94,5 @@ internal static class DemFixture
     internal const string MissingTileWarning = "Warning: DEM tile N48E002 not available, using GPS elevation";
 
     /// <summary>The sandboxed home directory inside a run's throwaway working directory.</summary>
-    internal static string HomeIn(string workDir) => Path.Combine(workDir, "home");
-
-    /// <summary>
-    /// Options for any run whose DEM behaviour matters: the platform cache directory is
-    /// redirected inside the throwaway working directory, so the developer's own SRTM cache
-    /// cannot change a result, and the proxy variables keep a stray download off the network.
-    /// </summary>
-    internal static CliOptions Offline(Action<string>? arrange = null, Action<string>? inspect = null) => new()
-    {
-        Arrange = w =>
-        {
-            Directory.CreateDirectory(HomeIn(w));
-            arrange?.Invoke(w);
-        },
-        Inspect = inspect,
-        Environment = w => OfflineEnvironment(HomeIn(w)),
-    };
+    internal static string HomeIn(string workDir) => CliRunner.HomeIn(workDir);
 }

@@ -225,7 +225,7 @@ public class CliDefaultsTests
     {
         // With --dem-auto-download false, a DEM source exists only if --dem-dir is non-empty.
         // No source at all means no tile lookup, hence not even a "tile not available" warning.
-        var r = CliRunner.Run(DemFixture.Offline(), "-f", "json", "analyze",
+        var r = CliRunner.Run(new CliOptions(), "-f", "json", "analyze",
             "--dem-auto-download", "false", "small.gpx");
 
         Assert.Equal(0, r.ExitCode);
@@ -234,14 +234,14 @@ public class CliDefaultsTests
 
         // Control 1: any non-empty --dem-dir does build a source, which then complains.
         var missing = CliRunner.Run(
-            DemFixture.Offline(w => Directory.CreateDirectory(Path.Combine(w, "dem"))),
+            new CliOptions { Arrange = w => Directory.CreateDirectory(Path.Combine(w, "dem")) },
             "-f", "json", "analyze", "--dem-dir", "dem", "--dem-auto-download", "false", "small.gpx");
         Assert.Contains(DemFixture.MissingTileWarning, missing.StdErr);
 
         // Control 2: and a populated one visibly rewrites the elevations.
         var applied = CliRunner.Run(
-            DemFixture.Offline(w => DemFixture.WriteValidTile(
-                Path.Combine(w, "dem", DemFixture.TileKey + ".hgt"))),
+            new CliOptions { Arrange = w => DemFixture.WriteValidTile(
+                Path.Combine(w, "dem", DemFixture.TileKey + ".hgt")) },
             "-f", "json", "analyze", "--dem-dir", "dem", "--dem-auto-download", "false", "small.gpx");
         Assert.Equal(DemFixture.TileElevation, MaxElevation(applied.StdOut), 6);
     }
@@ -254,12 +254,12 @@ public class CliDefaultsTests
         // The tile exists ONLY in the (sandboxed) platform cache directory. An empty
         // --dem-cache is what makes the CLI look there; any other default would miss it.
         var r = CliRunner.Run(
-            DemFixture.Offline(w =>
+            new CliOptions { Arrange = w =>
             {
                 Directory.CreateDirectory(Path.Combine(w, "dem"));
                 foreach (var tile in DemFixture.DefaultCacheTilePaths(DemFixture.HomeIn(w)))
                     DemFixture.WriteValidTile(tile);
-            }),
+            } },
             "-f", "json", "analyze", "--dem-dir", "dem", "--dem-auto-download", "false", "small.gpx");
 
         Assert.Equal(0, r.ExitCode);
@@ -269,13 +269,13 @@ public class CliDefaultsTests
         // Control: point --dem-cache anywhere else and the very same tile stops being found,
         // which is what would happen for the whole run if the default were not empty.
         var elsewhere = CliRunner.Run(
-            DemFixture.Offline(w =>
+            new CliOptions { Arrange = w =>
             {
                 Directory.CreateDirectory(Path.Combine(w, "dem"));
                 Directory.CreateDirectory(Path.Combine(w, "other-cache"));
                 foreach (var tile in DemFixture.DefaultCacheTilePaths(DemFixture.HomeIn(w)))
                     DemFixture.WriteValidTile(tile);
-            }),
+            } },
             "-f", "json", "analyze", "--dem-dir", "dem", "--dem-cache", "other-cache",
             "--dem-auto-download", "false", "small.gpx");
 
@@ -291,7 +291,7 @@ public class CliDefaultsTests
         Action<string> arrangeTile = w => DemFixture.WriteTileThatFailsValidation(
             Path.Combine(w, "dem", DemFixture.TileKey + ".hgt"));
 
-        var r = CliRunner.Run(DemFixture.Offline(arrangeTile), "-f", "json", "analyze",
+        var r = CliRunner.Run(new CliOptions { Arrange = arrangeTile }, "-f", "json", "analyze",
             "--dem-dir", "dem", "--dem-auto-download", "false", "small.gpx");
 
         Assert.Equal(0, r.ExitCode);
@@ -299,7 +299,7 @@ public class CliDefaultsTests
         Assert.Equal(GpsMaxElevation, MaxElevation(r.StdOut), 6);
 
         // Control: skipping validation accepts the very same tile and its elevations win.
-        var control = CliRunner.Run(DemFixture.Offline(arrangeTile), "-f", "json", "analyze",
+        var control = CliRunner.Run(new CliOptions { Arrange = arrangeTile }, "-f", "json", "analyze",
             "--dem-dir", "dem", "--dem-skip-validation", "true",
             "--dem-auto-download", "false", "small.gpx");
         Assert.Equal(DemFixture.TileElevation, MaxElevation(control.StdOut), 6);
@@ -336,10 +336,12 @@ public class CliDefaultsTests
         };
 
         var downloaded = new List<string>();
-        var options = DemFixture.Offline(
-            arrange: w => DemFixture.CreateDownloadBlockingCache(w),
-            inspect: w => downloaded.AddRange(
-                Directory.GetFiles(w, "*.hgt", SearchOption.AllDirectories)));
+        var options = new CliOptions
+        {
+            Arrange = w => DemFixture.CreateDownloadBlockingCache(w),
+            Inspect = w => downloaded.AddRange(
+                Directory.GetFiles(w, "*.hgt", SearchOption.AllDirectories)),
+        };
 
         var withDefault = CliRunner.Run(options,
             [.. tail, "--dem-cache", "blocked-cache"]);
