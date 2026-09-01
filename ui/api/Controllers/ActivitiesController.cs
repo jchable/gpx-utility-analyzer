@@ -20,6 +20,7 @@ public class ActivitiesController : ControllerBase
     private readonly AppDbContext _db;
     private readonly GpxStorageService _storage;
     private readonly Channel<ProcessingRequest> _processingChannel;
+    private readonly ProcessingCancellationRegistry _processingCancellation;
     private readonly GpxAnalysisService _analysisService;
     private readonly ProfileComputationService _profileService;
 
@@ -27,12 +28,14 @@ public class ActivitiesController : ControllerBase
         AppDbContext db,
         GpxStorageService storage,
         Channel<ProcessingRequest> processingChannel,
+        ProcessingCancellationRegistry processingCancellation,
         GpxAnalysisService analysisService,
         ProfileComputationService profileService)
     {
         _db = db;
         _storage = storage;
         _processingChannel = processingChannel;
+        _processingCancellation = processingCancellation;
         _analysisService = analysisService;
         _profileService = profileService;
     }
@@ -179,6 +182,12 @@ public class ActivitiesController : ControllerBase
     {
         var activity = await _db.Activities.FindAsync(id);
         if (activity is null || activity.UserId != User.GetUserId()) return NotFound();
+
+        // Deleting always succeeds. Signal any in-flight run first so we stop paying
+        // for an analysis — and an AI call — whose result has nowhere to go; the
+        // worker tolerates the row and the file disappearing underneath it, and
+        // storage tolerates a GPX still held open, so we never wait on either (#131).
+        _processingCancellation.Cancel(id);
 
         await _storage.DeleteWithOriginalAsync(activity.GpxFilePath);
         _db.Activities.Remove(activity);

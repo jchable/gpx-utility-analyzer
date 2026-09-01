@@ -137,6 +137,8 @@ else if (routingProvider == "osrm")
 
 // Processing channel — carries (ActivityId, UserId) for multi-user context
 builder.Services.AddSingleton(Channel.CreateUnbounded<ProcessingRequest>());
+// Lets a DELETE stop the run it is deleting instead of paying for it to finish.
+builder.Services.AddSingleton<ProcessingCancellationRegistry>();
 // Registered BEFORE the worker so stranded rows are requeued before it starts reading.
 builder.Services.AddHostedService<ProcessingRecoveryService>();
 builder.Services.AddHostedService<ActivityProcessingWorker>();
