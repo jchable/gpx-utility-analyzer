@@ -64,6 +64,7 @@ public static class MergeCommand
             }
 
             var docs = new List<GpxDocument>();
+            int failures = 0;
             foreach (var path in resolvedFiles)
             {
                 try
@@ -74,6 +75,7 @@ public static class MergeCommand
                 catch (Exception ex)
                 {
                     Console.Error.WriteLine($"  Warning: failed to parse {path}: {ex.Message}");
+                    failures++;
                 }
             }
 
@@ -112,7 +114,9 @@ public static class MergeCommand
                 formatter.Format(Console.Out, output, summary, cfg.StopConfig);
             }
 
-            return 0;
+            // #139: a merge that silently dropped one of its inputs hands the caller a file it
+            // believes is complete. The warning was already there; the exit code was not.
+            return failures > 0 ? 1 : 0;
         });
 
         return cmd;
