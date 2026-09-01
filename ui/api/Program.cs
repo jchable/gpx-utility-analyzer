@@ -18,6 +18,11 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Microsoft.AspNetCore.Hosting.Diagnostics is pinned to Warning in appsettings.json
+// on purpose: at Information it logs the full request line, and webhook callback
+// URLs carry their secret in the query string (Strava cannot send custom headers on
+// its webhook POSTs). Raising that category writes those secrets to the log.
+
 // Database
 var dbProvider = builder.Configuration["Database:Provider"] ?? "sqlite";
 if (dbProvider.Equals("postgresql", StringComparison.OrdinalIgnoreCase))
@@ -181,6 +186,10 @@ using (var scope = app.Services.CreateScope())
 
     await ExternalActivityDeduplication.LogRowsAboutToBeRemovedAsync(db, startupLogger);
     db.Database.Migrate();
+
+    // A provider configured without a webhook secret would 401 every event it
+    // receives. Fail here rather than let imports stop silently.
+    await WebhookSecretValidator.ValidateAsync(scope.ServiceProvider.GetRequiredService<ISettingsService>());
 
     // Seed roles
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();

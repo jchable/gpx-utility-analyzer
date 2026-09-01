@@ -71,14 +71,33 @@ public class WebhooksController : ControllerBase
         var importer = _importers.FirstOrDefault(i => i.ProviderName == provider);
         if (importer is null) return NotFound();
 
+        // The secret arrives in the query string because Strava cannot send custom
+        // headers on its webhook POSTs — the callback URL is the only channel. It is
+        // therefore already exposed to access logs, so it must never be echoed into
+        // ours: nothing below logs either the supplied or the expected value.
         var expectedSecret = await _settings.GetAsync($"Integrations:{provider}:WebhookSecret");
         var suppliedSecret = Request.Query["secret"].ToString();
-        if (string.IsNullOrWhiteSpace(expectedSecret) ||
-            !CryptographicOperations.FixedTimeEquals(
+
+        if (string.IsNullOrWhiteSpace(expectedSecret))
+        {
+            // WebhookSecretValidator makes a CONFIGURED provider without a secret a
+            // startup failure, so reaching here means the provider has no credentials
+            // and could not import anything even if we let the event through.
+            _logger.LogWarning(
+                "Rejected {Provider} webhook: the provider has no webhook secret configured " +
+                "(Integrations:{Provider}:WebhookSecret) and no credentials to import with",
+                provider, provider);
+            return Unauthorized();
+        }
+
+        if (!CryptographicOperations.FixedTimeEquals(
                 Encoding.UTF8.GetBytes(expectedSecret),
                 Encoding.UTF8.GetBytes(suppliedSecret)))
         {
-            _logger.LogWarning("Rejected unauthenticated webhook for {Provider}", provider);
+            _logger.LogWarning(
+                "Rejected {Provider} webhook: the callback URL carried a wrong or missing secret. " +
+                "If this started after a secret change, re-register the subscription with the new " +
+                "callback URL", provider);
             return Unauthorized();
         }
 
