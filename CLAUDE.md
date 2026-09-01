@@ -174,6 +174,7 @@ npm install
 npm run dev      # Vite dev server on http://localhost:5173 (proxies /api → :5000)
 npm run build    # Production build (tsc + vite)
 npm run lint     # ESLint
+npm run test     # Vitest unit tests (jsdom, 23 tests)
 ```
 
 ### API Architecture
