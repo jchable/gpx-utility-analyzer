@@ -7,13 +7,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-01
+
 ### Added
-- Open-source project health files: `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`,
-  `SECURITY.md`, `SUPPORT.md`, `CODEOWNERS`, issue/PR templates.
-- Continuous integration workflow (`ci.yml`) building and testing the CLI,
-  AI analyzer, API, and React client, plus Playwright E2E.
-- DCO sign-off check on pull requests (`dco.yml`).
-- Dependabot configuration for NuGet, npm, GitHub Actions, and Docker.
+
+- **CLI**: characterization golden tests over the command layer — behavioural
+  output, `--help` layout, parse errors — with every run sandboxed away from the
+  developer's real SRTM cache (#135), and the 12 option defaults that
+  System.CommandLine 2.x no longer prints now pinned by their observable effect.
+- **Client**: Vitest unit-test harness.
+- **Build**: open-source project health files (`CONTRIBUTING.md`,
+  `CODE_OF_CONDUCT.md`, `SECURITY.md`, `SUPPORT.md`, `CODEOWNERS`, issue and PR
+  templates); a CI workflow building and testing the CLI, AI analyzer, API and
+  React client plus Playwright E2E; a DCO sign-off check on pull requests; and
+  Dependabot coverage for NuGet, npm, GitHub Actions and Docker.
+- **Release**: a `/release` skill codifying the manual half of cutting a version.
+
+### Changed
+
+- **CLI**: command layer migrated to System.CommandLine 2.0.11 — `SetAction`,
+  `parseResult.GetValue`, `DefaultValueFactory`; the pre-2.0 `SetHandler` and
+  `InvocationContext` API is gone.
+- **Build**: floating package versions pinned for reproducible builds (#133),
+  and GitHub Actions bumped across the workflows.
+
+### Fixed
+
+- **CLI** — recording boundaries: `<trkseg>` boundaries are preserved through
+  splitting, merging, benchmarking and every GPX this tool writes; a boundary is
+  carried past the point `GpsFilter` drops (#142); each recording-boundary bit
+  has a single owner; the `<trkseg>` hop is excluded from `total_distance_m` and
+  `gpxa:dist` accumulates over the segments the pipeline actually counts (#144);
+  recording gaps no longer count as activity metrics, GPS drift, or jitter.
+- **CLI** — correctness and reporting: malformed input reports one line instead
+  of a stack trace (#136); commands exit non-zero whenever they could not do what
+  was asked (#139), and `analyze` no longer clobbers exports on failure; every
+  stage affected by `--fix-anomalies` is recomputed and speeds re-clamped;
+  contract timestamps use `InvariantCulture`; DEM neighbour tiles are no longer
+  downloaded for an unreachable path.
+- **API** — security and multi-user isolation: OAuth callbacks hardened and bound
+  to the initiating user, expired OAuth states purged, webhooks routed to the
+  owning user with the request body validated, the webhook secret made mandatory
+  at startup and rejected at save time when missing (#143), token refresh refused
+  for deactivated accounts, and the imported-activity unique index scoped per
+  user.
+- **API** — processing: expired processing leases reclaimed at runtime rather
+  than only at startup, activity deletion survives a concurrent processing run
+  (#131), timestamps stored in UTC, and stranded activities recovered.
+- **API** — splits: elevation gain allocated across kilometre splits without
+  double-counting boundary segments (#116).
+- **Client**: token refresh made single-flight with stale responses ignored;
+  race-plan and route editor fixes (complete plan sent on every PUT, editor stays
+  dirty when edits land during an auto-save, cutoffs beyond 24 hours, polyline
+  index translated to waypoint order); route exports downloaded with the bearer
+  token; upload queue keyed by id rather than array position.
+- **AI analyzer**: `ProviderOptions.Model` honoured for anthropic and mistral;
+  JSON extracted by its braces with an empty response diagnosed; `TrackReport`
+  deserialization made null-safe and genuinely lenient; non-zero exit when no
+  input is provided.
+- **CLI + API**: biometrics preserved on export, and the power namespace now
+  round-trips.
 
 ## [0.1.0-alpha] - 2026-06-19
 
@@ -31,5 +84,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Docs**: Docusaurus site deployed to GitHub Pages.
 - Windows installer (NSIS) and winget manifest.
 
-[Unreleased]: https://github.com/jchable/gpx-utility-analyzer/compare/v0.1.0-alpha...HEAD
+[Unreleased]: https://github.com/jchable/gpx-utility-analyzer/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/jchable/gpx-utility-analyzer/compare/v0.1.1...v0.2.0
 [0.1.0-alpha]: https://github.com/jchable/gpx-utility-analyzer/releases/tag/v0.1.0-alpha
