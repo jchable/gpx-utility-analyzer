@@ -1,7 +1,7 @@
 # ============================================
 # Stage 1: Restore & Build .NET API
 # ============================================
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS dotnet-build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS dotnet-build
 WORKDIR /src
 
 # Copy project files for restore
