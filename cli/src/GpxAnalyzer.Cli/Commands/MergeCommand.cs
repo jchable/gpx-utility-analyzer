@@ -56,7 +56,11 @@ public static class MergeCommand
             var analyze = parseResult.GetValue(analyzeOpt);
             var format = parseResult.GetValue(formatOption) ?? "text";
 
-            var resolvedFiles = FileResolver.ResolveFiles(files);
+            // #136: as on `analyze`, an unknown option binds to the OneOrMore files argument as
+            // a value and used to blow up inside FileResolver with a stack trace.
+            var resolvedFiles = InputDiagnostics.ResolveOrReport(files);
+            if (resolvedFiles is null)
+                return 1;
             if (resolvedFiles.Count == 0)
             {
                 Console.Error.WriteLine("Error: no GPX files found");

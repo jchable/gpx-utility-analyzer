@@ -52,6 +52,11 @@ public static class SplitCommand
             var prefix = parseResult.GetValue(prefixOpt) ?? "segment";
             var format = parseResult.GetValue(formatOption) ?? "text";
 
+            // #136: `split` takes exactly one file, so a lone unknown option binds to it as a
+            // value and would otherwise be reported as a missing file rather than a typo.
+            if (InputDiagnostics.ReportUnrecognizedOption([file]))
+                return 1;
+
             var splitInterval = ParseDuration(interval);
             if (splitInterval <= TimeSpan.Zero)
             {
