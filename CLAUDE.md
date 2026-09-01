@@ -41,10 +41,10 @@ docker-compose.prod.yml       → Prod overlay (PostgreSQL)
 cd cli
 dotnet build src/GpxAnalyzer.Cli/            # Build CLI
 dotnet build src/GpxAnalyzer.Cli.Core/       # Build shared library
-dotnet test tests/GpxAnalyzer.Cli.Tests/     # Run all tests (79 tests)
+dotnet test tests/GpxAnalyzer.Cli.Tests/     # Run all tests (389 tests)
 ```
 
-Requires .NET 9.0+. Key dependency: `System.CommandLine` (CLI framework).
+Requires .NET 9.0+. Key dependency: `System.CommandLine` 2.0.11 — the modern API (`SetAction`, `parseResult.GetValue(option)`, `GetRequiredValue(argument)`, `DefaultValueFactory`). The pre-2.0 `SetHandler`/`InvocationContext`/`GetValueForOption` API is gone.
 
 ### .NET CLI Architecture
 
@@ -105,13 +105,13 @@ dotnet build ai-analyzer/src/GpxAiAnalyzer.Core/GpxAiAnalyzer.Core.csproj
 dotnet build ai-analyzer/src/GpxAiAnalyzer/GpxAiAnalyzer.csproj
 
 # Tests (xUnit)
-dotnet test ai-analyzer/tests/GpxAiAnalyzer.Tests/
+dotnet test ai-analyzer/tests/GpxAiAnalyzer.Tests/       # 100 tests
 ```
 
 ### API Integration Tests
 
 ```bash
-dotnet test ui/api.Tests/GpxAnalyzer.Api.Tests.csproj   # 27 tests (auth + multi-user isolation)
+dotnet test ui/api.Tests/GpxAnalyzer.Api.Tests.csproj   # 157 tests (auth + multi-user isolation)
 ```
 
 Requires .NET 9.0+.
@@ -374,7 +374,7 @@ Two email backends via `IEmailService`:
 - **EF Core SQLite + DateTimeOffset**: SQLite provider does NOT support `DateTimeOffset` in ORDER BY or WHERE. All entities use `DateTime` (UTC), not `DateTimeOffset`.
 - **EF Core SQLite + SumAsync on empty set**: Returns NULL causing crash. Use `Select(a => (double?)a.Field).SumAsync() ?? 0` or materialize first.
 - **EF Core SQLite + enum string conversion**: Complex query chains with string-converted enums can fail EF Core translation. Materializing with `ToListAsync()` first is safer for dashboard-style queries.
-- **Go DEM memory**: Large tracks spanning many SRTM tiles can use significant memory. Use `--dem-max-memory` flag or preload handles memory checks.
+- **DEM memory**: Large tracks spanning many SRTM tiles can use significant memory. Use `--dem-max-memory` flag or preload handles memory checks.
 
 ## E2E Testing — Playwright
 
@@ -385,7 +385,7 @@ The client has a Playwright E2E test suite with **full API mocking** (no backend
 ```bash
 cd ui/client
 npm run build            # Required: tests run against preview build
-npm run e2e              # All tests (desktop + mobile, ~102 tests)
+npm run e2e              # All tests (desktop + mobile, 136 tests)
 npm run e2e:desktop      # Desktop only (Desktop Chrome 1280×720)
 npm run e2e:mobile       # Mobile only (iPhone 14 viewport, Chromium)
 npm run e2e:report       # Open HTML report
