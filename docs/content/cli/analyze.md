@@ -21,6 +21,8 @@ gpx-analyzer analyze [files...] [flags]
 | `--dem-dir` | Directory of SRTM `.hgt` tiles for DEM correction | _(disabled)_ |
 | `--dem-auto-download` | Automatically download missing SRTM tiles | `true` |
 | `--dem-cache` | Cache directory for downloaded tiles | _(OS cache dir)_ |
+| `--dem-max-memory` | Maximum memory (MB) for loaded DEM tiles (0 = no limit) | `0` |
+| `--dem-skip-validation` | Skip post-download DEM tile validation (faster) | `false` |
 | `--elevation-threshold` | Minimum elevation change threshold (meters) | `2.0` |
 | `--elevation-algo` | Elevation gain algorithm: `threshold`, `douglas-peucker`, `segments` | `threshold` |
 | `--track-smoothing` | GPS track lat/lon smoothing: `none`, `light`, `medium`, `heavy` | `none` |
