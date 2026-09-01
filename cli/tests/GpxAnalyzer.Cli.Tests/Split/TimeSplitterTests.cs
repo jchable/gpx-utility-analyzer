@@ -74,4 +74,42 @@ public class TimeSplitterTests
         Assert.Equal(3, segments.Count);
         Assert.All(segments, s => Assert.True(s.Points.Count >= 10));
     }
+
+    [Fact]
+    public void ByTime_NewGpxSegmentDoesNotCarryOldBoundaryAcrossGap()
+    {
+        var t0 = DateTime.Parse("2024-01-01T10:00:00Z").ToUniversalTime();
+        var points = new List<TrackPoint>
+        {
+            P(48.0, t0),
+            P(48.001, t0.AddMinutes(5)),
+            new() { Lat = 45.0, Lon = 4.0, Ele = 200, Time = t0.AddDays(1), StartsNewSegment = true },
+            P(45.001, t0.AddDays(1).AddMinutes(5)),
+        };
+
+        var segments = TimeSplitter.ByTime(points, TimeSpan.FromHours(12));
+
+        Assert.Equal(2, segments.Count);
+        Assert.Equal(t0.AddDays(1), segments[1].Points[0].Time);
+        Assert.Equal(2, segments[1].Points.Count);
+    }
+
+    [Fact]
+    public void ByTime_LongGapInSameGpxSegmentDoesNotCarryOldBoundary()
+    {
+        var t0 = DateTime.Parse("2024-01-01T10:00:00Z").ToUniversalTime();
+        var points = new List<TrackPoint>
+        {
+            P(48.0, t0),
+            P(48.001, t0.AddMinutes(5)),
+            P(45.0, t0.AddDays(1)),
+            P(45.001, t0.AddDays(1).AddMinutes(5)),
+        };
+
+        var segments = TimeSplitter.ByTime(points, TimeSpan.FromHours(12));
+
+        Assert.Equal(2, segments.Count);
+        Assert.Equal(t0.AddDays(1), segments[1].Points[0].Time);
+        Assert.Equal(2, segments[1].Points.Count);
+    }
 }

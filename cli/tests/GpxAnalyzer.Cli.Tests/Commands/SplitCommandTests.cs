@@ -1,4 +1,5 @@
 using GpxAnalyzer.Cli.Commands;
+using GpxAnalyzer.Cli.Core.Elevation;
 using GpxAnalyzer.Cli.Core.Gpx;
 using GpxAnalyzer.Cli.Tests.Characterization;
 
@@ -61,15 +62,8 @@ public class SplitCommandTests
     /// <summary>
     /// End-to-end regression test for #85, driving the real `split` command.
     ///
-    /// TimeSplitter duplicates the bucket boundary point into the next segment. The
-    /// command writes segment i, then runs ComputePipeline on it, which mutates Ele
-    /// (DEM correction + elevation smoothing) and Lat/Lon (track smoothing) IN PLACE;
-    /// segment i+1 is only serialized on the next iteration. While the boundary point
-    /// was shared by reference, segment i+1's first trkpt therefore carried segment
-    /// i's smoothed elevation - a value that exists nowhere in the source file - while
-    /// every other point around it was raw.
-    ///
-    /// The boundary point must appear with its ORIGINAL elevation in both files.
+    /// A boundary point may be duplicated between continuous buckets, but a recording
+    /// gap must start the next file at the first point actually recorded after it.
     /// </summary>
     [Fact]
     public void Split_MultiDayTrack_DoesNotLeakSmoothedValuesIntoTheNextSegmentsFile()
@@ -104,16 +98,8 @@ public class SplitCommandTests
             var tail = written[i][^1];
             var head = written[i + 1][0];
 
-            // The two files describe the same source point ...
-            Assert.Equal(tail.Time, head.Time);
-            // ... so they must agree on it ...
-            Assert.Equal(tail.Ele, head.Ele, 6);
-            Assert.Equal(tail.Lat, head.Lat, 9);
-
-            // ... and on the value the source file actually holds.
-            var original = source.Single(p => p.Time == tail.Time);
-            Assert.Equal(original.Ele, head.Ele, 6);
-            Assert.Equal(original.Lat, head.Lat, 9);
+            Assert.True(head.Time - tail.Time > ElevationSmoother.GapThreshold);
+            Assert.Contains(source, p => p.Time == head.Time);
         }
     }
 

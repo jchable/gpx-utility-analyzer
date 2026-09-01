@@ -98,100 +98,78 @@
   "total_distance_m": 266.20136566938066,
   "total_distance_3d_m": 266.20136566938066,
   "total_distance_km": 0.2662013656693807,
-  "elevation_gain_m": 15,
+  "elevation_gain_m": 0,
   "elevation_loss_m": 0,
   "max_elevation_m": 55,
-  "min_elevation_m": 40,
-  "start_time": "2024-01-01T10:05:00Z",
+  "min_elevation_m": 55,
+  "start_time": "2024-01-02T10:00:00Z",
   "end_time": "2024-01-02T10:05:00Z",
   "total_time": {
-    "display": "1d 0h 0m 0s",
-    "seconds": 86400
+    "display": "5m 0s",
+    "seconds": 300
   },
   "moving_time": {
     "display": "5m 0s",
     "seconds": 300
   },
   "stopped_time": {
-    "display": "23h 55m 0s",
-    "seconds": 86100
+    "display": "0s",
+    "seconds": 0
   },
-  "avg_speed_kmh": 0.011091723569557529,
+  "avg_speed_kmh": 3.194416388032568,
   "avg_moving_speed_kmh": 3.194416388032568,
   "max_speed_kmh": 3.194416388032568,
-  "avg_pace": "5409:26 min/km",
+  "avg_pace": "18:46 min/km",
   "avg_moving_pace": "18:46 min/km",
-  "point_count": 3,
+  "point_count": 2,
   "segment_count": 1,
-  "points_per_km": 11.269664197463092,
-  "stop_count": 1,
+  "points_per_km": 7.513109464975394,
+  "stop_count": 0,
   "total_stop_time": {
-    "display": "23h 55m 0s",
-    "seconds": 86100
+    "display": "0s",
+    "seconds": 0
   },
   "avg_stop_duration": {
-    "display": "23h 55m 0s",
-    "seconds": 86100
+    "display": "0s",
+    "seconds": 0
   },
-  "longest_stop": {
-    "start_time": "2024-01-01T10:05:00Z",
-    "end_time": "2024-01-02T10:00:00Z",
-    "duration": {
-      "display": "23h 55m 0s",
-      "seconds": 86100
-    },
-    "lat": 48.858999999999995,
-    "lon": 2.355
-  },
-  "stops": [
-    {
-      "start_time": "2024-01-01T10:05:00Z",
-      "end_time": "2024-01-02T10:00:00Z",
-      "duration": {
-        "display": "23h 55m 0s",
-        "seconds": 86100
-      },
-      "lat": 48.858999999999995,
-      "lon": 2.355
-    }
-  ],
   "effort": {
     "naismith_time": {
-      "display": "4m 41s",
-      "seconds": 281.6649832
+      "display": "3m 11s",
+      "seconds": 191.6649832
     },
     "tobler_time": {
       "display": "3m 10s",
       "seconds": 190.2668218
     },
     "munter_time": {
-      "display": "5m 7s",
-      "seconds": 307.0812291
+      "display": "3m 59s",
+      "seconds": 239.5812291
     },
-    "performance_ratio_naismith": 1.07,
+    "performance_ratio_naismith": 1.57,
     "performance_ratio_tobler": 1.58,
-    "kilometre_effort": 0.4,
-    "itra_points": 0.4,
+    "kilometre_effort": 0.3,
+    "itra_points": 0.3,
     "itra_category": "XXS",
     "equivalent_flat_distance_km": 0.3,
     "terrain_difficulty": {
-      "score": 1.9,
+      "score": 1,
       "grade": "Easy",
       "avg_grade_percent": 0,
       "max_grade_percent": 0,
       "grade_variance": 0,
       "steep_section_ratio": 0,
-      "elevation_per_km": 56.3
+      "elevation_per_km": 0
     }
   },
   "anomalies": {
-    "quality_score": 90,
-    "total_count": 2,
+    "quality_score": 95,
+    "total_count": 1,
     "info_count": 0,
-    "warning_count": 2,
+    "warning_count": 1,
     "critical_count": 0,
-    "distance_impact_m": -76133.58736822504,
-    "time_impact_s": 86400,
+    "distance_impact_m": 0,
+    "time_impact_s": 300,
     "correction_applied": false,
     "anomalies": [
       {
@@ -200,19 +178,6 @@
         "severity": "warning",
         "start_index": 0,
         "end_index": 1,
-        "start_time": "2024-01-01T10:05:00Z",
-        "end_time": "2024-01-02T10:00:00Z",
-        "distance_impact_m": -76133.58736822504,
-        "time_impact_s": 86100,
-        "description": "Signal loss: 23h55m00s gap between consecutive points",
-        "was_corrected": false
-      },
-      {
-        "type": "signal_loss",
-        "category": "position",
-        "severity": "warning",
-        "start_index": 1,
-        "end_index": 2,
         "start_time": "2024-01-02T10:00:00Z",
         "end_time": "2024-01-02T10:05:00Z",
         "distance_impact_m": -0,

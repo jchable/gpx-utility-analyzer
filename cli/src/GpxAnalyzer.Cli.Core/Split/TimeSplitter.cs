@@ -1,3 +1,4 @@
+using GpxAnalyzer.Cli.Core.Elevation;
 using GpxAnalyzer.Cli.Core.Gpx;
 
 namespace GpxAnalyzer.Cli.Core.Split;
@@ -30,11 +31,16 @@ public static class TimeSplitter
 
         int segIndex = 0;
         var currentPoints = new List<TrackPoint>();
+        var hasRetainedBoundary = false;
+        TrackPoint? previousPoint = null;
         var segStart = baseTime;
         var segEnd = baseTime + interval;
 
         foreach (var p in points)
         {
+            var startsAfterGap = previousPoint != null &&
+                p.Time - previousPoint.Time > ElevationSmoother.GapThreshold;
+
             // Move to the correct bucket
             while (p.Time >= segEnd)
             {
@@ -59,13 +65,22 @@ public static class TimeSplitter
                     // boundary object writes one segment's smoothed values into
                     // the neighbouring segment's exported GPX.
                     currentPoints = [lastPoint.Clone()];
+                    hasRetainedBoundary = true;
                 }
 
                 segStart = segEnd;
                 segEnd = segStart + interval;
             }
 
+            // A new GPX segment has no path back to the retained boundary point.
+            // Keeping that point would make the next output span the whole recording
+            // gap and would fabricate moving time and elevation across it.
+            if (hasRetainedBoundary && (p.StartsNewSegment || startsAfterGap))
+                currentPoints.Clear();
+
             currentPoints.Add(p);
+            hasRetainedBoundary = false;
+            previousPoint = p;
         }
 
         // Final segment
