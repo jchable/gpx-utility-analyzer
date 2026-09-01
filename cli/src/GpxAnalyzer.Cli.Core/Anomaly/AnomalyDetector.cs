@@ -37,8 +37,10 @@ public static class AnomalyDetector
         anomalies.AddRange(BiometricAnomalyDetector.Detect(points, cfg));
         anomalies.AddRange(DataQualityDetector.Detect(points, totalDistanceM, hasDemCorrection, cfg));
 
-        // Raw elevation anomalies (pre-smoothing data)
-        if (rawElevations != null)
+        // Raw elevation anomalies (pre-smoothing data). Skipped when DEM
+        // correction ran: the spike no longer exists in the processed
+        // elevations, so "correcting" it would overwrite accurate SRTM data.
+        if (rawElevations != null && !hasDemCorrection)
             anomalies.AddRange(ElevationAnomalyDetector.DetectRaw(points, rawElevations, cfg));
 
         // Deduplicate: remove SpeedBiometricMismatch that overlaps with GpsFrozen

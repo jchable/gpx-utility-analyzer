@@ -58,12 +58,19 @@ public static class ComputePipeline
         int clampedCount = SpeedCalculator.ClampSpeeds(points, cfg.MaxReasonableSpeed);
 
         // Step 6-7: Distance
+        // 3D must be derived from the SAME segments as 2D: EnrichPoints zeroes
+        // DistFromPrev across recording gaps and ClampSpeeds zeroes it for
+        // over-speed segments, and a segment excluded from 2D is not a real
+        // segment in 3D either.
         for (int i = 1; i < points.Count; i++)
         {
-            s.TotalDistance += points[i].DistFromPrev;
-            s.TotalDistance3D += DistanceCalculator.Distance3D(
-                points[i - 1].Lat, points[i - 1].Lon, points[i - 1].Ele,
-                points[i].Lat, points[i].Lon, points[i].Ele);
+            double horizontal = points[i].DistFromPrev;
+            s.TotalDistance += horizontal;
+
+            if (horizontal <= 0) continue;
+
+            double dEle = points[i].Ele - points[i - 1].Ele;
+            s.TotalDistance3D += Math.Sqrt(horizontal * horizontal + dEle * dEle);
         }
 
         // Step 8: Elevation (configured algorithm)
@@ -89,7 +96,7 @@ public static class ComputePipeline
         s.LongestStop = StopDetector.LongestStop(s.Stops);
         s.AvgStopDuration = StopDetector.AvgStopDuration(s.Stops);
         s.StoppedTime = s.TotalStopTime;
-        s.MovingTime = s.TotalTime - s.StoppedTime;
+        s.MovingTime = RecordedTime(points) - s.StoppedTime;
         if (s.MovingTime < TimeSpan.Zero)
             s.MovingTime = TimeSpan.Zero;
 
@@ -118,10 +125,65 @@ public static class ComputePipeline
             if (cfg.FixAnomalies && s.AnomalyReport.TotalCount > 0)
             {
                 s.AnomalyReport = AnomalyCorrector.ApplyCorrections(points, s.AnomalyReport);
-                AnomalyCorrector.RecalculateStats(points, s);
+
+                // Corrections mutate Ele, Lat/Lon, Time and HeartRate, so every
+                // stage downstream of those fields has to run again. Re-running
+                // the stages is the only way to keep the exported GPX and the
+                // reported numbers describing the same track.
+                SpeedCalculator.EnrichPoints(points);
+                SpeedCalculator.ClampSpeeds(points, cfg.MaxReasonableSpeed);
+                AnomalyCorrector.ApplyFrozenSectionDistances(points, s);
+
+                s.TotalDistance = 0;
+                s.TotalDistance3D = 0;
+                for (int i = 1; i < points.Count; i++)
+                {
+                    double horizontal = points[i].DistFromPrev;
+                    s.TotalDistance += horizontal;
+                    if (horizontal <= 0) continue;
+                    double dEle = points[i].Ele - points[i - 1].Ele;
+                    s.TotalDistance3D += Math.Sqrt(horizontal * horizontal + dEle * dEle);
+                }
+
+                s.Elevation = ElevationCalculator.ComputeWithAlgo(points, elevCfg);
+
+                s.StartTime = points[0].Time;
+                s.EndTime = points[^1].Time;
+                s.TotalTime = s.EndTime - s.StartTime;
+
+                s.Stops = StopDetector.DetectStops(points, cfg.StopConfig);
+                s.StopCount = s.Stops.Count;
+                s.TotalStopTime = StopDetector.TotalStopTime(s.Stops);
+                s.LongestStop = StopDetector.LongestStop(s.Stops);
+                s.AvgStopDuration = StopDetector.AvgStopDuration(s.Stops);
+                s.StoppedTime = s.TotalStopTime;
+                s.MovingTime = RecordedTime(points) - s.StoppedTime;
+                if (s.MovingTime < TimeSpan.Zero) s.MovingTime = TimeSpan.Zero;
+
+                s.Speed = SpeedCalculator.ComputeSpeed(s.TotalDistance, s.TotalTime, s.MovingTime);
+                s.Speed.MaxSpeed = SpeedCalculator.MaxSpeedFromPoints(points);
+
+                if (s.TotalDistance > 0)
+                    s.PointsPerKm = points.Count / (s.TotalDistance / 1000);
+
+                s.Biometrics = BiometricsCalculator.Compute(points, cfg.BiometricsCfg);
+                s.Effort = EffortCalculator.ComputeAll(points, s);
             }
         }
 
         return (s, points);
+    }
+
+    private static TimeSpan RecordedTime(List<TrackPoint> points)
+    {
+        var recorded = TimeSpan.Zero;
+        for (var i = 1; i < points.Count; i++)
+        {
+            if (points[i].BreaksRecordedTime) continue;
+            var interval = points[i].Time - points[i - 1].Time;
+            if (interval > TimeSpan.Zero)
+                recorded += interval;
+        }
+        return recorded;
     }
 }

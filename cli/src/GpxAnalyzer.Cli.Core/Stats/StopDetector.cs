@@ -12,6 +12,14 @@ public sealed class Stop
     public TimeSpan Duration { get; init; }
     public double Lat { get; init; } // centroid
     public double Lon { get; init; } // centroid
+
+    /// <summary>
+    /// True when the stop's own span contains a recording gap — the device stopped
+    /// logging rather than the athlete standing still. Such a stop is an ABSENCE of
+    /// fixes, so consumers that reason about what the receiver did between its
+    /// samples (GPS drift detection) must not treat it as a stationary period.
+    /// </summary>
+    public bool SpansRecordingGap { get; init; }
 }
 
 /// <summary>
@@ -66,6 +74,17 @@ public static class StopDetector
 
         for (int i = 1; i < points.Count; i++)
         {
+            if (points[i].BreaksPath)
+            {
+                if (inStop)
+                {
+                    var stop = BuildStop(points, stopStart, lastSlowIdx + 1, cfg);
+                    if (stop != null) stops.Add(stop);
+                }
+                inStop = false;
+                continue;
+            }
+
             bool isSlow = points[i].CalcSpeed <= cfg.MaxSpeed;
 
             if (isSlow && !inStop)
@@ -154,6 +173,10 @@ public static class StopDetector
                     Duration = duration,
                     Lat = sumLat / count,
                     Lon = sumLon / count,
+                    // The merged stop spans a recording gap if either component did,
+                    // or if the joint between them is itself one.
+                    SpansRecordingGap = prev.SpansRecordingGap || stops[i].SpansRecordingGap
+                        || gap > Elevation.ElevationSmoother.GapThreshold,
                 };
             }
             else
@@ -175,8 +198,14 @@ public static class StopDetector
         if (duration < cfg.MinDuration)
             return null;
 
-        // Reject if the person actually moved too far
-        if (cfg.MaxDistance > 0)
+        bool spansGap = HasRecordingGap(points, startIdx, endIdx - 1);
+
+        // Reject if the person actually moved too far — but only when the interval
+        // was recorded. Across a recording gap the displacement is movement during
+        // unrecorded time, not jitter at a standstill, and the preset limits
+        // (30-100 m) are jitter tolerances. Applying them there discards the pause
+        // entirely and charges all of it to moving time.
+        if (cfg.MaxDistance > 0 && !spansGap)
         {
             double dist = DistanceCalculator.Haversine(
                 points[startIdx].Lat, points[startIdx].Lon,
@@ -200,8 +229,21 @@ public static class StopDetector
             EndTime = points[endIdx - 1].Time,
             Duration = duration,
             Lat = sumLat / n,
-            Lon = sumLon / n
+            Lon = sumLon / n,
+            SpansRecordingGap = spansGap
         };
+    }
+
+    /// <summary>
+    /// True when any interval inside [startIdx, endIdx] exceeds the pipeline's
+    /// recording-gap threshold — i.e. the device stopped logging.
+    /// </summary>
+    private static bool HasRecordingGap(List<TrackPoint> points, int startIdx, int endIdx)
+    {
+        for (int i = startIdx + 1; i <= endIdx && i < points.Count; i++)
+            if (points[i].Time - points[i - 1].Time > Elevation.ElevationSmoother.GapThreshold)
+                return true;
+        return false;
     }
 
     public static TimeSpan TotalStopTime(List<Stop> stops)

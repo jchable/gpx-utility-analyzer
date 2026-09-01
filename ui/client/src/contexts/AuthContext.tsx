@@ -80,17 +80,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (!res.ok) {
-        clearAuth();
+        if (localStorage.getItem(REFRESH_KEY) === refreshToken)
+          clearAuth();
         return null;
       }
 
       const data: AuthResponse = await res.json();
+      if (localStorage.getItem(REFRESH_KEY) !== refreshToken)
+        return null;
       setToken(data.accessToken);
       localStorage.setItem(TOKEN_KEY, data.accessToken);
       localStorage.setItem(REFRESH_KEY, data.refreshToken);
       return data.accessToken;
     } catch {
-      clearAuth();
+      if (localStorage.getItem(REFRESH_KEY) === refreshToken)
+        clearAuth();
       return null;
     }
   }, [clearAuth]);

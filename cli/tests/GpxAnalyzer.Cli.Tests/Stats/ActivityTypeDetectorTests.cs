@@ -211,5 +211,57 @@ public class ActivityTypeDetectorTests
         Assert.Null(result.SubType);
     }
 
+    // ── #101: the lap-distance tolerance was unreachable ──
+
+    /// <summary>
+    /// Builds a "run"-shaped GpxStats whose stop pattern clears every earlier
+    /// backyard gate (>= 3 qualifying stops of 3-30 min, mean interval 50-70 min,
+    /// CV &lt;= 0.15), so the only thing left to decide the sub-type is the
+    /// lap-distance check.
+    /// </summary>
+    private static GpxStats BuildBackyardShapedStats(double totalDistanceKm, int stopIntervalMinutes)
+    {
+        var baseTime = new DateTime(2024, 1, 1, 8, 0, 0, DateTimeKind.Utc);
+        var stops = new List<StopInfo>();
+        for (int i = 0; i < 5; i++)
+        {
+            var stopStart = baseTime.AddMinutes(40 + i * stopIntervalMinutes);
+            stops.Add(new StopInfo
+            {
+                StartTime = stopStart.ToString("O"),
+                EndTime = stopStart.AddMinutes(10).ToString("O"),
+                Duration = new DurationValue { Seconds = 600 },
+            });
+        }
+
+        return MakeStats(
+            avgMovingSpeedKmh: 10.0,   // run branch: 7-18 km/h
+            elevationGainM: 100,       // elevPerKm well under 30
+            totalDistanceKm: totalDistanceKm,
+            stops: stops);
+    }
+
+    [Fact]
+    public void DetectFromStats_IntervalWorkoutOnAnHourlyCadence_IsNotLabelledBackyard()
+    {
+        // 30 km at 10 km/h with rests spaced almost exactly 60 min apart: a common
+        // interval session. 30 / 6.706 = 4.474 laps, which is nowhere near a whole
+        // number of backyard laps.
+        var stats = BuildBackyardShapedStats(totalDistanceKm: 30.0, stopIntervalMinutes: 60);
+
+        var detection = ActivityTypeDetector.DetectFromStats(stats);
+
+        Assert.Equal("run", detection.ActivityType);
+        Assert.NotEqual("backyard", detection.SubType);
+    }
+
+    [Fact]
+    public void DetectFromStats_RealBackyardUltra_IsStillLabelled()
+    {
+        // 6 laps of 6.706 km = 40.236 km on an hourly cadence.
+        var stats = BuildBackyardShapedStats(totalDistanceKm: 6 * 6.706, stopIntervalMinutes: 60);
+        Assert.Equal("backyard", ActivityTypeDetector.DetectFromStats(stats).SubType);
+    }
+
     #endregion
 }

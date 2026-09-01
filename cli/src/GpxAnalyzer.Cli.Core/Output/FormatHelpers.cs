@@ -5,6 +5,16 @@ namespace GpxAnalyzer.Cli.Core.Output;
 public static class FormatHelpers
 {
     /// <summary>
+    /// Formats an instant for the CLI JSON contract.
+    /// ':' is the time-separator PLACEHOLDER in a .NET custom format string, not a
+    /// literal, so without InvariantCulture this emits "2024-06-15T08.00.00Z" under
+    /// fi-FI / da-DK — and the API, which calls this library with the OS culture,
+    /// then fails to parse its own output.
+    /// </summary>
+    internal static string FormatIsoTimestamp(DateTime t) =>
+        t.ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
+
+    /// <summary>
     /// Formats a duration as "2d 5h 30m 15s" (matching Go's FormatDuration exactly).
     /// </summary>
     public static string FormatDuration(TimeSpan d)

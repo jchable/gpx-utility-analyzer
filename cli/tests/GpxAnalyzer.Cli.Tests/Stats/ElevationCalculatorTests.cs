@@ -87,4 +87,28 @@ public class ElevationCalculatorTests
         Assert.True(result.Gain >= 0);
         Assert.True(result.Loss >= 0);
     }
+
+    [Theory]
+    [InlineData(ElevationAlgo.Threshold)]
+    [InlineData(ElevationAlgo.DouglasPeucker)]
+    [InlineData(ElevationAlgo.Segments)]
+    public void ComputeWithAlgo_DoesNotCountElevationAcrossRecordingGap(string algorithm)
+    {
+        var points = MakePoints(35, 40, 50, 55);
+        points[1].DistFromPrev = 200;
+        points[2].StartsNewSegment = true;
+        points[3].DistFromPrev = 200;
+
+        var result = ElevationCalculator.ComputeWithAlgo(points, new ElevationConfig
+        {
+            Algo = algorithm,
+            Threshold = 2,
+            Epsilon = 0,
+            MinSegLen = 1,
+            MaxSlopeDev = 2,
+        });
+
+        Assert.Equal(10, result.Gain, 6);
+        Assert.Equal(0, result.Loss, 6);
+    }
 }

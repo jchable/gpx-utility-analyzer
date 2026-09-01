@@ -1,3 +1,5 @@
+using System.Globalization;
+using GpxAnalyzer.Cli.Core.Anomaly;
 using GpxAnalyzer.Cli.Core.Output;
 using GpxAnalyzer.Cli.Core.Stats;
 
@@ -117,5 +119,79 @@ public class SummaryMapperTests
         Assert.Null(stats.Temperature);
         Assert.Null(stats.Stops);
         Assert.Null(stats.LongestStop);
+    }
+
+    // #87 — ':' is the time-separator PLACEHOLDER in a .NET custom date/time
+    // format string, not a literal. SummaryMapper lives in the Core library but
+    // is called from ui/api, which runs under the OS culture.
+    [Theory]
+    [InlineData("fi-FI")]
+    [InlineData("da-DK")]
+    public void ToGpxStats_UnderACultureWithANonColonTimeSeparator_EmitsIsoTimestamps(string culture)
+    {
+        var previous = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentCulture = new CultureInfo(culture);
+
+            // Guard against a vacuous run: this culture must actually use a
+            // non-colon time separator on this ICU build, otherwise the test
+            // would pass without ever exercising the bug.
+            Assert.NotEqual(":", CultureInfo.CurrentCulture.DateTimeFormat.TimeSeparator);
+
+            var s = new Summary
+            {
+                StartTime = new DateTime(2024, 6, 15, 8, 0, 0, DateTimeKind.Utc),
+                EndTime = new DateTime(2024, 6, 15, 11, 30, 0, DateTimeKind.Utc),
+                Stops =
+                [
+                    new Stop
+                    {
+                        StartTime = new DateTime(2024, 6, 15, 9, 30, 0, DateTimeKind.Utc),
+                        EndTime = new DateTime(2024, 6, 15, 9, 50, 0, DateTimeKind.Utc),
+                        Duration = TimeSpan.FromMinutes(20),
+                        Lat = 45.0,
+                        Lon = 6.0,
+                    },
+                ],
+                AnomalyReport = new AnomalyReport
+                {
+                    QualityScore = 95,
+                    Anomalies =
+                    [
+                        new TrackAnomaly
+                        {
+                            Type = AnomalyType.SignalLoss,
+                            Severity = AnomalySeverity.Warning,
+                            Category = AnomalyCategory.Position,
+                            StartIndex = 0,
+                            EndIndex = 1,
+                            StartTime = new DateTime(2024, 6, 15, 10, 0, 0, DateTimeKind.Utc),
+                            EndTime = new DateTime(2024, 6, 15, 10, 5, 0, DateTimeKind.Utc),
+                            Description = "Signal loss",
+                        },
+                    ],
+                },
+            };
+
+            var stats = SummaryMapper.ToGpxStats("track.gpx", s);
+
+            Assert.Equal("2024-06-15T08:00:00Z", stats.StartTime);
+            Assert.Equal("2024-06-15T11:30:00Z", stats.EndTime);
+            Assert.NotNull(stats.Stops);
+            Assert.Equal("2024-06-15T09:30:00Z", stats.Stops[0].StartTime);
+            Assert.Equal("2024-06-15T09:50:00Z", stats.Stops[0].EndTime);
+
+            Assert.NotNull(stats.Anomalies);
+            Assert.NotNull(stats.Anomalies.Anomalies);
+            Assert.Equal("2024-06-15T10:00:00Z", stats.Anomalies.Anomalies[0].StartTime);
+            Assert.Equal("2024-06-15T10:05:00Z", stats.Anomalies.Anomalies[0].EndTime);
+
+            // And the API must be able to parse its own producer's output.
+            Assert.True(DateTime.TryParse(stats.StartTime,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out _));
+        }
+        finally { CultureInfo.CurrentCulture = previous; }
     }
 }

@@ -28,6 +28,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<NutritionProduct> NutritionProducts => Set<NutritionProduct>();
     public DbSet<Setting> Settings => Set<Setting>();
     public DbSet<GlobalSetting> GlobalSettings => Set<GlobalSetting>();
+    public DbSet<OAuthState> OAuthStates => Set<OAuthState>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -36,6 +37,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
         // Key-value settings use natural (non-"Id") primary keys.
         builder.Entity<GlobalSetting>().HasKey(g => g.Key);
         builder.Entity<Setting>().HasKey(s => new { s.UserId, s.Key });
+        builder.Entity<OAuthState>().HasKey(s => s.Nonce);
 
         // Activity.Status (ProcessingStatus enum) is persisted as its string name.
         builder.Entity<Activity>()
@@ -63,7 +65,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
         {
             e.HasIndex(a => a.StartTime);
             e.HasIndex(a => a.Status);
-            e.HasIndex(a => new { a.Source, a.ExternalId });
+            // Scoped per user on purpose: two athletes who shared the same workout
+            // both legitimately hold the provider's activity id. Only re-importing
+            // it for the SAME user is a duplicate.
+            e.HasIndex(a => new { a.UserId, a.Source, a.ExternalId }).IsUnique();
             e.HasIndex(a => new { a.UserId, a.StartTime });
         });
         builder.Entity<Route>(e =>

@@ -76,7 +76,12 @@ public class ProfileComputationService
                         cad = ParseInt(tpe.Element(tpe.Name.Namespace + "cad")?.Value);
                     }
 
-                    power = ParseInt(extensions.Element("power")?.Value);
+                    // GpxWriter emits <power> in the GPX default namespace (the
+                    // two-arg WriteElementString overload inherits it), so an
+                    // unqualified XName never matched and power was always null,
+                    // in ProfileJson and in ComputeKmSplits' AvgPower.
+                    power = ParseInt(extensions.Element(ns + "power")?.Value)
+                         ?? ParseInt(extensions.Element("power")?.Value);
                 }
 
                 rawPoints.Add(new RawEnrichedPoint
@@ -287,11 +292,20 @@ public class ProfileComputationService
 
             for (var i = startIdx; i <= endIdx && i < points.Count; i++)
             {
-                if (i > startIdx)
+                if (i > 0)
                 {
-                    var dEle = points[i].Ele - points[i - 1].Ele;
-                    if (dEle > 0) elevGain += dEle;
-                    else elevLoss += Math.Abs(dEle);
+                    var segmentStart = points[i - 1].CumDist;
+                    var segmentEnd = points[i].CumDist;
+                    var segmentDistance = segmentEnd - segmentStart;
+                    var overlap = Math.Min(segmentEnd, splitEndDist)
+                                - Math.Max(segmentStart, splitStartDist);
+                    if (segmentDistance > 0 && overlap > 0)
+                    {
+                        var dEle = (points[i].Ele - points[i - 1].Ele)
+                                 * (overlap / segmentDistance);
+                        if (dEle > 0) elevGain += dEle;
+                        else elevLoss += Math.Abs(dEle);
+                    }
                 }
 
                 if (points[i].CumDist >= splitStartDist && points[i].CumDist <= splitEndDist)

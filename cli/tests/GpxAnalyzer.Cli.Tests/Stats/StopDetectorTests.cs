@@ -266,4 +266,50 @@ public class StopDetectorTests
         Assert.NotNull(longest);
         Assert.Equal(TimeSpan.FromMinutes(10), longest!.Duration);
     }
+
+    [Fact]
+    public void DetectStops_RecordingGapIsUnknownTime_NotAStop()
+    {
+        var t0 = DateTime.Parse("2024-01-01T10:00:00Z").ToUniversalTime();
+        var points = new List<TrackPoint>();
+
+        // 10 min of hiking, one point every 30 s
+        for (int i = 0; i < 20; i++)
+            points.Add(new TrackPoint { Lat = 48.0 + i * 0.0002, Lon = 2.0, Time = t0.AddSeconds(i * 30) });
+
+        // Watch auto-pauses for 45 min; the hiker resumes ~50 m from where they stopped
+        var resume = points[^1].Time.AddMinutes(45);
+        double lastLat = points[^1].Lat;
+        points.Add(new TrackPoint { Lat = lastLat + 0.00045, Lon = 2.0, Time = resume });
+
+        // ...then hikes on for another 10 min
+        for (int i = 1; i < 20; i++)
+            points.Add(new TrackPoint
+            {
+                Lat = lastLat + 0.00045 + i * 0.0002, Lon = 2.0,
+                Time = resume.AddSeconds(i * 30),
+            });
+
+        SpeedCalculator.EnrichPoints(points);
+        var stops = StopDetector.DetectStops(points, StopDetector.Presets[StopDetector.PresetHiking]);
+
+        Assert.Empty(stops);
+    }
+
+    [Fact]
+    public void DetectStops_RecordedStandstillBeyondMaxDistance_IsStillRejected()
+    {
+        var t0 = DateTime.Parse("2024-01-01T10:00:00Z").ToUniversalTime();
+        var points = new List<TrackPoint>();
+
+        // 5 min of continuously recorded very slow movement covering ~200 m,
+        // well past the hiking MaxDistance of 30 m: not a stop.
+        for (int i = 0; i < 60; i++)
+            points.Add(new TrackPoint { Lat = 48.0 + i * 0.00003, Lon = 2.0, Time = t0.AddSeconds(i * 5) });
+
+        SpeedCalculator.EnrichPoints(points);
+        var stops = StopDetector.DetectStops(points, StopDetector.Presets[StopDetector.PresetHiking]);
+
+        Assert.Empty(stops);
+    }
 }

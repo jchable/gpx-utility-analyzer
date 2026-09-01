@@ -10,11 +10,11 @@ public class AnomalyCorrectorTests
         DateTime.Parse("2024-01-01T10:00:00Z").ToUniversalTime().AddSeconds(seconds);
 
     // ---------------------------------------------------------------
-    // RecalculateStats: frozen section distance estimation
+    // ApplyFrozenSectionDistances: frozen section distance estimation
     // ---------------------------------------------------------------
 
     [Fact]
-    public void RecalculateStats_WithFrozenSection_EstimatesDistanceFromAvgSpeed()
+    public void ApplyFrozenSectionDistances_WithFrozenSection_EstimatesDistanceFromAvgSpeed()
     {
         // Simulate: 3 normal points → 3 frozen points → 1 normal point
         var points = new List<TrackPoint>
@@ -51,7 +51,8 @@ public class AnomalyCorrectorTests
             },
         };
 
-        AnomalyCorrector.RecalculateStats(points, summary);
+        SpeedCalculator.EnrichPoints(points);
+        AnomalyCorrector.ApplyFrozenSectionDistances(points, summary);
 
         // Frozen points should have estimated DistFromPrev > 0
         Assert.True(points[3].DistFromPrev > 0, "Frozen point should have estimated distance");
@@ -60,12 +61,13 @@ public class AnomalyCorrectorTests
 
         // Total distance should be greater than just healthy sections
         double healthyDistance = points[1].DistFromPrev + points[2].DistFromPrev + points[6].DistFromPrev;
-        Assert.True(summary.TotalDistance > healthyDistance,
+        double total = points.Sum(p => p.DistFromPrev);
+        Assert.True(total > healthyDistance,
             "Total distance should include estimated frozen section distance");
     }
 
     [Fact]
-    public void RecalculateStats_NoAnomalyReport_StillRecalculates()
+    public void ApplyFrozenSectionDistances_NoAnomalyReport_IsANoOp()
     {
         var points = new List<TrackPoint>
         {
@@ -80,14 +82,15 @@ public class AnomalyCorrectorTests
         };
 
         // Should not throw even without AnomalyReport
-        AnomalyCorrector.RecalculateStats(points, summary);
+        SpeedCalculator.EnrichPoints(points);
+        AnomalyCorrector.ApplyFrozenSectionDistances(points, summary);
 
-        Assert.True(summary.TotalDistance > 0);
-        Assert.True(summary.Speed.AvgSpeed > 0);
+        // Nothing to override, so EnrichPoints' own distances survive untouched.
+        Assert.True(points[1].DistFromPrev > 0);
     }
 
     [Fact]
-    public void RecalculateStats_EmptyPoints_DoesNotCrash()
+    public void ApplyFrozenSectionDistances_EmptyPoints_DoesNotCrash()
     {
         var points = new List<TrackPoint>();
         var summary = new Summary
@@ -96,14 +99,14 @@ public class AnomalyCorrectorTests
             MovingTime = TimeSpan.Zero,
         };
 
-        AnomalyCorrector.RecalculateStats(points, summary);
+        SpeedCalculator.EnrichPoints(points);
+        AnomalyCorrector.ApplyFrozenSectionDistances(points, summary);
 
-        Assert.Equal(0, summary.TotalDistance);
-        Assert.Equal(0, summary.TotalDistance3D);
+        Assert.Empty(points);
     }
 
     [Fact]
-    public void RecalculateStats_SinglePoint_DoesNotCrash()
+    public void ApplyFrozenSectionDistances_SinglePoint_DoesNotCrash()
     {
         var points = new List<TrackPoint>
         {
@@ -116,17 +119,18 @@ public class AnomalyCorrectorTests
             MovingTime = TimeSpan.Zero,
         };
 
-        AnomalyCorrector.RecalculateStats(points, summary);
+        SpeedCalculator.EnrichPoints(points);
+        AnomalyCorrector.ApplyFrozenSectionDistances(points, summary);
 
-        Assert.Equal(0, summary.TotalDistance);
+        Assert.Equal(0, points[0].DistFromPrev);
     }
 
     // ---------------------------------------------------------------
-    // RecalculateStats: frozen section edge cases
+    // ApplyFrozenSectionDistances: frozen section edge cases
     // ---------------------------------------------------------------
 
     [Fact]
-    public void RecalculateStats_FrozenAtStart_HandlesGracefully()
+    public void ApplyFrozenSectionDistances_FrozenAtStart_HandlesGracefully()
     {
         var points = new List<TrackPoint>
         {
@@ -157,12 +161,13 @@ public class AnomalyCorrectorTests
         };
 
         // Should not throw for boundary case
-        AnomalyCorrector.RecalculateStats(points, summary);
-        Assert.True(summary.TotalDistance > 0);
+        SpeedCalculator.EnrichPoints(points);
+        AnomalyCorrector.ApplyFrozenSectionDistances(points, summary);
+        Assert.True(points.Sum(p => p.DistFromPrev) > 0);
     }
 
     [Fact]
-    public void RecalculateStats_FrozenAtEnd_HandlesGracefully()
+    public void ApplyFrozenSectionDistances_FrozenAtEnd_HandlesGracefully()
     {
         var points = new List<TrackPoint>
         {
@@ -192,12 +197,13 @@ public class AnomalyCorrectorTests
             },
         };
 
-        AnomalyCorrector.RecalculateStats(points, summary);
-        Assert.True(summary.TotalDistance > 0);
+        SpeedCalculator.EnrichPoints(points);
+        AnomalyCorrector.ApplyFrozenSectionDistances(points, summary);
+        Assert.True(points.Sum(p => p.DistFromPrev) > 0);
     }
 
     [Fact]
-    public void RecalculateStats_MultipleFrozenSections_EstimatesAll()
+    public void ApplyFrozenSectionDistances_MultipleFrozenSections_EstimatesAll()
     {
         var points = new List<TrackPoint>
         {
@@ -230,7 +236,8 @@ public class AnomalyCorrectorTests
             },
         };
 
-        AnomalyCorrector.RecalculateStats(points, summary);
+        SpeedCalculator.EnrichPoints(points);
+        AnomalyCorrector.ApplyFrozenSectionDistances(points, summary);
 
         // Both frozen sections should have estimated distances
         Assert.True(points[2].DistFromPrev > 0, "First frozen section should have estimated distance");
@@ -401,4 +408,154 @@ public class AnomalyCorrectorTests
         Assert.Equal(120, points[0].HeartRate);
         Assert.Equal(130, points[2].HeartRate);
     }
+
+    // ---------------------------------------------------------------
+    // Post-correction recompute (#79, #81, #82, #83, #84)
+    // ---------------------------------------------------------------
+
+    // -- #82: a frozen run starting at index 0 must ramp linearly -------
+    [Fact]
+    public void CorrectGpsFrozen_RunStartingAtIndexZero_ProducesEvenlySpacedPoints()
+    {
+        var t0 = DateTime.Parse("2024-01-01T10:00:00Z").ToUniversalTime();
+        var points = new List<TrackPoint>();
+        for (int i = 0; i < 5; i++)
+            points.Add(new TrackPoint { Lat = 48.0000, Lon = 2.0, Time = t0.AddSeconds(i), Cadence = 80 });
+        points.Add(new TrackPoint { Lat = 48.0050, Lon = 2.0, Time = t0.AddSeconds(5), Cadence = 80 });
+
+        var report = new AnomalyReport
+        {
+            Anomalies =
+            [
+                new TrackAnomaly
+                {
+                    Type = AnomalyType.GpsFrozen,
+                    Severity = AnomalySeverity.Warning,
+                    Category = AnomalyCategory.Position,
+                    StartIndex = 0, EndIndex = 4,
+                    StartTime = t0, EndTime = t0.AddSeconds(4),
+                    TimeImpactS = 4,
+                },
+            ],
+        };
+
+        AnomalyCorrector.ApplyCorrections(points, report);
+
+        // Five points interpolated between 48.0000 and 48.0050 must be evenly
+        // spaced: every consecutive delta identical to within floating error.
+        var deltas = new List<double>();
+        for (int i = 1; i <= 4; i++) deltas.Add(points[i].Lat - points[i - 1].Lat);
+        foreach (var d in deltas)
+            Assert.Equal(deltas[0], d, 8);
+    }
+
+    // -- #83: a freeze longer than moving time must not zero the estimate
+    [Fact]
+    public void ApplyFrozenSectionDistances_FrozenLongerThanMovingTime_StillEstimatesDistance()
+    {
+        var t0 = DateTime.Parse("2024-01-01T10:00:00Z").ToUniversalTime();
+        var points = new List<TrackPoint>();
+        for (int i = 0; i < 10; i++)
+            points.Add(new TrackPoint { Lat = 48.0 + i * 0.0009, Lon = 2.0, Time = t0.AddSeconds(i * 30) });
+
+        // Frozen indices 4..7 (900 s of impact) with only 300 s of moving time
+        var s = new Summary
+        {
+            MovingTime = TimeSpan.FromSeconds(300),
+            AnomalyReport = new AnomalyReport
+            {
+                Anomalies =
+                [
+                    new TrackAnomaly
+                    {
+                        Type = AnomalyType.GpsFrozen,
+                        StartIndex = 4, EndIndex = 7,
+                        TimeImpactS = 900, WasCorrected = true,
+                    },
+                ],
+            },
+        };
+        SpeedCalculator.EnrichPoints(points);
+
+        AnomalyCorrector.ApplyFrozenSectionDistances(points, s);
+
+        double frozenDist = 0;
+        for (int i = 4; i <= 7; i++) frozenDist += points[i].DistFromPrev;
+        Assert.True(frozenDist > 0,
+            "the frozen section must receive an estimated distance, not zero");
+    }
+
+    private static ComputeConfig BuildFixAnomaliesConfig(double maxReasonableSpeed) => new()
+    {
+        FixAnomalies = true,
+        AnomalyConfig = AnomalyConfig.Default(),
+        StopConfig = StopDetector.Presets[StopDetector.PresetHiking],
+        SmoothingLevel = "none",
+        TrackSmoothing = "none",
+        DemSource = null,
+        ElevationCfg = new ElevationConfig(),
+        BiometricsCfg = new BiometricsConfig(),
+        MaxReasonableSpeed = maxReasonableSpeed,
+    };
+
+    // -- #81: the recompute must re-clamp ------------------------------
+    [Fact]
+    public void FixAnomalies_BackwardTimestamp_DoesNotReportAnImpossibleMaxSpeed()
+    {
+        var t0 = DateTime.Parse("2024-01-01T10:00:00Z").ToUniversalTime();
+        var points = new List<TrackPoint>
+        {
+            new() { Lat = 48.0000, Lon = 2.0, Ele = 100, Time = t0 },
+            // Backward timestamp, ~100 m further along
+            new() { Lat = 48.0009, Lon = 2.0, Ele = 100, Time = t0.AddSeconds(-60) },
+            new() { Lat = 48.0010, Lon = 2.0, Ele = 100, Time = t0.AddSeconds(30) },
+        };
+        for (int i = 3; i < 30; i++)
+            points.Add(new TrackPoint
+            {
+                Lat = 48.0010 + (i - 2) * 0.00003, Lon = 2.0, Ele = 100,
+                Time = t0.AddSeconds(30 + i),
+            });
+
+        var cfg = BuildFixAnomaliesConfig(maxReasonableSpeed: 4.0); // hiking
+        var (summary, _) = ComputePipeline.Compute(points, 1, cfg);
+
+        // CorrectBackwardTime sets p1.Time = p0.Time + 1s -> 100 m in 1 s.
+        // Without a re-clamp that lands in speed.max as 360 km/h for a hike.
+        Assert.True(summary.Speed.MaxSpeed <= 4.0,
+            $"max speed should stay clamped at the hiking threshold, got {summary.Speed.MaxSpeed * 3.6:F0} km/h");
+    }
+
+
+    // -- #79 + #84: elevation and biometrics must follow the corrections
+    [Fact]
+    public void FixAnomalies_ElevationSpikeAndHrDropout_RecomputesElevationAndBiometrics()
+    {
+        var t0 = DateTime.Parse("2024-01-01T10:00:00Z").ToUniversalTime();
+        var points = new List<TrackPoint>();
+        for (int i = 0; i < 30; i++)
+            points.Add(new TrackPoint
+            {
+                Lat = 48.0 + i * 0.00003, Lon = 2.0, Ele = 100,
+                Time = t0.AddSeconds(i), HeartRate = 140,
+            });
+
+        points[10].Ele = 950;                                   // barometric spike, +850 m
+        for (int i = 20; i < 25; i++) points[i].HeartRate = 250; // HR dropout run
+
+        var cfg = BuildFixAnomaliesConfig(maxReasonableSpeed: 4.0);
+        var (summary, processed) = ComputePipeline.Compute(points, 1, cfg);
+
+        // The corrector rewrote the elevations and nulled the HR samples...
+        Assert.True(processed[10].Ele < 500, "the spike should have been interpolated away");
+        Assert.DoesNotContain(processed, p => p.HeartRate == 250);
+
+        // ...so the reported numbers must reflect the corrected data.
+        Assert.True(summary.Elevation.Gain < 100,
+            $"elevation gain still includes the corrected spike: {summary.Elevation.Gain:F0} m");
+        Assert.NotNull(summary.Biometrics.HeartRate);
+        Assert.True(summary.Biometrics.HeartRate!.Max < 250,
+            $"heart rate max still reports the nulled dropout: {summary.Biometrics.HeartRate.Max}");
+    }
+
 }

@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="GpxAnalyzer.Api.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- EF Core -->
     <PackageReference Include="AWSSDK.S3" Version="3.*" />
     <PackageReference Include="MailKit" Version="4.*" />

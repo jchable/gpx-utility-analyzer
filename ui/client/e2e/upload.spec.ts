@@ -42,6 +42,52 @@ test.describe('Upload Page', () => {
     await expect(page.getByText('test.gpx')).toBeVisible();
     await expect(page.getByText('Ready')).toBeVisible();
   });
+
+  test('removing a queued file mid-upload does not upload it or mislabel the next row', async ({ page }) => {
+    const uploadedNames: string[] = [];
+    let releaseFirst: () => void = () => {};
+    const firstInFlight = new Promise<void>((r) => { releaseFirst = r; });
+
+    // Registered after mockAllApi, so it wins (Playwright matches routes LIFO).
+    await page.route('**/api/activities/upload', async (route) => {
+      const post = route.request().postData() ?? '';
+      const name = /filename="([^"]+)"/.exec(post)?.[1] ?? 'unknown';
+      uploadedNames.push(name);
+      if (uploadedNames.length === 1) await firstInFlight; // hold a.gpx in flight
+      await route.fulfill({
+        json: { id: `activity-${name.replace('.gpx', '')}`, name, status: 'Pending' },
+      });
+    });
+
+    await page.goto('/upload');
+    await page.setInputFiles(
+      'input[type="file"]',
+      ['a.gpx', 'b.gpx', 'c.gpx'].map((n) => ({
+        name: n,
+        mimeType: 'application/gpx+xml',
+        buffer: Buffer.from('<gpx version="1.1"><trk><trkseg/></trk></gpx>'),
+      })),
+    );
+
+    await page.getByRole('button', { name: /^Upload \d+ files?$/ }).click();
+
+    // While a.gpx is in flight, the user changes their mind about b.gpx.
+    const removeB = page.getByRole('button', { name: 'Remove b.gpx' });
+    await expect(removeB).toBeVisible();
+    await removeB.click();
+
+    releaseFirst();
+    await expect.poll(() => uploadedNames.length, { timeout: 10_000 }).toBeGreaterThanOrEqual(2);
+    await page.waitForTimeout(500);
+
+    // b.gpx must never reach the server, and c.gpx must — exactly once each.
+    expect(uploadedNames).toEqual(['a.gpx', 'c.gpx']);
+
+    // …and c.gpx's row must carry c.gpx's own activity, not b.gpx's.
+    const rowC = page.locator('div.bg-surface-card').filter({ hasText: 'c.gpx' });
+    await rowC.getByRole('button', { name: 'View' }).click();
+    await expect(page).toHaveURL(/\/activities\/activity-c$/);
+  });
 });
 
 test.describe('Upload Page — mobile layout', () => {

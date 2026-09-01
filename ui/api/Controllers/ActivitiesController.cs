@@ -2,6 +2,7 @@ namespace GpxAnalyzer.Api.Controllers;
 
 using System.Text.Json;
 using System.Threading.Channels;
+using GpxAnalyzer.Api.BackgroundServices;
 using GpxAnalyzer.Api.Auth;
 using GpxAnalyzer.Api.Data;
 using GpxAnalyzer.Api.Dto;
@@ -18,20 +19,23 @@ public class ActivitiesController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly GpxStorageService _storage;
-    private readonly Channel<(Guid ActivityId, Guid UserId)> _processingChannel;
+    private readonly Channel<ProcessingRequest> _processingChannel;
+    private readonly ProcessingCancellationRegistry _processingCancellation;
     private readonly GpxAnalysisService _analysisService;
     private readonly ProfileComputationService _profileService;
 
     public ActivitiesController(
         AppDbContext db,
         GpxStorageService storage,
-        Channel<(Guid ActivityId, Guid UserId)> processingChannel,
+        Channel<ProcessingRequest> processingChannel,
+        ProcessingCancellationRegistry processingCancellation,
         GpxAnalysisService analysisService,
         ProfileComputationService profileService)
     {
         _db = db;
         _storage = storage;
         _processingChannel = processingChannel;
+        _processingCancellation = processingCancellation;
         _analysisService = analysisService;
         _profileService = profileService;
     }
@@ -142,6 +146,7 @@ public class ActivitiesController : ControllerBase
         if (language.Length > 2) language = language[..2];
 
         var userId = User.GetUserId();
+        var leaseId = Guid.NewGuid();
         var activity = new Activity
         {
             Id = Guid.NewGuid(),
@@ -151,13 +156,15 @@ public class ActivitiesController : ControllerBase
             GpxFilePath = relativePath,
             Source = "upload",
             Status = ProcessingStatus.Pending,
+            ProcessingLeaseId = leaseId,
+            ProcessingLeaseExpiresAt = DateTime.UtcNow.AddMinutes(1),
             Language = language,
         };
 
         _db.Activities.Add(activity);
         await _db.SaveChangesAsync();
 
-        await _processingChannel.Writer.WriteAsync((activity.Id, userId));
+        await _processingChannel.Writer.WriteAsync(new ProcessingRequest(activity.Id, userId, leaseId));
 
         return CreatedAtAction(nameof(GetActivity), new { id = activity.Id }, new ActivityDetailDto
         {
@@ -175,6 +182,12 @@ public class ActivitiesController : ControllerBase
     {
         var activity = await _db.Activities.FindAsync(id);
         if (activity is null || activity.UserId != User.GetUserId()) return NotFound();
+
+        // Deleting always succeeds. Signal any in-flight run first so we stop paying
+        // for an analysis — and an AI call — whose result has nowhere to go; the
+        // worker tolerates the row and the file disappearing underneath it, and
+        // storage tolerates a GPX still held open, so we never wait on either (#131).
+        _processingCancellation.Cancel(id);
 
         await _storage.DeleteWithOriginalAsync(activity.GpxFilePath);
         _db.Activities.Remove(activity);
@@ -271,7 +284,13 @@ public class ActivitiesController : ControllerBase
         var language = Request.Headers.AcceptLanguage.FirstOrDefault()?.Split(',')[0]?.Trim() ?? "en";
         if (language.Length > 2) language = language[..2];
 
+        if (IsOwnedByALiveWorker(activity))
+            return Accepted();
+
+        var leaseId = Guid.NewGuid();
         activity.Status = ProcessingStatus.Pending;
+        activity.ProcessingLeaseId = leaseId;
+        activity.ProcessingLeaseExpiresAt = DateTime.UtcNow.AddMinutes(1);
         activity.ErrorMessage = null;
         activity.AiReportJson = null;
         activity.ProfileJson = null;
@@ -281,10 +300,24 @@ public class ActivitiesController : ControllerBase
         activity.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
 
-        await _processingChannel.Writer.WriteAsync((id, User.GetUserId()));
+        await _processingChannel.Writer.WriteAsync(new ProcessingRequest(id, User.GetUserId(), leaseId));
 
         return Accepted();
     }
+
+    /// <summary>
+    /// Whether a worker genuinely owns this activity right now: a non-terminal
+    /// status AND a lease that has not run out.
+    ///
+    /// The status alone is not enough. A crash leaves the row non-terminal with a
+    /// lease nobody holds, and answering 202 to that without acting is how an
+    /// activity ends up unrevivable — the user's only manual escape hatch silently
+    /// does nothing. Once the lease has expired the row is fair game to restart.
+    /// </summary>
+    private static bool IsOwnedByALiveWorker(Activity activity) =>
+        activity.Status is ProcessingStatus.Pending or ProcessingStatus.Recovering
+            or ProcessingStatus.Analyzing or ProcessingStatus.AiProcessing
+        && activity.ProcessingLeaseExpiresAt > DateTime.UtcNow;
 
     /// <summary>
     /// Re-triggers full processing with anomaly correction enabled.
@@ -299,8 +332,14 @@ public class ActivitiesController : ControllerBase
         var language = Request.Headers.AcceptLanguage.FirstOrDefault()?.Split(',')[0]?.Trim() ?? "en";
         if (language.Length > 2) language = language[..2];
 
+        if (IsOwnedByALiveWorker(activity))
+            return Accepted();
+
+        var leaseId = Guid.NewGuid();
         activity.FixAnomaliesOnNextRun = true;
         activity.Status = ProcessingStatus.Pending;
+        activity.ProcessingLeaseId = leaseId;
+        activity.ProcessingLeaseExpiresAt = DateTime.UtcNow.AddMinutes(1);
         activity.ErrorMessage = null;
         activity.AiReportJson = null;
         activity.ProfileJson = null;
@@ -310,7 +349,7 @@ public class ActivitiesController : ControllerBase
         activity.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
 
-        await _processingChannel.Writer.WriteAsync((id, User.GetUserId()));
+        await _processingChannel.Writer.WriteAsync(new ProcessingRequest(id, User.GetUserId(), leaseId));
 
         return Accepted();
     }

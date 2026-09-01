@@ -1,7 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using GpxAnalyzer.Api.Data;
 using GpxAnalyzer.Api.Tests.Helpers;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace GpxAnalyzer.Api.Tests.Auth;
 
@@ -227,5 +230,34 @@ public class AuthApiTests : IAsyncLifetime
         var refreshResp = await _client.PostAsJsonAsync("/api/auth/refresh",
             new { refreshToken = auth.RefreshToken });
         Assert.Equal(HttpStatusCode.Unauthorized, refreshResp.StatusCode);
+    }
+
+    // ─── Deactivated accounts ─────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Refresh_ForDeactivatedUser_IsRejected()
+    {
+        using var factory = new ApiFactory();
+        var client = factory.CreateClient();
+        var auth = await TestHelpers.RegisterAsync(client, $"deact_{Guid.NewGuid():N}@test.local");
+
+        // Admin deactivates the account.
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var user = await db.Users.SingleAsync(u => u.Id == Guid.Parse(auth.User.Id));
+            user.IsActive = false;
+            await db.SaveChangesAsync();
+        }
+
+        var resp = await client.PostAsJsonAsync("/api/auth/refresh",
+            new { refreshToken = auth.RefreshToken });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, resp.StatusCode);
+
+        // And the presented token must now be revoked, so a retry cannot succeed either.
+        var retry = await client.PostAsJsonAsync("/api/auth/refresh",
+            new { refreshToken = auth.RefreshToken });
+        Assert.Equal(HttpStatusCode.Unauthorized, retry.StatusCode);
     }
 }

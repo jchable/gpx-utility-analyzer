@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using GpxAnalyzer.Cli.Core.Gpx;
 using GpxAnalyzer.Cli.Core.Output;
@@ -131,5 +132,50 @@ public class JsonFormatterTests
         var json = sw.ToString();
         // Should contain 2-space indent (matching Go's encoding/json)
         Assert.Contains("  \"filename\"", json);
+    }
+
+    // #87 — the CLI exe masks this with InvariantGlobalization, but the Core
+    // library is also consumed by ui/api, which runs under the OS culture.
+    [Theory]
+    [InlineData("fi-FI")]
+    [InlineData("da-DK")]
+    public void Format_UnderACultureWithANonColonTimeSeparator_EmitsIsoTimestamps(string culture)
+    {
+        var previous = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentCulture = new CultureInfo(culture);
+
+            // Guard against a vacuous run.
+            Assert.NotEqual(":", CultureInfo.CurrentCulture.DateTimeFormat.TimeSeparator);
+
+            var summary = new Summary
+            {
+                StartTime = new DateTime(2024, 6, 15, 8, 0, 0, DateTimeKind.Utc),
+                EndTime = new DateTime(2024, 6, 15, 11, 30, 0, DateTimeKind.Utc),
+                Stops =
+                [
+                    new Stop
+                    {
+                        StartTime = new DateTime(2024, 6, 15, 9, 30, 0, DateTimeKind.Utc),
+                        EndTime = new DateTime(2024, 6, 15, 9, 50, 0, DateTimeKind.Utc),
+                        Duration = TimeSpan.FromMinutes(20),
+                        Lat = 45.0,
+                        Lon = 6.0,
+                    },
+                ],
+            };
+
+            var formatter = new JsonFormatter();
+            using var sw = new StringWriter();
+            formatter.Format(sw, "test.gpx", summary, ComputeConfig.Default().StopConfig);
+
+            var json = sw.ToString();
+            Assert.Contains("\"2024-06-15T08:00:00Z\"", json);
+            Assert.Contains("\"2024-06-15T11:30:00Z\"", json);
+            Assert.Contains("\"2024-06-15T09:30:00Z\"", json);
+            Assert.DoesNotContain("T08.00.00Z", json);
+        }
+        finally { CultureInfo.CurrentCulture = previous; }
     }
 }

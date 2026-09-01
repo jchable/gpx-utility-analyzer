@@ -62,6 +62,47 @@ RUSTFS_SECRET_KEY=your-secret-key
 
 Access the RustFS web console at `http://localhost:9001` (default credentials: `rustfsadmin` / `rustfsadmin`).
 
+## Scaling — the API runs as a single replica
+
+:::danger Do not run more than one `api` replica
+
+The API must run as **exactly one instance**. `docker-compose.prod.yml` pins
+`deploy.replicas: 1` for this reason.
+
+Activity processing is queued through an **in-memory `Channel`**, and
+`ProcessingRecoveryService` reclaims stranded activities straight from the database
+with no cross-process coordination — it has no way to tell "another replica is
+working on this" from "the process that owned this died".
+
+With more than one replica, every instance reclaims and re-enqueues the **same** rows.
+One stranded activity then becomes N full GPX analyses and, because the AI step runs
+once per analysis, **N paid AI calls**. Nothing detects or de-duplicates this: it
+surfaces only on your AI provider's bill.
+
+Scaling out safely requires a durable, shared queue, which this deployment does not
+have. Until then:
+
+| Component | Scaling |
+|-----------|---------|
+| `api` | **Vertical only** — one replica, more CPU/RAM |
+| `client` | Horizontal — stateless nginx |
+| `db` | Independent (PostgreSQL replicas, connection pooling) |
+
+If you are adding a second replica, you are changing the processing architecture, not
+just the replica count.
+
+:::
+
+### Processing lease tuning
+
+A single replica still recovers from its own crashes. Activities are claimed with a
+lease, and `ProcessingRecoveryService` reclaims any lease that has expired — at
+startup, and then on a timer while the app runs.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `Processing__LeaseSweepIntervalSeconds` | `30` | How often expired processing leases are reclaimed and re-enqueued |
+
 ## Environment Variables
 
 ### Required for Production

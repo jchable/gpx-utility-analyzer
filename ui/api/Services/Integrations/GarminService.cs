@@ -29,12 +29,17 @@ public class GarminService : IActivityImporter
         _logger = logger;
     }
 
-    public async Task<string> GetAuthorizationUrlAsync(string callbackUrl)
+    public async Task<string> GetAuthorizationUrlAsync(string callbackUrl, string state)
     {
         var consumerKey = await _settings.GetAsync("Integrations:Garmin:ConsumerKey")
             ?? throw new InvalidOperationException("Garmin ConsumerKey not configured.");
         var consumerSecret = await _settings.GetAsync("Integrations:Garmin:ConsumerSecret")
             ?? throw new InvalidOperationException("Garmin ConsumerSecret not configured.");
+
+        // OAuth 1.0a has no `state` parameter, so the binding travels in the
+        // callback URL itself — the provider redirects the browser back to it
+        // verbatim, appending oauth_token/oauth_verifier.
+        var boundCallbackUrl = $"{callbackUrl}?state={Uri.EscapeDataString(state)}";
 
         using var client = _httpClientFactory.CreateClient();
         var request = new HttpRequestMessage(HttpMethod.Post, RequestTokenUrl);
@@ -42,7 +47,7 @@ public class GarminService : IActivityImporter
         OAuth1Helper.SignRequest(request, consumerKey, consumerSecret,
             extraParams: new Dictionary<string, string>
             {
-                ["oauth_callback"] = callbackUrl,
+                ["oauth_callback"] = boundCallbackUrl,
             });
 
         var response = await client.SendAsync(request);
@@ -103,7 +108,56 @@ public class GarminService : IActivityImporter
             // Store both token and secret as compound string
             AccessToken = $"{accessToken}|{accessTokenSecret}",
             ExpiresAt = null, // Garmin tokens don't expire
+
+            // Webhook routing resolves the owning user by ExternalUserId. Without it
+            // every Garmin event is logged and dropped and the integration is inert
+            // (#130), so capture the Garmin user id — the same value the webhook's
+            // `userId` field carries — while we hold a working token.
+            ExternalUserId = await TryFetchGarminUserIdAsync(
+                client, consumerKey, consumerSecret, accessToken, accessTokenSecret),
         };
+    }
+
+    /// <summary>
+    /// Reads the Garmin user id for the freshly issued access token.
+    /// Returns null on failure rather than aborting the connect: the integration is
+    /// still created, and <c>IntegrationDto.NeedsReconnect</c> tells the user it must
+    /// be reconnected before webhooks can be routed.
+    /// </summary>
+    private async Task<string?> TryFetchGarminUserIdAsync(
+        HttpClient client, string consumerKey, string consumerSecret,
+        string token, string tokenSecret)
+    {
+        try
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, $"{ApiBase}/wellness-api/rest/user/id");
+            OAuth1Helper.SignRequest(request, consumerKey, consumerSecret, token, tokenSecret);
+
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+            var userId = json.ValueKind == JsonValueKind.Object
+                ? WebhookJson.ReadAccountId(json, "userId") ?? WebhookJson.ReadAccountId(json, "userID")
+                : null;
+
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                _logger.LogError(
+                    "Garmin returned no user id at connect time; this integration cannot receive " +
+                    "webhooks and must be reconnected");
+                return null;
+            }
+
+            return userId;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to read the Garmin user id at connect time; this integration cannot receive " +
+                "webhooks and must be reconnected");
+            return null;
+        }
     }
 
     public Task<TokenInfo> RefreshTokenAsync(string refreshToken)
@@ -112,24 +166,41 @@ public class GarminService : IActivityImporter
         throw new NotSupportedException("Garmin tokens do not expire.");
     }
 
-    public Task<bool> ValidateWebhookAsync(HttpContext context)
+    public Task<bool> ValidateSubscriptionAsync(HttpContext context)
     {
         // Garmin webhook validation is typically done during registration
         return Task.FromResult(true);
     }
 
-    public async Task<string?> GetWebhookActivityIdAsync(HttpContext context)
+    public async Task<WebhookEvent?> ReadWebhookEventAsync(HttpContext context)
     {
-        var body = await JsonSerializer.DeserializeAsync<JsonElement>(context.Request.Body);
+        JsonElement body;
+        try { body = await JsonSerializer.DeserializeAsync<JsonElement>(context.Request.Body); }
+        catch (JsonException) { return null; }
 
-        // Garmin webhook payload contains activityDetails array
-        if (body.TryGetProperty("activityDetails", out var details) && details.GetArrayLength() > 0)
+        if (body.ValueKind != JsonValueKind.Object) return null;
+
+        // Garmin webhook payload contains an activityDetails array. The length check
+        // also guards the indexer below: details[0] on an empty array throws.
+        if (!body.TryGetProperty("activityDetails", out var details) ||
+            details.ValueKind != JsonValueKind.Array ||
+            details.GetArrayLength() == 0)
+            return null;
+
+        var entry = details[0];
+        if (entry.ValueKind != JsonValueKind.Object) return null;
+
+        // Every read is type-guarded: the body is unauthenticated input, and a
+        // wrongly-typed field used to escape as a 500 (#132).
+        if (!WebhookJson.TryReadNumericId(entry, "activityId", out var externalId))
         {
-            var activityId = details[0].GetProperty("activityId").GetInt64();
-            return activityId.ToString();
+            _logger.LogWarning("Dropped Garmin webhook: activityId was missing or not a numeric id");
+            return null;
         }
 
-        return null;
+        // Garmin identifies the athlete with userId; without it the event cannot
+        // be attributed to a user and must be dropped rather than guessed.
+        return new WebhookEvent(externalId, WebhookJson.ReadAccountId(entry, "userId"));
     }
 
     public async Task<ImportedActivity> FetchActivityAsync(string externalId, string accessToken)

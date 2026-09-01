@@ -68,14 +68,26 @@ public static class GpxWriter
 
     public static void Write(string path, List<TrackPoint> points, string trackName)
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(path) ?? ".");
+        EnsureDirectory(path);
         WriteToFile(path, points, trackName, enrich: false);
     }
 
     public static void WriteEnriched(string path, List<TrackPoint> points, string trackName)
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(path) ?? ".");
+        EnsureDirectory(path);
         WriteToFile(path, points, trackName, enrich: true);
+    }
+
+    /// <summary>
+    /// Creates the output directory when the path has one. Path.GetDirectoryName
+    /// returns string.Empty (not null) for a bare filename, so a "?? \".\"" fallback
+    /// never fires and CreateDirectory("") throws.
+    /// </summary>
+    private static void EnsureDirectory(string path)
+    {
+        var dir = Path.GetDirectoryName(path);
+        if (!string.IsNullOrEmpty(dir))
+            Directory.CreateDirectory(dir);
     }
 
     private static void WriteToFile(string path, List<TrackPoint> points, string trackName, bool enrich)
@@ -94,11 +106,9 @@ public static class GpxWriter
         w.WriteStartElement("gpx", GpxNs);
         w.WriteAttributeString("version", "1.1");
         w.WriteAttributeString("creator", "gpx-analyzer");
+        w.WriteAttributeString("xmlns", "gpxtpx", null, GpxtpxNs);
         if (enrich)
-        {
             w.WriteAttributeString("xmlns", "gpxa", null, GpxaNs);
-            w.WriteAttributeString("xmlns", "gpxtpx", null, GpxtpxNs);
-        }
 
         w.WriteStartElement("trk", GpxNs);
         w.WriteElementString("name", GpxNs, trackName);
@@ -110,7 +120,33 @@ public static class GpxWriter
         {
             var tp = points[i];
 
-            if (i > 0)
+            // Every statistic this tool reports is segment-dependent - elevation sections,
+            // stop runs and recorded time all break at a <trkseg> boundary. Writing one
+            // flattened segment made the numbers change the moment the file was read back:
+            // `merge --analyze` printed D+ 40 m and `analyze` on the file it had just written
+            // printed D+ 70 m.
+            if (i > 0 && tp.BreaksRecordedTime)
+            {
+                w.WriteEndElement();                    // trkseg
+                w.WriteStartElement("trkseg", GpxNs);
+            }
+
+            // gpxa:dist has to accumulate the SAME segments the stats pipeline counts into
+            // total_distance_m, or the file contradicts the summary written beside it. The
+            // pipeline sums TrackPoint.DistFromPrev, which EnrichPoints zeroes across a
+            // recording gap and ClampSpeeds zeroes for an over-speed segment - between them,
+            // exactly the segments BreaksPath describes as having no usable path.
+            //
+            // BreaksPath, not BreaksRecordedTime: the two differ on the speed clamp, and a
+            // clamp is precisely a case where the distance is discredited while the elapsed
+            // time is not. Distance is the thing being accumulated here, so the predicate
+            // that governs distance is the one to ask.
+            //
+            // Downstream this is not cosmetic. The API reads gpxa:dist into CumDist, which
+            // places every km-split boundary and is the ruler its best-effort sliding window
+            // measures against - so banked phantom distance turned a "best 10 km" into a
+            // window over less than 10 real kilometres (issue #144).
+            if (i > 0 && !tp.BreaksPath)
             {
                 cumDist += Stats.DistanceCalculator.Haversine(
                     points[i - 1].Lat, points[i - 1].Lon,
@@ -121,7 +157,25 @@ public static class GpxWriter
             w.WriteAttributeString("lat", tp.Lat.ToString(CultureInfo.InvariantCulture));
             w.WriteAttributeString("lon", tp.Lon.ToString(CultureInfo.InvariantCulture));
             w.WriteElementString("ele", GpxNs, tp.Ele.ToString(CultureInfo.InvariantCulture));
-            w.WriteElementString("time", GpxNs, tp.Time.ToString("yyyy-MM-ddTHH:mm:ssZ"));
+            // ':' is the time-separator placeholder in a custom format string, so
+            // without InvariantCulture this emits e.g. 2024-01-02T10.04.05Z under
+            // fi-FI / cs-CZ / et-EE — invalid per the GPX xsd:dateTime schema.
+            w.WriteElementString("time", GpxNs,
+                tp.Time.ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture));
+
+            // GPS quality lives on the trkpt itself in GPX 1.1 and is part of the
+            // source data, not a computed metric — split and merge have no --enrich
+            // flag, so writing it only under `enrich` silently discarded it.
+            if (tp.Fix is not null)
+                w.WriteElementString("fix", GpxNs, tp.Fix);
+            if (tp.Satellites is not null)
+                w.WriteElementString("sat", GpxNs, tp.Satellites.Value.ToString(CultureInfo.InvariantCulture));
+            if (tp.Hdop is not null)
+                w.WriteElementString("hdop", GpxNs, tp.Hdop.Value.ToString(CultureInfo.InvariantCulture));
+            if (tp.Vdop is not null)
+                w.WriteElementString("vdop", GpxNs, tp.Vdop.Value.ToString(CultureInfo.InvariantCulture));
+            if (tp.Pdop is not null)
+                w.WriteElementString("pdop", GpxNs, tp.Pdop.Value.ToString(CultureInfo.InvariantCulture));
 
             if (enrich)
             {
@@ -134,6 +188,10 @@ public static class GpxWriter
                 }
 
                 WriteEnrichedExtensions(w, tp, cumDist, grade);
+            }
+            else
+            {
+                WriteSourceExtensions(w, tp);
             }
 
             w.WriteEndElement(); // trkpt
@@ -170,10 +228,57 @@ public static class GpxWriter
             w.WriteEndElement(); // TrackPointExtension
         }
 
-        // Power (bare element)
-        if (tp.Power != null)
-            w.WriteElementString("power", tp.Power.Value.ToString(CultureInfo.InvariantCulture));
+        WritePower(w, tp);
 
         w.WriteEndElement(); // extensions
+    }
+
+    /// <summary>
+    /// Writes the source biometrics for a non-enriched export. split and merge use
+    /// this writer and have no --enrich flag, so without it every heart rate,
+    /// cadence, power and temperature sample in the input is silently dropped.
+    /// </summary>
+    private static void WriteSourceExtensions(XmlWriter w, TrackPoint tp)
+    {
+        bool hasGarmin = tp.HeartRate is not null || tp.Cadence is not null
+                      || tp.Temperature is not null || tp.DeviceSpeed is not null
+                      || tp.WaterTemp is not null;
+        if (!hasGarmin && tp.Power is null) return;
+
+        w.WriteStartElement("extensions", GpxNs);
+
+        if (hasGarmin)
+        {
+            w.WriteStartElement("TrackPointExtension", GpxtpxNs);
+            if (tp.HeartRate is not null)
+                w.WriteElementString("hr", GpxtpxNs, tp.HeartRate.Value.ToString(CultureInfo.InvariantCulture));
+            if (tp.Cadence is not null)
+                w.WriteElementString("cad", GpxtpxNs, tp.Cadence.Value.ToString(CultureInfo.InvariantCulture));
+            if (tp.Temperature is not null)
+                w.WriteElementString("atemp", GpxtpxNs, tp.Temperature.Value.ToString(CultureInfo.InvariantCulture));
+            if (tp.WaterTemp is not null)
+                w.WriteElementString("wtemp", GpxtpxNs, tp.WaterTemp.Value.ToString(CultureInfo.InvariantCulture));
+            if (tp.DeviceSpeed is not null)
+                w.WriteElementString("speed", GpxtpxNs, tp.DeviceSpeed.Value.ToString(CultureInfo.InvariantCulture));
+            w.WriteEndElement();
+        }
+
+        WritePower(w, tp);
+
+        w.WriteEndElement(); // extensions
+    }
+
+    /// <summary>
+    /// Power is written in the GPX default namespace, explicitly. The two-argument
+    /// WriteElementString overload passes null for the namespace, which XmlWriter
+    /// reads as "inherit the in-scope default" rather than "no namespace", so the
+    /// element was already landing in GpxNs while the code claimed it was bare —
+    /// and ProfileComputationService looked it up with an unqualified XName and
+    /// always got null.
+    /// </summary>
+    private static void WritePower(XmlWriter w, TrackPoint tp)
+    {
+        if (tp.Power is null) return;
+        w.WriteElementString("power", GpxNs, tp.Power.Value.ToString(CultureInfo.InvariantCulture));
     }
 }

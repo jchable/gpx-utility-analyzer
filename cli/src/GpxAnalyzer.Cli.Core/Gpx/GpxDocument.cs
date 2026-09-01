@@ -17,7 +17,11 @@ public sealed class GpxDocument
         var points = new List<TrackPoint>();
         foreach (var track in Tracks)
             foreach (var segment in track.Segments)
+            {
+                if (segment.Points.Count > 0)
+                    segment.Points[0].StartsNewSegment = points.Count > 0;
                 points.AddRange(segment.Points);
+            }
         return points;
     }
 

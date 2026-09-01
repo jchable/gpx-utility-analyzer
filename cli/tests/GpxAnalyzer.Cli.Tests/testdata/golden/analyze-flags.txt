@@ -1,0 +1,213 @@
+{
+  "filename": "with-extensions.gpx",
+  "total_distance_m": 318.38639118353865,
+  "total_distance_3d_m": 318.38639118353865,
+  "total_distance_km": 0.3183863911835387,
+  "elevation_gain_m": 0,
+  "elevation_loss_m": 0,
+  "max_elevation_m": 38.166666666666664,
+  "min_elevation_m": 38.166666666666664,
+  "start_time": "2024-01-01T10:00:00Z",
+  "end_time": "2024-01-01T10:05:00Z",
+  "total_time": {
+    "display": "5m 0s",
+    "seconds": 300
+  },
+  "moving_time": {
+    "display": "5m 0s",
+    "seconds": 300
+  },
+  "stopped_time": {
+    "display": "0s",
+    "seconds": 0
+  },
+  "avg_speed_kmh": 3.820636694202464,
+  "avg_moving_speed_kmh": 3.820636694202464,
+  "max_speed_kmh": 5.1457133103987065,
+  "avg_pace": "15:42 min/km",
+  "avg_moving_pace": "15:42 min/km",
+  "point_count": 6,
+  "segment_count": 1,
+  "points_per_km": 18.845026565665016,
+  "stop_count": 0,
+  "total_stop_time": {
+    "display": "0s",
+    "seconds": 0
+  },
+  "avg_stop_duration": {
+    "display": "0s",
+    "seconds": 0
+  },
+  "heart_rate": {
+    "avg_bpm": 149.16666666666666,
+    "max_bpm": 170,
+    "min_bpm": 120,
+    "zones": [
+      {
+        "name": "Z1 (Recovery)",
+        "min_percent": 50,
+        "max_percent": 60,
+        "duration": {
+          "display": "0s",
+          "seconds": 0
+        }
+      },
+      {
+        "name": "Z2 (Endurance)",
+        "min_percent": 60,
+        "max_percent": 70,
+        "duration": {
+          "display": "0s",
+          "seconds": 0
+        }
+      },
+      {
+        "name": "Z3 (Tempo)",
+        "min_percent": 70,
+        "max_percent": 80,
+        "duration": {
+          "display": "2m 0s",
+          "seconds": 120
+        }
+      },
+      {
+        "name": "Z4 (Threshold)",
+        "min_percent": 80,
+        "max_percent": 90,
+        "duration": {
+          "display": "3m 0s",
+          "seconds": 180
+        }
+      },
+      {
+        "name": "Z5 (VO2 Max)",
+        "min_percent": 90,
+        "max_percent": 100,
+        "duration": {
+          "display": "0s",
+          "seconds": 0
+        }
+      }
+    ]
+  },
+  "power": {
+    "avg_watts": 240,
+    "max_watts": 280,
+    "normalized_power_watts": 244.27582681694884
+  },
+  "cadence": {
+    "avg_rpm": 88.33333333333333,
+    "max_rpm": 95
+  },
+  "temperature": {
+    "avg_celsius": 19.55,
+    "min_celsius": 18.5,
+    "max_celsius": 20.5
+  },
+  "effort": {
+    "naismith_time": {
+      "display": "3m 49s",
+      "seconds": 229.2382016
+    },
+    "tobler_time": {
+      "display": "3m 47s",
+      "seconds": 227.5659503
+    },
+    "munter_time": {
+      "display": "4m 46s",
+      "seconds": 286.547752
+    },
+    "performance_ratio_naismith": 1.31,
+    "performance_ratio_tobler": 1.32,
+    "kilometre_effort": 0.3,
+    "itra_points": 0.3,
+    "itra_category": "XXS",
+    "equivalent_flat_distance_km": 0.3,
+    "terrain_difficulty": {
+      "score": 1,
+      "grade": "Easy",
+      "avg_grade_percent": 0,
+      "max_grade_percent": 0,
+      "grade_variance": 0,
+      "steep_section_ratio": 0,
+      "elevation_per_km": 0
+    }
+  },
+  "anomalies": {
+    "quality_score": 75,
+    "total_count": 5,
+    "info_count": 0,
+    "warning_count": 5,
+    "critical_count": 0,
+    "distance_impact_m": -88.8628066430105,
+    "time_impact_s": 300,
+    "correction_applied": false,
+    "anomalies": [
+      {
+        "type": "signal_loss",
+        "category": "position",
+        "severity": "warning",
+        "start_index": 0,
+        "end_index": 1,
+        "start_time": "2024-01-01T10:00:00Z",
+        "end_time": "2024-01-01T10:01:00Z",
+        "distance_impact_m": -39.62866000242651,
+        "time_impact_s": 60,
+        "description": "Signal loss: 1m00s gap between consecutive points",
+        "was_corrected": false
+      },
+      {
+        "type": "signal_loss",
+        "category": "position",
+        "severity": "warning",
+        "start_index": 1,
+        "end_index": 2,
+        "start_time": "2024-01-01T10:01:00Z",
+        "end_time": "2024-01-01T10:02:00Z",
+        "distance_impact_m": -0,
+        "time_impact_s": 60,
+        "description": "Signal loss: 1m00s gap between consecutive points",
+        "was_corrected": false
+      },
+      {
+        "type": "signal_loss",
+        "category": "position",
+        "severity": "warning",
+        "start_index": 2,
+        "end_index": 3,
+        "start_time": "2024-01-01T10:02:00Z",
+        "end_time": "2024-01-01T10:03:00Z",
+        "distance_impact_m": -0,
+        "time_impact_s": 60,
+        "description": "Signal loss: 1m00s gap between consecutive points",
+        "was_corrected": false
+      },
+      {
+        "type": "signal_loss",
+        "category": "position",
+        "severity": "warning",
+        "start_index": 3,
+        "end_index": 4,
+        "start_time": "2024-01-01T10:03:00Z",
+        "end_time": "2024-01-01T10:04:00Z",
+        "distance_impact_m": -0,
+        "time_impact_s": 60,
+        "description": "Signal loss: 1m00s gap between consecutive points",
+        "was_corrected": false
+      },
+      {
+        "type": "signal_loss",
+        "category": "position",
+        "severity": "warning",
+        "start_index": 4,
+        "end_index": 5,
+        "start_time": "2024-01-01T10:04:00Z",
+        "end_time": "2024-01-01T10:05:00Z",
+        "distance_impact_m": -49.234146640583994,
+        "time_impact_s": 60,
+        "description": "Signal loss: 1m00s gap between consecutive points",
+        "was_corrected": false
+      }
+    ]
+  }
+}

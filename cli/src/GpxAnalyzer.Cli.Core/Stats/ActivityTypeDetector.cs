@@ -36,7 +36,10 @@ public static class ActivityTypeDetector
 
     // Backyard detection
     private const double BackyardLapDistanceKm = 6.706;
-    private const double BackyardLapTolerance = 0.5;
+    // The guard compares this against the distance from estimatedLaps to its
+    // nearest integer, which is at most 0.5 by definition — so 0.5 could never
+    // reject anything. 0.15 is ~1 km of a 6.706 km lap.
+    private const double BackyardLapTolerance = 0.15;
     private const int BackyardMinStops = 3;
     private const double BackyardMinIntervalMin = 50.0;
     private const double BackyardMaxIntervalMin = 70.0;

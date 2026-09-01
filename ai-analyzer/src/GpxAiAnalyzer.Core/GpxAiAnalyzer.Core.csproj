@@ -8,24 +8,28 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="GpxAiAnalyzer.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- Microsoft.Extensions.AI core -->
     <PackageReference Include="Google.GenAI" Version="1.13.0" />
-    <PackageReference Include="Microsoft.Extensions.AI" Version="*" />
-    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="*" />
+    <PackageReference Include="Microsoft.Extensions.AI" Version="10.9.0" />
+    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.9.0" />
 
     <!-- OpenAI / Azure OpenAI -->
-    <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="*-*" />
+    <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="10.9.0" />
     <PackageReference Include="Azure.AI.OpenAI" Version="2.*" />
     <PackageReference Include="Azure.Identity" Version="1.*" />
 
     <!-- Anthropic -->
-    <PackageReference Include="Anthropic.SDK" Version="*" />
+    <PackageReference Include="Anthropic.SDK" Version="5.10.0" />
 
     <!-- Mistral -->
-    <PackageReference Include="Mistral.SDK" Version="*" />
+    <PackageReference Include="Mistral.SDK" Version="2.3.1" />
 
     <!-- Ollama -->
-    <PackageReference Include="OllamaSharp" Version="*" />
+    <PackageReference Include="OllamaSharp" Version="5.4.30" />
   </ItemGroup>
 
 </Project>

@@ -269,6 +269,34 @@ export interface RacePlanUpdateRequest {
   equipment?: RacePlanEquipmentItem[] | null;
 }
 
+/**
+ * Projects a loaded plan onto a COMPLETE update request.
+ * The API's PUT is a full replace: any field omitted here is persisted as null.
+ * Always build the body with this helper and pass only the fields you changed.
+ */
+export function toRacePlanUpdateRequest(
+  plan: RacePlanDetail,
+  overrides: Partial<RacePlanUpdateRequest> = {},
+): RacePlanUpdateRequest {
+  return {
+    name: plan.name,
+    description: plan.description ?? undefined,
+    activityType: plan.activityType,
+    status: plan.status,
+    raceDate: plan.raceDate,
+    startTime: plan.startTime,
+    startLatitude: plan.startLatitude,
+    startLongitude: plan.startLongitude,
+    targetTimeSeconds: plan.targetTimeSeconds,
+    targetTimeBSeconds: plan.targetTimeBSeconds,
+    targetTimeCSeconds: plan.targetTimeCSeconds,
+    performanceCoefficient: plan.performanceCoefficient,
+    sweatRateMLPerHour: plan.sweatRateMLPerHour,
+    equipment: plan.equipment,
+    ...overrides,
+  };
+}
+
 export interface RacePlanCheckpointCreateRequest {
   name: string;
   type: CheckpointType;

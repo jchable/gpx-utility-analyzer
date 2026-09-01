@@ -34,13 +34,16 @@ public sealed class TrackAnalyzer
         _chatClient = chatClient;
     }
 
-    private static string ExtractJson(string text)
+    /// <summary>
+    /// Extracts the JSON object from a model response. Never trusts the response to
+    /// contain nothing but JSON: a response that STARTS with '{' can still append a
+    /// closing remark, and System.Text.Json rejects trailing content after the
+    /// top-level value.
+    /// </summary>
+    internal static string ExtractJson(string text)
     {
         var trimmed = text.Trim();
-        if (trimmed.StartsWith('{'))
-            return trimmed;
 
-        // Extract from ```json ... ``` or ``` ... ```
         var startIdx = trimmed.IndexOf('{');
         var endIdx = trimmed.LastIndexOf('}');
         if (startIdx >= 0 && endIdx > startIdx)
@@ -80,8 +83,15 @@ public sealed class TrackAnalyzer
 
         var response = await client.GetResponseAsync(messages, chatOptions, ct);
 
-        var text = response.Text
-            ?? throw new InvalidOperationException("AI returned an empty response.");
+        // ChatResponse.Text is non-nullable and returns "" when the response
+        // carried no text — a model that ends on tool calls only, or that hits the
+        // function-invocation iteration limit. The old "?? throw" was dead code and
+        // the user got an opaque JsonException instead.
+        var text = response.Text;
+        if (string.IsNullOrWhiteSpace(text))
+            throw new InvalidOperationException(
+                "AI returned an empty response (no assistant text — the model may have " +
+                "ended on tool calls or hit the function-invocation limit).");
 
         // Strip markdown code fences if the model wraps JSON in ```json ... ```
         var json = ExtractJson(text);

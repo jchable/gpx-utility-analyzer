@@ -18,6 +18,11 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Microsoft.AspNetCore.Hosting.Diagnostics is pinned to Warning in appsettings.json
+// on purpose: at Information it logs the full request line, and webhook callback
+// URLs carry their secret in the query string (Strava cannot send custom headers on
+// its webhook POSTs). Raising that category writes those secrets to the log.
+
 // Database
 var dbProvider = builder.Configuration["Database:Provider"] ?? "sqlite";
 if (dbProvider.Equals("postgresql", StringComparison.OrdinalIgnoreCase))
@@ -136,7 +141,11 @@ else if (routingProvider == "osrm")
 }
 
 // Processing channel — carries (ActivityId, UserId) for multi-user context
-builder.Services.AddSingleton(Channel.CreateUnbounded<(Guid ActivityId, Guid UserId)>());
+builder.Services.AddSingleton(Channel.CreateUnbounded<ProcessingRequest>());
+// Lets a DELETE stop the run it is deleting instead of paying for it to finish.
+builder.Services.AddSingleton<ProcessingCancellationRegistry>();
+// Registered BEFORE the worker so stranded rows are requeued before it starts reading.
+builder.Services.AddHostedService<ProcessingRecoveryService>();
 builder.Services.AddHostedService<ActivityProcessingWorker>();
 
 // Integration services
@@ -172,7 +181,15 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var startupLogger = scope.ServiceProvider
+        .GetRequiredService<ILoggerFactory>().CreateLogger("GpxAnalyzer.Api.Startup");
+
+    await ExternalActivityDeduplication.LogRowsAboutToBeRemovedAsync(db, startupLogger);
     db.Database.Migrate();
+
+    // A provider configured without a webhook secret would 401 every event it
+    // receives. Fail here rather than let imports stop silently.
+    await WebhookSecretValidator.ValidateAsync(scope.ServiceProvider.GetRequiredService<ISettingsService>());
 
     // Seed roles
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();

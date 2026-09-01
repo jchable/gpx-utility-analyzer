@@ -19,10 +19,9 @@ function allHeaders(): Record<string, string> {
   return { ...langHeaders(), ...authHeaders() };
 }
 
-async function tryRefreshToken(): Promise<boolean> {
-  const refreshToken = localStorage.getItem(REFRESH_KEY);
-  if (!refreshToken) return false;
+let refreshInFlight: Promise<boolean> | null = null;
 
+async function doRefresh(refreshToken: string): Promise<boolean> {
   try {
     const res = await fetch(`${BASE}/auth/refresh`, {
       method: 'POST',
@@ -33,6 +32,8 @@ async function tryRefreshToken(): Promise<boolean> {
     if (!res.ok) return false;
 
     const data = await res.json();
+    if (localStorage.getItem(REFRESH_KEY) !== refreshToken)
+      return false;
     localStorage.setItem(TOKEN_KEY, data.accessToken);
     localStorage.setItem(REFRESH_KEY, data.refreshToken);
     return true;
@@ -41,22 +42,52 @@ async function tryRefreshToken(): Promise<boolean> {
   }
 }
 
+/**
+ * Single-flight token refresh. The API rotates refresh tokens (each is
+ * single-use), so parallel 401s must share one refresh, not race for it.
+ */
+export async function tryRefreshToken(): Promise<boolean> {
+  if (refreshInFlight) return refreshInFlight;
+
+  const refreshToken = localStorage.getItem(REFRESH_KEY);
+  if (!refreshToken) return false;
+
+  const p = doRefresh(refreshToken);
+  refreshInFlight = p;
+  void p.finally(() => {
+    if (refreshInFlight === p) refreshInFlight = null;
+  });
+  return p;
+}
+
+/** Test-only: drops any in-flight refresh so tests start from a clean slate. */
+export function __resetRefreshStateForTests(): void {
+  refreshInFlight = null;
+}
+
+function forceLogout(attemptedToken: string | null): never {
+  // Only clear if nobody else has already rotated us onto a fresh pair.
+  if (localStorage.getItem(REFRESH_KEY) === attemptedToken) {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(REFRESH_KEY);
+    window.location.href = '/login';
+  }
+  throw new Error('UNAUTHORIZED');
+}
+
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const headers = { ...allHeaders(), ...init?.headers };
   let res = await fetch(`${BASE}${url}`, { cache: 'no-cache', ...init, headers });
 
   // 401 → try refresh token, then retry once
   if (res.status === 401) {
+    const attempted = localStorage.getItem(REFRESH_KEY);
     const refreshed = await tryRefreshToken();
     if (refreshed) {
       const retryHeaders = { ...allHeaders(), ...init?.headers };
       res = await fetch(`${BASE}${url}`, { cache: 'no-cache', ...init, headers: retryHeaders });
     } else {
-      // Clear tokens and redirect to login
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(REFRESH_KEY);
-      window.location.href = '/login';
-      throw new Error('UNAUTHORIZED');
+      forceLogout(attempted);
     }
   }
 
@@ -77,15 +108,13 @@ async function fetchWithAuth(url: string, init?: RequestInit): Promise<Response>
   let res = await fetch(`${BASE}${url}`, { ...init, headers });
 
   if (res.status === 401) {
+    const attempted = localStorage.getItem(REFRESH_KEY);
     const refreshed = await tryRefreshToken();
     if (refreshed) {
       const retryHeaders = { ...allHeaders(), ...init?.headers };
       res = await fetch(`${BASE}${url}`, { ...init, headers: retryHeaders });
     } else {
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(REFRESH_KEY);
-      window.location.href = '/login';
-      throw new Error('UNAUTHORIZED');
+      forceLogout(attempted);
     }
   }
 
@@ -228,7 +257,17 @@ export const api = {
     });
     if (!res.ok) {
       const text = await res.text();
-      throw new Error(`API error ${res.status}: ${text}`);
+      // A rejected save carries { code, message } and the message is the whole point
+      // of the rejection (it names the config key to set and the callback URL to
+      // re-register). Surface it instead of dumping the raw JSON envelope.
+      let detail = text;
+      try {
+        const parsed = JSON.parse(text);
+        detail = parsed?.message ?? parsed?.code ?? text;
+      } catch {
+        /* not JSON — fall back to the raw body */
+      }
+      throw new Error(detail || `API error ${res.status}`);
     }
   },
 

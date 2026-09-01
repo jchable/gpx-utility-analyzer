@@ -8,6 +8,20 @@ namespace GpxAnalyzer.Cli.Core.Stats;
 /// </summary>
 public static class EffortCalculator
 {
+    /// <summary>
+    /// Shortest segment whose grade is meaningful. Below a few metres the
+    /// denominator is GPS jitter and the numerator independent elevation noise,
+    /// so the quotient is arbitrary — and it propagated straight into
+    /// MaxGradePercent and the composite difficulty score.
+    ///
+    /// Applies to ComputeTerrainDifficulty ONLY. Tobler and Minetti bound a wild
+    /// grade themselves (exp decay + a min-speed guard; a clamp to +/-0.45), and
+    /// they consume the segment DISTANCE, so a floor there would not sanitise a
+    /// quotient — it would silently drop real distance. At 1 Hz, the default
+    /// cadence on most watches, that is every segment of a running track.
+    /// </summary>
+    private const double MinGradeSegmentM = 5.0;
+
     // ── Feature 1: Time estimates ──
 
     /// <summary>
@@ -32,6 +46,9 @@ public static class EffortCalculator
         for (int i = 1; i < points.Count; i++)
         {
             var dist = points[i].DistFromPrev;
+            // 0.1 m, not MinGradeSegmentM: Tobler saturates (exp decay plus the
+            // speedMs > 0.01 guard below), and a 5 m floor would discard EVERY
+            // segment of a 1 Hz recording - the default cadence on most watches.
             if (dist < 0.1) continue; // skip negligible segments
 
             var dEle = points[i].Ele - points[i - 1].Ele;
@@ -127,6 +144,9 @@ public static class EffortCalculator
         for (int i = 1; i < points.Count; i++)
         {
             var dist = points[i].DistFromPrev;
+            // 0.1 m, not MinGradeSegmentM: Minetti clamps the grade to +/-0.45, so a
+            // jitter segment contributes at most its own (tiny) length x 5.4, and a
+            // 5 m floor would zero the metric outright for 1 Hz recordings.
             if (dist < 0.1) continue;
 
             var dEle = points[i].Ele - points[i - 1].Ele;
@@ -155,19 +175,42 @@ public static class EffortCalculator
             };
         }
 
-        // Compute per-segment grades
+        // Elevation per km needs no per-segment grade at all, so it must be
+        // reported even when no window below clears the baseline.
+        var distKm = distanceM / 1000.0;
+        var elevPerKm = distKm > 0 ? elevGainM / distKm : 0;
+
+        // Accumulate consecutive segments until they span at least
+        // MinGradeSegmentM, then take ONE grade over that whole window. Discarding
+        // the short segments instead would drop every segment of a 1 Hz recording
+        // — the default cadence on most GPS watches — and report a sustained 20%
+        // climb as flat "Easy" terrain.
         var grades = new List<double>();
         var segmentDists = new List<double>();
 
+        double accDist = 0, accEle = 0;
         for (int i = 1; i < points.Count; i++)
         {
             var dist = points[i].DistFromPrev;
-            if (dist < 0.1) continue;
 
-            var dEle = points[i].Ele - points[i - 1].Ele;
-            var grade = Math.Abs(dEle / dist) * 100.0; // in percent
-            grades.Add(grade);
-            segmentDists.Add(dist);
+            // A zero-distance segment is a recording gap or a clamped outlier: its
+            // elevation delta belongs to no recorded ground distance, so it must
+            // not be folded into the next window's numerator.
+            if (dist <= 0)
+            {
+                accDist = 0;
+                accEle = 0;
+                continue;
+            }
+
+            accDist += dist;
+            accEle += points[i].Ele - points[i - 1].Ele;
+            if (accDist < MinGradeSegmentM) continue;
+
+            grades.Add(Math.Abs(accEle / accDist) * 100.0); // in percent
+            segmentDists.Add(accDist);
+            accDist = 0;
+            accEle = 0;
         }
 
         if (grades.Count == 0)
@@ -176,16 +219,23 @@ public static class EffortCalculator
             {
                 Score = 1,
                 Grade = "Easy",
+                ElevationPerKm = Math.Round(elevPerKm, 1),
             };
         }
 
         var totalSegmentDist = segmentDists.Sum();
-        var avgGrade = grades.Average();
+        // Distance-weighted: an unweighted mean lets the many near-stationary
+        // samples dominate the few long segments that carry the real terrain.
+        var avgGrade = totalSegmentDist > 0
+            ? grades.Zip(segmentDists, (g, d) => g * d).Sum() / totalSegmentDist
+            : 0;
         var maxGrade = grades.Max();
 
-        // Grade variance
+        // Grade variance, weighted by the same distances as the mean
         var mean = avgGrade;
-        var variance = grades.Average(g => (g - mean) * (g - mean));
+        var variance = totalSegmentDist > 0
+            ? grades.Zip(segmentDists, (g, d) => (g - mean) * (g - mean) * d).Sum() / totalSegmentDist
+            : 0;
 
         // Steep section ratio (% of distance where grade > 15%)
         double steepDist = 0;
@@ -195,10 +245,6 @@ public static class EffortCalculator
                 steepDist += segmentDists[i];
         }
         var steepRatio = totalSegmentDist > 0 ? steepDist / totalSegmentDist : 0;
-
-        // Elevation per km
-        var distKm = distanceM / 1000.0;
-        var elevPerKm = distKm > 0 ? elevGainM / distKm : 0;
 
         // Composite score with weighted normalization
         // Reference values for normalization (typical upper bounds)

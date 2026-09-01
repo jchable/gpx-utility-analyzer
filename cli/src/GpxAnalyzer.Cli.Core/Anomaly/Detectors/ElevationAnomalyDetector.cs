@@ -47,9 +47,12 @@ public static class ElevationAnomalyDetector
                     Type = AnomalyType.ElevationSpike,
                     Severity = AnomalySeverity.Warning,
                     Category = AnomalyCategory.Elevation,
-                    StartIndex = i - 1,
+                    // Flag only the spiking point. The previous point is healthy,
+                    // and CorrectElevationSpike overwrites every index in the
+                    // inclusive range with an interpolated value.
+                    StartIndex = i,
                     EndIndex = i,
-                    StartTime = points[i - 1].Time,
+                    StartTime = points[i].Time,
                     EndTime = points[i].Time,
                     DistanceImpactM = 0,
                     TimeImpactS = 0,

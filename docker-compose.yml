@@ -25,6 +25,8 @@ services:
       # Integrations — configure as needed
       - Integrations__Strava__ClientId=${STRAVA_CLIENT_ID:-}
       - Integrations__Strava__ClientSecret=${STRAVA_CLIENT_SECRET:-}
+      - Integrations__Strava__WebhookSecret=${STRAVA_WEBHOOK_SECRET:-}
+      - Integrations__Garmin__WebhookSecret=${GARMIN_WEBHOOK_SECRET:-}
       # DEM elevation data directory
       - Storage__DemDirectory=/app/data/dem
       # Routing — uncomment and configure for route editing

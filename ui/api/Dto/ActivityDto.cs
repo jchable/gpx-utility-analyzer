@@ -84,4 +84,13 @@ public class IntegrationDto
     public bool IsConnected { get; set; }
     public string? ExternalUserId { get; set; }
     public DateTime? ConnectedAt { get; set; }
+
+    /// <summary>
+    /// Connected, but with no external user id — so webhook routing can never match
+    /// an incoming event to this account and nothing will ever import. Rows written
+    /// before the id was captured at connect time are in this state (#130); the only
+    /// fix is to reconnect, which is worth saying out loud rather than failing
+    /// silently.
+    /// </summary>
+    public bool NeedsReconnect { get; set; }
 }

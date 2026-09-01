@@ -1,5 +1,4 @@
 using System.CommandLine;
-using System.CommandLine.Invocation;
 using GpxAnalyzer.Cli.Core.Gpx;
 using GpxAnalyzer.Cli.Core.Input;
 using GpxAnalyzer.Cli.Core.Output;
@@ -11,30 +10,31 @@ public static class AnalyzeCommand
 {
     public static Command Create(Option<string> formatOption)
     {
-        var filesArg = new Argument<string[]>("files", "GPX files, directories, or glob patterns")
+        var filesArg = new Argument<string[]>("files")
         {
+            Description = "GPX files, directories, or glob patterns",
             Arity = ArgumentArity.OneOrMore
         };
-        var presetOpt = new Option<string>("--preset", () => "hiking", "Stop detection preset: hiking, trail, cycling");
-        var stopSpeedOpt = new Option<double>("--stop-speed", () => 0, "Override max speed for stops (m/s)");
-        var stopDurationOpt = new Option<double>("--stop-duration", () => 0, "Override min duration for stops (seconds)");
-        var elevThresholdOpt = new Option<double>("--elevation-threshold", () => 2.0, "Min elevation change (meters)");
-        var smoothingOpt = new Option<string>("--smoothing", () => "medium", "Elevation smoothing: none, light, medium, heavy");
-        var demDirOpt = new Option<string>("--dem-dir", () => "", "SRTM .hgt directory");
-        var demCacheOpt = new Option<string>("--dem-cache", () => "", "DEM cache directory");
-        var demAutoOpt = new Option<bool>("--dem-auto-download", () => true, "Auto-download missing tiles");
-        var demMaxMemOpt = new Option<int>("--dem-max-memory", () => 0, "Max memory for DEM (MB, 0=unlimited)");
-        var demSkipValOpt = new Option<bool>("--dem-skip-validation", () => false, "Skip tile validation");
-        var elevAlgoOpt = new Option<string>("--elevation-algo", () => "threshold", "Algorithm: threshold, douglas-peucker, segments");
-        var trackSmoothOpt = new Option<string>("--track-smoothing", () => "none", "GPS lat/lon smoothing: none, light, medium, heavy");
-        var dpEpsOpt = new Option<double>("--dp-epsilon", () => 3.0, "Douglas-Peucker epsilon (meters)");
-        var segMinLenOpt = new Option<double>("--seg-min-length", () => 200.0, "Segments min length (meters)");
-        var segMaxDevOpt = new Option<double>("--seg-max-deviation", () => 2.0, "Segments max RMS residual (meters)");
-        var exportOpt = new Option<string>("--export", () => "", "Export preprocessed GPX directory");
-        var enrichOpt = new Option<bool>("--enrich", () => false, "Include computed metrics in export");
-        var maxHrOpt = new Option<int>("--max-hr", () => 0, "Max HR for zone calculation");
-        var maxSpeedOpt = new Option<double>("--max-speed", () => 0, "GPS outlier removal threshold (m/s)");
-        var fixAnomaliesOpt = new Option<bool>("--fix-anomalies", () => false, "Apply automatic anomaly corrections");
+        var presetOpt = new Option<string>("--preset") { Description = "Stop detection preset: hiking, trail, cycling", DefaultValueFactory = _ => "hiking" };
+        var stopSpeedOpt = new Option<double>("--stop-speed") { Description = "Override max speed for stops (m/s)", DefaultValueFactory = _ => 0 };
+        var stopDurationOpt = new Option<double>("--stop-duration") { Description = "Override min duration for stops (seconds)", DefaultValueFactory = _ => 0 };
+        var elevThresholdOpt = new Option<double>("--elevation-threshold") { Description = "Min elevation change (meters)", DefaultValueFactory = _ => 2.0 };
+        var smoothingOpt = new Option<string>("--smoothing") { Description = "Elevation smoothing: none, light, medium, heavy", DefaultValueFactory = _ => "medium" };
+        var demDirOpt = new Option<string>("--dem-dir") { Description = "SRTM .hgt directory", DefaultValueFactory = _ => "" };
+        var demCacheOpt = new Option<string>("--dem-cache") { Description = "DEM cache directory", DefaultValueFactory = _ => "" };
+        var demAutoOpt = new Option<bool>("--dem-auto-download") { Description = "Auto-download missing tiles", DefaultValueFactory = _ => true };
+        var demMaxMemOpt = new Option<int>("--dem-max-memory") { Description = "Max memory for DEM (MB, 0=unlimited)", DefaultValueFactory = _ => 0 };
+        var demSkipValOpt = new Option<bool>("--dem-skip-validation") { Description = "Skip tile validation", DefaultValueFactory = _ => false };
+        var elevAlgoOpt = new Option<string>("--elevation-algo") { Description = "Algorithm: threshold, douglas-peucker, segments", DefaultValueFactory = _ => "threshold" };
+        var trackSmoothOpt = new Option<string>("--track-smoothing") { Description = "GPS lat/lon smoothing: none, light, medium, heavy", DefaultValueFactory = _ => "none" };
+        var dpEpsOpt = new Option<double>("--dp-epsilon") { Description = "Douglas-Peucker epsilon (meters)", DefaultValueFactory = _ => 3.0 };
+        var segMinLenOpt = new Option<double>("--seg-min-length") { Description = "Segments min length (meters)", DefaultValueFactory = _ => 200.0 };
+        var segMaxDevOpt = new Option<double>("--seg-max-deviation") { Description = "Segments max RMS residual (meters)", DefaultValueFactory = _ => 2.0 };
+        var exportOpt = new Option<string>("--export") { Description = "Export preprocessed GPX directory", DefaultValueFactory = _ => "" };
+        var enrichOpt = new Option<bool>("--enrich") { Description = "Include computed metrics in export", DefaultValueFactory = _ => false };
+        var maxHrOpt = new Option<int>("--max-hr") { Description = "Max HR for zone calculation", DefaultValueFactory = _ => 0 };
+        var maxSpeedOpt = new Option<double>("--max-speed") { Description = "GPS outlier removal threshold (m/s)", DefaultValueFactory = _ => 0 };
+        var fixAnomaliesOpt = new Option<bool>("--fix-anomalies") { Description = "Apply automatic anomaly corrections", DefaultValueFactory = _ => false };
 
         var cmd = new Command("analyze", "Analyze GPX files: distance, elevation, speed, pace, stops")
         {
@@ -44,38 +44,54 @@ public static class AnalyzeCommand
             segMaxDevOpt, exportOpt, enrichOpt, maxHrOpt, maxSpeedOpt, fixAnomaliesOpt
         };
 
-        cmd.SetHandler((InvocationContext ctx) =>
+        cmd.SetAction((ParseResult parseResult) =>
         {
-            var files = ctx.ParseResult.GetValueForArgument(filesArg);
-            var format = ctx.ParseResult.GetValueForOption(formatOption) ?? "text";
-            var export = ctx.ParseResult.GetValueForOption(exportOpt) ?? "";
-            var enrich = ctx.ParseResult.GetValueForOption(enrichOpt);
+            var files = parseResult.GetRequiredValue(filesArg);
+            var format = parseResult.GetValue(formatOption) ?? "text";
+            var export = parseResult.GetValue(exportOpt) ?? "";
+            var enrich = parseResult.GetValue(enrichOpt);
 
             var formatter = FormatterFactory.Create(format, GpxAnalyzer.Cli.Output.JsonContext.Default.Options);
-            var resolvedFiles = FileResolver.ResolveFiles(files);
-            var cfg = SharedFlags.BuildConfigFromContext(ctx, presetOpt, stopSpeedOpt, stopDurationOpt,
+
+            // #136: the files argument has OneOrMore arity, so an unknown option binds to it as
+            // a value and used to blow up inside FileResolver with a stack trace.
+            var resolvedFiles = InputDiagnostics.ResolveOrReport(files);
+            if (resolvedFiles is null)
+                return 1;
+
+            var cfg = SharedFlags.BuildConfigFromParseResult(parseResult, presetOpt, stopSpeedOpt, stopDurationOpt,
                 elevThresholdOpt, smoothingOpt, demDirOpt, demCacheOpt, demAutoOpt, demMaxMemOpt,
                 demSkipValOpt, elevAlgoOpt, trackSmoothOpt, dpEpsOpt, segMinLenOpt, segMaxDevOpt,
                 maxHrOpt, maxSpeedOpt, fixAnomaliesOpt);
+
+            // Output paths claimed so far, so two inputs with the same basename in
+            // different directories cannot silently overwrite each other.
+            var claimed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            int failures = 0;
 
             foreach (var path in resolvedFiles)
             {
                 try
                 {
-                    AnalyzeFile(path, formatter, cfg, export, enrich);
+                    AnalyzeFile(path, formatter, cfg, export, enrich, claimed);
                 }
                 catch (Exception ex)
                 {
                     Console.Error.WriteLine($"Error analyzing {path}: {ex.Message}");
+                    failures++;
                 }
             }
+
+            // A pipeline cannot distinguish "parsed nothing" from "analyzed
+            // everything" when the exit code is 0 either way.
+            return failures > 0 ? 1 : 0;
         });
 
         return cmd;
     }
 
     private static void AnalyzeFile(string path, IFormatter formatter, ComputeConfig cfg,
-        string exportDir, bool enrich)
+        string exportDir, bool enrich, HashSet<string> claimedOutputs)
     {
         var doc = GpxParser.ParseFile(path);
         var points = doc.AllPoints();
@@ -85,7 +101,7 @@ public static class AnalyzeCommand
         if (!string.IsNullOrEmpty(exportDir))
         {
             string baseName = Path.GetFileNameWithoutExtension(path);
-            string outPath = Path.Combine(exportDir, baseName + "_processed.gpx");
+            string outPath = ClaimOutputPath(exportDir, baseName, path, claimedOutputs);
             Directory.CreateDirectory(exportDir);
 
             if (enrich)
@@ -94,6 +110,32 @@ public static class AnalyzeCommand
                 GpxWriter.Write(outPath, processed, baseName);
 
             Console.Error.WriteLine($"Exported: {outPath} ({processed.Count} points)");
+        }
+    }
+
+    /// <summary>
+    /// Reserves a unique export path. Recursive input resolution can yield several
+    /// files with the same basename in different directories; without this they all
+    /// map to one output and the last write silently wins.
+    /// </summary>
+    internal static string ClaimOutputPath(string exportDir, string baseName,
+        string sourcePath, HashSet<string> claimed)
+    {
+        string candidate = Path.Combine(exportDir, baseName + "_processed.gpx");
+        if (claimed.Add(candidate)) return candidate;
+
+        // First disambiguator: the source's parent directory (tracks/2023 -> 2023).
+        var parent = Path.GetFileName(Path.GetDirectoryName(sourcePath) ?? "");
+        if (!string.IsNullOrEmpty(parent))
+        {
+            candidate = Path.Combine(exportDir, $"{parent}_{baseName}_processed.gpx");
+            if (claimed.Add(candidate)) return candidate;
+        }
+
+        for (int n = 2; ; n++)
+        {
+            candidate = Path.Combine(exportDir, $"{baseName}_processed_{n}.gpx");
+            if (claimed.Add(candidate)) return candidate;
         }
     }
 }

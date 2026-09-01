@@ -1,6 +1,7 @@
 namespace GpxAnalyzer.Api.Services;
 
 using System.Diagnostics;
+using System.Globalization;
 using System.Text.Json;
 using GpxAnalyzer.Api.Data;
 using GpxAnalyzer.Api.Entities;
@@ -38,14 +39,61 @@ public class ActivityProcessingService
 
     public async Task ProcessActivityAsync(Guid activityId, Guid userId, CancellationToken ct = default)
     {
-        var totalSw = Stopwatch.StartNew();
+        var activity = await _db.Activities.FindAsync([activityId], CancellationToken.None);
+        if (activity is null || activity.UserId != userId) return;
+        await ProcessClaimedActivityAsync(activity, ct);
+    }
 
-        var activity = await _db.Activities.FindAsync([activityId], ct);
-        if (activity is null)
+    public async Task ProcessActivityAsync(
+        Guid activityId, Guid userId, Guid leaseId, CancellationToken ct = default)
+    {
+        var claimed = await _db.Activities
+            .Where(a => a.Id == activityId && a.UserId == userId &&
+                a.ProcessingLeaseId == leaseId &&
+                (a.Status == ProcessingStatus.Pending || a.Status == ProcessingStatus.Recovering))
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(a => a.Status, ProcessingStatus.Analyzing)
+                .SetProperty(a => a.ProcessingLeaseExpiresAt, DateTime.UtcNow.AddMinutes(30)),
+                CancellationToken.None);
+        if (claimed != 1)
         {
-            _logger.LogWarning("Activity {Id} not found, skipping processing", activityId);
+            _logger.LogInformation("Activity {Id} lease was already consumed, skipping duplicate request", activityId);
             return;
         }
+
+        var activity = await _db.Activities.FindAsync([activityId], CancellationToken.None);
+        if (activity is null) return;
+        await ProcessClaimedActivityAsync(activity, ct);
+    }
+
+    /// <summary>
+    /// Runs the pipeline, tolerating the activity being deleted underneath it.
+    ///
+    /// A DELETE can land at any point in a run (#131). Every write then affects zero
+    /// rows and EF raises <see cref="DbUpdateConcurrencyException"/> — an ordinary
+    /// outcome here, not a worker crash: there is simply nothing left to record
+    /// progress against.
+    /// </summary>
+    private async Task ProcessClaimedActivityAsync(Entities.Activity activity, CancellationToken ct)
+    {
+        try
+        {
+            await RunPipelineAsync(activity, ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            _logger.LogInformation(
+                "[{Id}] Activity was deleted while it was being processed; abandoning the run",
+                activity.Id);
+            _db.ChangeTracker.Clear();
+        }
+    }
+
+    private async Task RunPipelineAsync(Entities.Activity activity, CancellationToken ct)
+    {
+        var totalSw = Stopwatch.StartNew();
+        var activityId = activity.Id;
+        var userId = activity.UserId;
 
         _logger.LogInformation("Starting processing for activity {Id} ({Name}, type={Type}, source={Source})",
             activityId, activity.Name, activity.ActivityType, activity.Source);
@@ -164,9 +212,9 @@ public class ActivityProcessingService
                 activity.ElevationLossM = stats.ElevationLossM;
                 activity.MovingTimeSeconds = stats.MovingTime.Seconds;
 
-                if (DateTime.TryParse(stats.StartTime, out var start))
+                if (TryParseUtc(stats.StartTime, out var start))
                     activity.StartTime = start;
-                if (DateTime.TryParse(stats.EndTime, out var end))
+                if (TryParseUtc(stats.EndTime, out var end))
                     activity.EndTime = end;
 
                 // Phase B: auto-detect activity type from computed stats
@@ -228,20 +276,49 @@ public class ActivityProcessingService
             }
 
             activity.Status = ProcessingStatus.Completed;
+            activity.ProcessingLeaseId = null;
+            activity.ProcessingLeaseExpiresAt = null;
             activity.UpdatedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync(ct);
 
             totalSw.Stop();
             _logger.LogInformation("[{Id}] Processing completed in {Elapsed:F1}s (status=Completed)", activityId, totalSw.Elapsed.TotalSeconds);
         }
+        // Let the caller record "the row is gone" rather than reporting a failure
+        // against an activity that no longer exists.
+        catch (DbUpdateConcurrencyException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             totalSw.Stop();
             _logger.LogError(ex, "[{Id}] Processing failed after {Elapsed:F1}s: {Message}", activityId, totalSw.Elapsed.TotalSeconds, ex.Message);
             activity.Status = ProcessingStatus.Failed;
+            activity.ProcessingLeaseId = null;
+            activity.ProcessingLeaseExpiresAt = null;
             activity.ErrorMessage = ex.Message;
             activity.UpdatedAt = DateTime.UtcNow;
-            await _db.SaveChangesAsync(ct);
+            // NOT `ct`: the most common reason we are here is that `ct` was cancelled
+            // (host shutdown), and saving with it throws immediately, leaving the row
+            // stuck in Analyzing with nothing to move it on.
+            await _db.SaveChangesAsync(CancellationToken.None);
         }
+    }
+
+    /// <summary>
+    /// Parses a timestamp from the CLI JSON contract as a UTC instant.
+    /// SummaryMapper emits a UTC instant with a trailing Z. With DateTimeStyles.None
+    /// .NET honours the Z by converting to the host's LOCAL time (and stamping
+    /// Kind = Local), so the stored value drifts by the host's UTC offset — and by its
+    /// current DST state — while CreatedAt/UpdatedAt and the dashboard's month
+    /// boundaries are all UtcNow.
+    /// </summary>
+    internal static bool TryParseUtc(string? value, out DateTime utc)
+    {
+        const DateTimeStyles utcStyles =
+            DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal;
+
+        return DateTime.TryParse(value, CultureInfo.InvariantCulture, utcStyles, out utc);
     }
 }

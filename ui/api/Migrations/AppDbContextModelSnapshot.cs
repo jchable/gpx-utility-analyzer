@@ -15,7 +15,7 @@ namespace GpxAnalyzer.Api.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "9.0.14");
+            modelBuilder.HasAnnotation("ProductVersion", "9.0.19");
 
             modelBuilder.Entity("GpxAnalyzer.Api.Entities.Activity", b =>
                 {
@@ -25,7 +25,6 @@ namespace GpxAnalyzer.Api.Migrations
 
                     b.Property<string>("ActivityType")
                         .IsRequired()
-                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("AiReportJson")
@@ -62,7 +61,6 @@ namespace GpxAnalyzer.Api.Migrations
                         .HasColumnType("REAL");
 
                     b.Property<string>("ExternalId")
-                        .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("FixAnomaliesOnNextRun")
@@ -70,7 +68,6 @@ namespace GpxAnalyzer.Api.Migrations
 
                     b.Property<string>("GpxFilePath")
                         .IsRequired()
-                        .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Language")
@@ -82,11 +79,16 @@ namespace GpxAnalyzer.Api.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
                     b.Property<int?>("PerceivedExertion")
                         .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("ProcessingLeaseExpiresAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("ProcessingLeaseId")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("ProfileJson")
                         .HasColumnType("TEXT");
@@ -96,7 +98,6 @@ namespace GpxAnalyzer.Api.Migrations
 
                     b.Property<string>("Source")
                         .IsRequired()
-                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("SplitsJson")
@@ -110,7 +111,6 @@ namespace GpxAnalyzer.Api.Migrations
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Tags")
@@ -131,9 +131,10 @@ namespace GpxAnalyzer.Api.Migrations
 
                     b.HasIndex("Status");
 
-                    b.HasIndex("Source", "ExternalId");
-
                     b.HasIndex("UserId", "StartTime");
+
+                    b.HasIndex("UserId", "Source", "ExternalId")
+                        .IsUnique();
 
                     b.ToTable("Activities");
                 });
@@ -258,7 +259,6 @@ namespace GpxAnalyzer.Api.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Sex")
-                        .HasMaxLength(10)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("UpdatedAt")
@@ -284,7 +284,6 @@ namespace GpxAnalyzer.Api.Migrations
             modelBuilder.Entity("GpxAnalyzer.Api.Entities.GlobalSetting", b =>
                 {
                     b.Property<string>("Key")
-                        .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("UpdatedAt")
@@ -292,7 +291,6 @@ namespace GpxAnalyzer.Api.Migrations
 
                     b.Property<string>("Value")
                         .IsRequired()
-                        .HasMaxLength(4000)
                         .HasColumnType("TEXT");
 
                     b.HasKey("Key");
@@ -308,14 +306,12 @@ namespace GpxAnalyzer.Api.Migrations
 
                     b.Property<string>("AccessToken")
                         .IsRequired()
-                        .HasMaxLength(2000)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ExternalUserId")
-                        .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsActive")
@@ -323,11 +319,9 @@ namespace GpxAnalyzer.Api.Migrations
 
                     b.Property<string>("Provider")
                         .IsRequired()
-                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("RefreshToken")
-                        .HasMaxLength(2000)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("TokenExpiresAt")
@@ -340,7 +334,6 @@ namespace GpxAnalyzer.Api.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("WebhookSubscriptionId")
-                        .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -358,7 +351,6 @@ namespace GpxAnalyzer.Api.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Brand")
-                        .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
                     b.Property<double?>("CaffeineG")
@@ -378,7 +370,6 @@ namespace GpxAnalyzer.Api.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(300)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Notes")
@@ -392,7 +383,6 @@ namespace GpxAnalyzer.Api.Migrations
 
                     b.Property<string>("Type")
                         .IsRequired()
-                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("UpdatedAt")
@@ -414,6 +404,26 @@ namespace GpxAnalyzer.Api.Migrations
                     b.ToTable("NutritionProducts");
                 });
 
+            modelBuilder.Entity("GpxAnalyzer.Api.Entities.OAuthState", b =>
+                {
+                    b.Property<string>("Nonce")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Nonce");
+
+                    b.ToTable("OAuthStates");
+                });
+
             modelBuilder.Entity("GpxAnalyzer.Api.Entities.RacePlan", b =>
                 {
                     b.Property<Guid>("Id")
@@ -422,14 +432,12 @@ namespace GpxAnalyzer.Api.Migrations
 
                     b.Property<string>("ActivityType")
                         .IsRequired()
-                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Description")
-                        .HasMaxLength(5000)
                         .HasColumnType("TEXT");
 
                     b.Property<double>("DistanceKm")
@@ -449,7 +457,6 @@ namespace GpxAnalyzer.Api.Migrations
 
                     b.Property<string>("Language")
                         .IsRequired()
-                        .HasMaxLength(10)
                         .HasColumnType("TEXT");
 
                     b.Property<Guid?>("LinkedActivityId")
@@ -463,7 +470,6 @@ namespace GpxAnalyzer.Api.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
                     b.Property<double>("PerformanceCoefficient")
@@ -482,7 +488,6 @@ namespace GpxAnalyzer.Api.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ShareToken")
-                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.Property<double?>("StartLatitude")
@@ -496,7 +501,6 @@ namespace GpxAnalyzer.Api.Migrations
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
                     b.Property<double?>("SweatRateMLPerHour")
@@ -537,7 +541,6 @@ namespace GpxAnalyzer.Api.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CrewNotes")
-                        .HasMaxLength(2000)
                         .HasColumnType("TEXT");
 
                     b.Property<int?>("CutoffTimeSeconds")
@@ -572,11 +575,9 @@ namespace GpxAnalyzer.Api.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(300)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Notes")
-                        .HasMaxLength(5000)
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Order")
@@ -593,7 +594,6 @@ namespace GpxAnalyzer.Api.Migrations
 
                     b.Property<string>("Type")
                         .IsRequired()
-                        .HasMaxLength(30)
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -616,7 +616,6 @@ namespace GpxAnalyzer.Api.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Notes")
-                        .HasMaxLength(2000)
                         .HasColumnType("TEXT");
 
                     b.Property<Guid?>("ProductId")
@@ -624,7 +623,6 @@ namespace GpxAnalyzer.Api.Migrations
 
                     b.Property<string>("ProductName")
                         .IsRequired()
-                        .HasMaxLength(300)
                         .HasColumnType("TEXT");
 
                     b.Property<double>("Quantity")
@@ -641,7 +639,6 @@ namespace GpxAnalyzer.Api.Migrations
 
                     b.Property<string>("Unit")
                         .IsRequired()
-                        .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -669,26 +666,22 @@ namespace GpxAnalyzer.Api.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedByIp")
-                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("ExpiresAt")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ReplacedByToken")
-                        .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("RevokedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("RevokedByIp")
-                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Token")
                         .IsRequired()
-                        .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("UserId")
@@ -711,14 +704,12 @@ namespace GpxAnalyzer.Api.Migrations
 
                     b.Property<string>("ActivityType")
                         .IsRequired()
-                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Description")
-                        .HasMaxLength(5000)
                         .HasColumnType("TEXT");
 
                     b.Property<double>("DistanceKm")
@@ -735,7 +726,6 @@ namespace GpxAnalyzer.Api.Migrations
 
                     b.Property<string>("Language")
                         .IsRequired()
-                        .HasMaxLength(10)
                         .HasColumnType("TEXT");
 
                     b.Property<double>("MaxElevationM")
@@ -746,7 +736,6 @@ namespace GpxAnalyzer.Api.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PointsJson")
@@ -760,28 +749,23 @@ namespace GpxAnalyzer.Api.Migrations
 
                     b.Property<string>("RouteCategory")
                         .IsRequired()
-                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("RoutingProfile")
                         .IsRequired()
-                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.Property<Guid?>("SourceActivityId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("SourceFileName")
-                        .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Tags")
-                        .HasMaxLength(2000)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("UpdatedAt")
@@ -812,7 +796,6 @@ namespace GpxAnalyzer.Api.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Key")
-                        .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("UpdatedAt")
@@ -820,7 +803,6 @@ namespace GpxAnalyzer.Api.Migrations
 
                     b.Property<string>("Value")
                         .IsRequired()
-                        .HasMaxLength(4000)
                         .HasColumnType("TEXT");
 
                     b.HasKey("UserId", "Key");

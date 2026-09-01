@@ -21,6 +21,21 @@ services:
     restart: unless-stopped
 
   api:
+    # ┌──────────────────────────────────────────────────────────────────────┐
+    # │ THE API RUNS AS EXACTLY ONE REPLICA. DO NOT RAISE THIS.               │
+    # └──────────────────────────────────────────────────────────────────────┘
+    # The processing queue is an in-memory Channel and ProcessingRecoveryService
+    # reclaims stranded activities from the database with no cross-process
+    # coordination. Every replica would therefore reclaim and re-enqueue the SAME
+    # rows, so one stranded activity becomes N full GPX analyses and — because the
+    # AI step runs per analysis — N PAID AI CALLS. Nothing detects or dedupes this;
+    # it just shows up on the bill.
+    #
+    # Scaling out needs a durable, shared queue (issue #134), which this deployment
+    # does not have. Until then the API scales vertically only; the client and the
+    # database can be scaled independently.
+    deploy:
+      replicas: 1
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - Database__Provider=postgresql

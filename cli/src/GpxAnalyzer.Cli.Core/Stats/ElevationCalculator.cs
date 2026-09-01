@@ -47,12 +47,34 @@ public static class ElevationCalculator
     /// </summary>
     public static ElevationResult ComputeWithAlgo(List<TrackPoint> points, ElevationConfig cfg)
     {
-        return cfg.Algo switch
+        if (points.Count == 0)
+            return new ElevationResult();
+
+        var result = new ElevationResult
         {
-            ElevationAlgo.DouglasPeucker => ElevationDouglasPeucker.Compute(points, cfg.Epsilon),
-            ElevationAlgo.Segments => ElevationSegments.Compute(points, cfg.MinSegLen, cfg.MaxSlopeDev),
-            _ => ComputeThreshold(points, cfg.Threshold),
+            Max = points.Max(p => p.Ele),
+            Min = points.Min(p => p.Ele),
         };
+
+        var start = 0;
+        for (var i = 1; i <= points.Count; i++)
+        {
+            if (i < points.Count && !points[i].BreaksPath)
+                continue;
+
+            var section = points.GetRange(start, i - start);
+            var sectionResult = cfg.Algo switch
+            {
+                ElevationAlgo.DouglasPeucker => ElevationDouglasPeucker.Compute(section, cfg.Epsilon),
+                ElevationAlgo.Segments => ElevationSegments.Compute(section, cfg.MinSegLen, cfg.MaxSlopeDev),
+                _ => ComputeThreshold(section, cfg.Threshold),
+            };
+            result.Gain += sectionResult.Gain;
+            result.Loss += sectionResult.Loss;
+            start = i;
+        }
+
+        return result;
     }
 
     /// <summary>

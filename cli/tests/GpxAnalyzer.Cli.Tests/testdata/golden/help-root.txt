@@ -1,0 +1,16 @@
+Description:
+  Analyze GPX files: distance, elevation, stops, and more
+
+Usage:
+  gpx-analyzer [command] [options]
+
+Options:
+  -f, --format <format>  Output format: text or json [default: text]
+  -?, -h, --help         Show help and usage information
+  --version              Show version information
+
+Commands:
+  analyze <files>   Analyze GPX files: distance, elevation, speed, pace, stops
+  split <file>      Split a GPX file by time interval
+  merge <files>     Merge multiple GPX files into one
+  benchmark <file>  Run multi-configuration benchmark on a GPX file

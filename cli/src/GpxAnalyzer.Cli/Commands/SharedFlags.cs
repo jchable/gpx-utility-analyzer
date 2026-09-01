@@ -1,5 +1,4 @@
 using System.CommandLine;
-using System.CommandLine.Invocation;
 using GpxAnalyzer.Cli.Core.Anomaly;
 using GpxAnalyzer.Cli.Core.Dem;
 using GpxAnalyzer.Cli.Core.Elevation;
@@ -9,7 +8,7 @@ namespace GpxAnalyzer.Cli.Commands;
 
 internal static class SharedFlags
 {
-    public static ComputeConfig BuildConfigFromContext(InvocationContext ctx,
+    public static ComputeConfig BuildConfigFromParseResult(ParseResult parseResult,
         Option<string> presetOpt, Option<double> stopSpeedOpt, Option<double> stopDurationOpt,
         Option<double> elevThresholdOpt, Option<string> smoothingOpt,
         Option<string> demDirOpt, Option<string> demCacheOpt, Option<bool> demAutoOpt,
@@ -19,24 +18,24 @@ internal static class SharedFlags
         Option<int> maxHrOpt, Option<double> maxSpeedOpt, Option<bool>? fixAnomaliesOpt = null)
     {
         return BuildConfig(
-            ctx.ParseResult.GetValueForOption(presetOpt) ?? "hiking",
-            ctx.ParseResult.GetValueForOption(stopSpeedOpt),
-            ctx.ParseResult.GetValueForOption(stopDurationOpt),
-            ctx.ParseResult.GetValueForOption(elevThresholdOpt),
-            ctx.ParseResult.GetValueForOption(smoothingOpt) ?? "medium",
-            ctx.ParseResult.GetValueForOption(demDirOpt) ?? "",
-            ctx.ParseResult.GetValueForOption(demCacheOpt) ?? "",
-            ctx.ParseResult.GetValueForOption(demAutoOpt),
-            ctx.ParseResult.GetValueForOption(demMaxMemOpt),
-            ctx.ParseResult.GetValueForOption(demSkipValOpt),
-            ctx.ParseResult.GetValueForOption(elevAlgoOpt) ?? "threshold",
-            ctx.ParseResult.GetValueForOption(trackSmoothOpt) ?? "none",
-            ctx.ParseResult.GetValueForOption(dpEpsOpt),
-            ctx.ParseResult.GetValueForOption(segMinLenOpt),
-            ctx.ParseResult.GetValueForOption(segMaxDevOpt),
-            ctx.ParseResult.GetValueForOption(maxHrOpt),
-            ctx.ParseResult.GetValueForOption(maxSpeedOpt),
-            fixAnomaliesOpt != null && ctx.ParseResult.GetValueForOption(fixAnomaliesOpt));
+            parseResult.GetValue(presetOpt) ?? "hiking",
+            parseResult.GetValue(stopSpeedOpt),
+            parseResult.GetValue(stopDurationOpt),
+            parseResult.GetValue(elevThresholdOpt),
+            parseResult.GetValue(smoothingOpt) ?? "medium",
+            parseResult.GetValue(demDirOpt) ?? "",
+            parseResult.GetValue(demCacheOpt) ?? "",
+            parseResult.GetValue(demAutoOpt),
+            parseResult.GetValue(demMaxMemOpt),
+            parseResult.GetValue(demSkipValOpt),
+            parseResult.GetValue(elevAlgoOpt) ?? "threshold",
+            parseResult.GetValue(trackSmoothOpt) ?? "none",
+            parseResult.GetValue(dpEpsOpt),
+            parseResult.GetValue(segMinLenOpt),
+            parseResult.GetValue(segMaxDevOpt),
+            parseResult.GetValue(maxHrOpt),
+            parseResult.GetValue(maxSpeedOpt),
+            fixAnomaliesOpt != null && parseResult.GetValue(fixAnomaliesOpt));
     }
 
     public static ComputeConfig BuildConfig(string preset, double stopSpeed, double stopDuration,
@@ -49,6 +48,11 @@ internal static class SharedFlags
         {
             Console.Error.WriteLine($"Warning: unknown preset '{preset}', using hiking");
             stopCfg = StopDetector.Presets[StopDetector.PresetHiking];
+            // The name itself has to fall back too: the PresetMaxSpeed lookup below
+            // uses it, and leaving the invalid name there silently sets
+            // MaxReasonableSpeed = 0, which disables GPS outlier filtering,
+            // speed clamping and speed-spike detection all at once.
+            preset = StopDetector.PresetHiking;
         }
 
         if (stopSpeed > 0)
@@ -84,8 +88,9 @@ internal static class SharedFlags
         }
 
         double maxReasonable = maxSpeed;
-        if (maxReasonable <= 0 && SpeedCalculator.PresetMaxSpeed.TryGetValue(preset, out var presetMax))
-            maxReasonable = presetMax;
+        if (maxReasonable <= 0)
+            maxReasonable = SpeedCalculator.PresetMaxSpeed.GetValueOrDefault(
+                preset, SpeedCalculator.DefaultMaxReasonableSpeed);
 
         return new ComputeConfig
         {

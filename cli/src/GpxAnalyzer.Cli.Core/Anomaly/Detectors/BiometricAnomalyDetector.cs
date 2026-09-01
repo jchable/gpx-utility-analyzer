@@ -14,13 +14,10 @@ public static class BiometricAnomalyDetector
         if (points.Count < 2)
             return anomalies;
 
-        // Only run if biometric data is present
-        bool hasHr = false;
-        for (int i = 0; i < Math.Min(100, points.Count); i++)
-        {
-            if (points[i].HeartRate.HasValue) { hasHr = true; break; }
-        }
-
+        // Only run if biometric data is present. Scan the whole list: a chest
+        // strap that pairs a couple of minutes in is common, and every other
+        // detector covers the full track.
+        bool hasHr = points.Any(p => p.HeartRate.HasValue);
         if (!hasHr) return anomalies;
 
         DetectHrOutOfRange(points, cfg, anomalies);
