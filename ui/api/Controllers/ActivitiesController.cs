@@ -284,8 +284,7 @@ public class ActivitiesController : ControllerBase
         var language = Request.Headers.AcceptLanguage.FirstOrDefault()?.Split(',')[0]?.Trim() ?? "en";
         if (language.Length > 2) language = language[..2];
 
-        if (activity.Status is ProcessingStatus.Pending or ProcessingStatus.Recovering or
-            ProcessingStatus.Analyzing or ProcessingStatus.AiProcessing)
+        if (IsOwnedByALiveWorker(activity))
             return Accepted();
 
         var leaseId = Guid.NewGuid();
@@ -307,6 +306,20 @@ public class ActivitiesController : ControllerBase
     }
 
     /// <summary>
+    /// Whether a worker genuinely owns this activity right now: a non-terminal
+    /// status AND a lease that has not run out.
+    ///
+    /// The status alone is not enough. A crash leaves the row non-terminal with a
+    /// lease nobody holds, and answering 202 to that without acting is how an
+    /// activity ends up unrevivable — the user's only manual escape hatch silently
+    /// does nothing. Once the lease has expired the row is fair game to restart.
+    /// </summary>
+    private static bool IsOwnedByALiveWorker(Activity activity) =>
+        activity.Status is ProcessingStatus.Pending or ProcessingStatus.Recovering
+            or ProcessingStatus.Analyzing or ProcessingStatus.AiProcessing
+        && activity.ProcessingLeaseExpiresAt > DateTime.UtcNow;
+
+    /// <summary>
     /// Re-triggers full processing with anomaly correction enabled.
     /// Sets FixAnomaliesOnNextRun = true so the pipeline runs with --fix-anomalies.
     /// </summary>
@@ -319,8 +332,7 @@ public class ActivitiesController : ControllerBase
         var language = Request.Headers.AcceptLanguage.FirstOrDefault()?.Split(',')[0]?.Trim() ?? "en";
         if (language.Length > 2) language = language[..2];
 
-        if (activity.Status is ProcessingStatus.Pending or ProcessingStatus.Recovering or
-            ProcessingStatus.Analyzing or ProcessingStatus.AiProcessing)
+        if (IsOwnedByALiveWorker(activity))
             return Accepted();
 
         var leaseId = Guid.NewGuid();
