@@ -172,6 +172,28 @@ Finally realign `dev` (repo convention: `dev` fast-forwards from `main`):
 git checkout dev && git merge --ff-only main && git push origin dev
 ```
 
+## The winget submission fails silently-ish
+
+`submit-winget` runs on a `WINGET_TOKEN` PAT that **expires**. On v0.2.0 it died
+with `GitHub token is invalid` after the Release was already published: the five
+assets were fine, nothing was submitted to `microsoft/winget-pkgs`, and the only
+signal was a red job in an otherwise finished release.
+
+So step 7 is not done when `gh release view` shows five assets. Check the job:
+
+```bash
+gh run view "$RUN" --json jobs --jq ".jobs[] | \"\(.name)\t\(.conclusion)\""
+gh pr list --repo microsoft/winget-pkgs --author jchable --state all --limit 3
+```
+
+Recovering needs no new tag — regenerate a classic PAT with the `public_repo`
+scope, then replay just that job:
+
+```bash
+gh secret set WINGET_TOKEN            # paste the new PAT
+gh run rerun --job <winget job id>
+```
+
 ## If it goes wrong
 
 A tag pushed too early can be withdrawn, but **the winget PR cannot be unsent** —
