@@ -44,8 +44,13 @@ Violating any of them is a broken release, not a style problem.
    This is the failure that already happened: `v0.1.1` shipped on 2026-07-09 and
    never got a CHANGELOG entry, so 138 commits of work stayed under
    `[Unreleased]`.
-4. **`git commit -s`.** The DCO check (`dco.yml`) inspects every non-merge commit
-   in a PR. No `Co-Authored-By` trailer — repo policy.
+4. **`git commit -s`.** The DCO check (`dco.yml`) inspects every non-merge
+   commit in the PR *range*, not only the ones you added. On a promotion PR that
+   range is the whole of `dev`, so one unsigned commit anywhere in the release
+   turns the check red — as it did on #145 and #156. Branch protection requires
+   an approving review, not a green check, so this does not block the merge:
+   report it and move on. Do not rewrite pushed history to chase green. No
+   `Co-Authored-By` trailer — repo policy.
 5. **Stop at both gates.** Never push a tag in the same breath as showing the
    CHANGELOG diff.
 
