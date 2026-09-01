@@ -53,43 +53,84 @@ public class ZipSlipTests : IDisposable
             => throw new NotSupportedException();
     }
 
-    /// <summary>Writes {name}_original.zip into storage containing a single entry.</summary>
-    private void WriteArchive(string archiveKey, string entryName, string content)
+    /// <summary>Writes {name}_original.zip into storage containing the given entries in order.</summary>
+    private void WriteArchive(string archiveKey, params string[] entryNames)
     {
         var path = Path.Combine(_storageDir, archiveKey);
         using var zip = ZipFile.Open(path, ZipArchiveMode.Create);
-        var entry = zip.CreateEntry(entryName);
-        using var stream = entry.Open();
-        stream.Write(Encoding.UTF8.GetBytes(content));
+        foreach (var name in entryNames)
+        {
+            var entry = zip.CreateEntry(name);
+            // A name ending in '/' is a directory entry and carries no content.
+            if (name.EndsWith('/')) continue;
+            using var stream = entry.Open();
+            stream.Write(Encoding.UTF8.GetBytes("<gpx>ok</gpx>"));
+        }
     }
 
     [Theory]
-    [InlineData("../escaped.gpx")]
-    [InlineData("../../escaped.gpx")]
-    [InlineData("sub/../../escaped.gpx")]
-    public async Task ExtractOriginalToTemp_WithAnEntryPointingOutsideTheTempDir_Throws(string entryName)
+    [InlineData("../")]
+    [InlineData("../../")]
+    [InlineData("sub/../../")]
+    public async Task ExtractOriginalToTemp_WithAnEntryPointingOutsideTheTempDir_Throws(string traversal)
     {
-        WriteArchive("track_original.zip", entryName, "<gpx/>");
+        // Unique per case. The guard is proved by this file's absence, so a leftover
+        // from an earlier run or a sibling case must not be what decides the assertion.
+        var marker = $"escaped-{Guid.NewGuid():N}.gpx";
+        WriteArchive("track_original.zip", traversal + marker);
         var service = new GpxStorageService(new DirectoryStorage(_storageDir));
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(
             () => service.ExtractOriginalToTempAsync("track.gpx"));
         Assert.Contains("escapes", ex.Message, StringComparison.OrdinalIgnoreCase);
 
-        // The escape target sits one level above the extraction root, i.e. in the
-        // system temp directory. Nothing may have been written there.
-        Assert.False(File.Exists(Path.Combine(Path.GetTempPath(), "escaped.gpx")),
-            "the entry was extracted outside the temp directory");
+        // The extraction root sits directly under the system temp directory, so one
+        // "../" lands in temp itself and two land in its parent. Check both rather
+        // than guessing which depth this case uses.
+        var tempRoot = new DirectoryInfo(Path.GetTempPath());
+        foreach (var dir in new[] { tempRoot, tempRoot.Parent })
+        {
+            if (dir is null) continue;
+            Assert.False(File.Exists(Path.Combine(dir.FullName, marker)),
+                $"the entry was extracted outside the extraction root, into {dir.FullName}");
+        }
     }
 
     [Fact]
     public async Task ExtractOriginalToTemp_WithAnOrdinaryEntry_StillExtracts()
     {
-        WriteArchive("track_original.zip", "track.gpx", "<gpx>ok</gpx>");
+        WriteArchive("track_original.zip", "track.gpx");
         var service = new GpxStorageService(new DirectoryStorage(_storageDir));
 
         using var lease = await service.ExtractOriginalToTempAsync("track.gpx");
 
         Assert.Equal("<gpx>ok</gpx>", await File.ReadAllTextAsync(lease.Path));
+    }
+
+    /// <summary>
+    /// A tampered archive can open with a directory entry. Taking it blindly sent an
+    /// undefined exception out of ExtractToFile, which reaches the caller as a 500.
+    /// </summary>
+    [Fact]
+    public async Task ExtractOriginalToTemp_WhenADirectoryEntryComesFirst_TakesTheFileAfterIt()
+    {
+        WriteArchive("track_original.zip", "sub/", "track.gpx");
+        var service = new GpxStorageService(new DirectoryStorage(_storageDir));
+
+        using var lease = await service.ExtractOriginalToTempAsync("track.gpx");
+
+        Assert.Equal("track.gpx", Path.GetFileName(lease.Path));
+        Assert.Equal("<gpx>ok</gpx>", await File.ReadAllTextAsync(lease.Path));
+    }
+
+    [Fact]
+    public async Task ExtractOriginalToTemp_WithNoFileEntries_ThrowsAClearError()
+    {
+        WriteArchive("track_original.zip", "sub/");
+        var service = new GpxStorageService(new DirectoryStorage(_storageDir));
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => service.ExtractOriginalToTempAsync("track.gpx"));
+        Assert.Contains("no file entries", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 }

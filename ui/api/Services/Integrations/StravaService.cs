@@ -103,7 +103,9 @@ public class StravaService : IActivityImporter
     ///
     /// The guard is driven by request input by design — that is what a webhook handshake
     /// is — so what matters is that the decision rests on a shared secret the caller must
-    /// already know, compared without leaking its length or contents through timing.
+    /// already know. FixedTimeEquals keeps the comparison of two equal-length tokens free
+    /// of content-dependent timing. It returns early when the lengths differ, so the
+    /// token's length is not protected and nothing here should be read as claiming it is.
     /// </summary>
     public async Task<bool> ValidateSubscriptionAsync(HttpContext context)
     {
