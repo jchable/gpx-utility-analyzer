@@ -186,6 +186,15 @@ gh run view "$RUN" --json jobs --jq ".jobs[] | \"\(.name)\t\(.conclusion)\""
 gh pr list --repo microsoft/winget-pkgs --author jchable --state all --limit 3
 ```
 
+Two distinct failures, two different causes — read the message, do not just
+rotate the token again:
+
+- `GitHub token is invalid` — the PAT expired or was revoked.
+- `<owner> does not have the correct permissions to execute ``CreateRef``` — the
+  PAT is live and the account is right, but it cannot write. A classic PAT with
+  no `public_repo` scope authenticates and reads public repos perfectly well and
+  fails only at the branch creation, which is why this surfaces so late.
+
 Recovering needs no new tag — regenerate a classic PAT with the `public_repo`
 scope, then replay just that job:
 
