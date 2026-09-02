@@ -186,14 +186,30 @@ gh run view "$RUN" --json jobs --jq ".jobs[] | \"\(.name)\t\(.conclusion)\""
 gh pr list --repo microsoft/winget-pkgs --author jchable --state all --limit 3
 ```
 
-Two distinct failures, two different causes — read the message, do not just
-rotate the token again:
+Two failures, two causes. The second one cost three needless PAT
+regenerations on v0.2.0 — read the message before touching the token:
 
-- `GitHub token is invalid` — the PAT expired or was revoked.
-- `<owner> does not have the correct permissions to execute ``CreateRef``` — the
-  PAT is live and the account is right, but it cannot write. A classic PAT with
-  no `public_repo` scope authenticates and reads public repos perfectly well and
-  fails only at the branch creation, which is why this surfaces so late.
+- `GitHub token is invalid` — the PAT expired or was revoked. Rotate it.
+- `<user> does not have the correct permissions to execute ``CreateRef``` — **not
+  a token problem.** It is GitHub's verbatim FORBIDDEN reply when the target repo
+  is one that user cannot write to, and komac targets upstream
+  `microsoft/winget-pkgs` when it fails to sync the fork first. The trigger is a
+  **stale fork**: komac compares the fork against upstream before branching, and
+  GitHub's compare API caps at 250 commits, so a fork thousands of commits behind
+  breaks that step. On v0.2.0 the fork was 5220 behind after 13 days.
+
+  The fix is one command, and it needs no new token and no new tag:
+
+  ```bash
+  gh api "repos/microsoft/winget-pkgs/compare/master...jchable:master" \
+    --jq "\"behind: \(.behind_by)  ahead: \(.ahead_by)\""
+  gh repo sync jchable/winget-pkgs      # safe: ahead_by is 0, pure fast-forward
+  gh run rerun <run-id> --failed
+  ```
+
+  To prove which repo is being refused, run the same GraphQL mutation komac uses
+  against the fork and against upstream — the fork succeeds, upstream reproduces
+  the error word for word.
 
 Recovering needs no new tag — regenerate a classic PAT with the `public_repo`
 scope, then replay just that job:
